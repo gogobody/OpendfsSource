@@ -1,0 +1,833 @@
+#include <sys/ioctl.h>
+
+#include "dn_process.h"
+#include "dfs_error_log.h"
+#include "dfs_conn.h"
+#include "dfs_channel.h"
+#include "dfs_memory.h"
+#include "dfs_lock.h"
+#include "dfs_conn_listen.h"
+#include "dn_signal.h"
+#include "dn_module.h"
+#include "dn_thread.h"
+#include "dn_time.h"
+#include "dn_conf.h"
+#include "dn_worker_process.h"
+#include "dn_conn_event.h"
+
+#define MASTER_TITLE "datanode: master process"
+
+#define    MAX_TIMER 5
+
+int        process_slot;             // process' slot
+int        process_last;
+pid_t      process_pid;
+uint32_t   process_doing = 0;        // the action that process will do
+uint32_t   process_type;
+uint32_t   stop;
+
+process_t  processes[PROCESSES_MAX]; // gloabal processes' info
+
+extern char   **environ;
+extern char   **dfs_argv;
+
+static int      process_old_alived = DFS_FALSE;
+dfs_thread_t   *main_thread = NULL;
+
+static int process_reap_workers(cycle_t *cycle);
+
+int process_check_running(cycle_t *cycle)
+{
+    conf_server_t *sconf = NULL;
+    pid_t          pid = -1;
+    char          *pid_file = NULL;
+    struct stat    st;
+
+    sconf = (conf_server_t *)dfs_cycle->sconf;
+
+    pid_file = (char *)sconf->pid_file.data;
+
+    if (stat(pid_file, &st) < 0) 
+	{
+        return DFS_FALSE;
+    }
+
+    pid = process_get_pid(cycle);
+    if (pid == (pid_t)DFS_ERROR) 
+	{
+   	    return DFS_FALSE;
+    }
+
+    if (kill(pid, 0) < 0) 
+	{
+   	    return DFS_FALSE;
+    }
+
+    return DFS_TRUE;
+}
+
+static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc, 
+	                              void *data, char *name, int slot)
+{
+    pid_t     pid = -1;
+    uint64_t  on = 0;
+    log_t    *log = NULL;
+    
+    log = cycle->error_log;
+
+    if (slot == PROCESS_SLOT_AUTO) 
+	{
+        for (slot = 0; slot < process_last; slot++) 
+		{
+            if (processes[slot].pid == DFS_INVALID_PID)  //先找到一个被回收的进程表象  
+			{
+                break;
+            }
+        }
+		
+        if (slot == PROCESSES_MAX)  //最多只能创建1024个子进程
+		{
+            dfs_log_error(log, DFS_LOG_WARN, 0,
+                "no more than %d processes can be spawned", PROCESSES_MAX);
+			
+            return DFS_INVALID_PID;
+        }
+    }
+
+    errno = 0;
+	/* 
+          这里相当于Master进程调用socketpair()为新的worker进程创建一对全双工的socket 
+            
+          实际上socketpair 函数跟pipe 函数是类似的，也只能在同个主机上具有亲缘关系的进程间通信，但pipe 创建的匿名管道是半双工的，
+          而socketpair 可以认为是创建一个全双工的管道。
+          int socketpair(int domain, int type, int protocol, int sv[2]);
+          这个方法可以创建一对关联的套接字sv[2]。下面依次介绍它的4个参数：参数d表示域，在Linux下通常取值为AF UNIX；type取值为SOCK。
+          STREAM或者SOCK。DGRAM，它表示在套接字上使用的是TCP还是UDP; protocol必须传递0；sv[2]是一个含有两个元素的整型数组，实际上就
+          是两个套接字。当socketpair返回0时，sv[2]这两个套接字创建成功，否则socketpair返回一1表示失败。
+             当socketpair执行成功时，sv[2]这两个套接字具备下列关系：向sv[0]套接字写入数据，将可以从sv[l]套接字中读取到刚写入的数据；
+          同样，向sv[l]套接字写入数据，也可以从sv[0]中读取到写入的数据。通常，在父、子进程通信前，会先调用socketpair方法创建这样一组
+          套接字，在调用fork方法创建出子进程后，将会在父进程中关闭sv[l]套接字，仅使用sv[0]套接字用于向子进程发送数据以及接收子进程发
+          送来的数据：而在子进程中则关闭sv[0]套接字，仅使用sv[l]套接字既可以接收父进程发来的数据，也可以向父进程发送数据。
+          注意socketpair的协议族为AF_UNIX UNXI域
+          */  
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, processes[slot].channel) == DFS_ERROR)
+    {
+        return DFS_INVALID_PID;
+    }
+	
+	/* 设置master的channel[0](即写端口)，channel[1](即读端口)均为非阻塞方式 */  
+    if (conn_nonblocking(processes[slot].channel[0]) == DFS_ERROR) 
+	{
+        channel_close(processes[slot].channel, cycle->error_log);
+
+        return DFS_INVALID_PID;
+    }
+
+    if (conn_nonblocking(processes[slot].channel[1]) == DFS_ERROR) 
+	{
+        channel_close(processes[slot].channel, cycle->error_log);
+
+        return DFS_INVALID_PID;
+    }
+	
+	/* 
+			 设置异步模式： 这里可以看下《网络编程卷一》的ioctl函数和fcntl函数 or 网上查询 
+		   */ 
+
+    on = 1;// 标记位，ioctl用于清除（0）或设置（非0）操作  
+    
+	/* 
+          设置channel[0]的信号驱动异步I/O标志 
+          FIOASYNC：该状态标志决定是否收取针对socket的异步I/O信号（SIGIO） 
+          其与O_ASYNC文件状态标志等效，可通过fcntl的F_SETFL命令设置or清除 
+         */ 
+
+    if (ioctl(processes[slot].channel[0], FIOASYNC, &on) == DFS_ERROR) 
+	{
+        channel_close(processes[slot].channel, cycle->error_log);
+
+        return DFS_INVALID_PID;
+    }
+	/* F_SETOWN：用于指定接收SIGIO和SIGURG信号的socket属主（进程ID或进程组ID） 
+			  * 这里意思是指定Master进程接收SIGIO和SIGURG信号 
+			  * SIGIO信号必须是在socket设置为信号驱动异步I/O才能产生，即上一步操作 
+			  * SIGURG信号是在新的带外数据到达socket时产生的 
+			 */ 
+
+    if (fcntl(processes[slot].channel[0], F_SETOWN, process_pid) == DFS_ERROR) 
+	{
+        return DFS_INVALID_PID;
+    }
+
+    if (fcntl(processes[slot].channel[0], F_SETFD, FD_CLOEXEC) == DFS_ERROR) 
+	{
+        channel_close(processes[slot].channel, cycle->error_log);
+
+        return DFS_INVALID_PID;
+    }
+
+    if (fcntl(processes[slot].channel[1], F_SETFD, FD_CLOEXEC) == DFS_ERROR) 
+	{
+        channel_close(processes[slot].channel, cycle->error_log);
+
+        return DFS_INVALID_PID;
+    }
+
+    process_slot = slot; // 这一步将在ngx_pass_open_channel()中用到，就是设置下标，用于寻找本次创建的子进程  
+
+    pid = fork();
+
+    switch (pid) 
+	{
+        case DFS_INVALID_PID:
+
+            channel_close(processes[slot].channel, cycle->error_log);
+
+            return DFS_INVALID_PID;
+			
+        case 0: //子进程
+
+            process_pid = getpid();  // 设置子进程ID 
+            
+            proc(cycle, data); // 调用proc回调函数，即ngx_worker_process_cycle。之后worker子进程从这里开始执行
+
+            return DFS_INVALID_PID;
+			
+        default: //父进程，但是这时候打印的pid为子进程ID
+
+            break;
+    }
+
+    processes[slot].pid = pid;
+    processes[slot].proc = proc; // worker_processer 主进程
+    processes[slot].data = data;
+    processes[slot].name = name;
+    processes[slot].ps = PROCESS_STATUS_RUNNING;
+    processes[slot].ow  = DFS_FALSE;
+    processes[slot].restart_gap = dfs_time->tv_sec;
+
+    if (slot == process_last) 
+	{
+        process_last++;
+    }
+
+    return pid;
+}
+
+
+void process_broadcast(int slot, int cmd)
+{
+    int       s = -1;
+    channel_t ch;
+
+    ch.command = cmd;
+    ch.pid = processes[slot].pid;
+    ch.slot = slot;
+    ch.fd = processes[slot].channel[0];
+
+    for (s = 0; s < process_last; s++) 
+	{
+        if ((s == process_slot)
+            || (processes[s].ps & PROCESS_STATUS_EXITED)
+            || (processes[s].ps & PROCESS_STATUS_EXITING)
+            || (processes[s].pid == DFS_INVALID_PID)
+            || (processes[s].channel[0] == DFS_INVALID_FILE)
+            || (processes[s].ow == DFS_TRUE))
+        {
+            continue;
+        }
+
+		// broadcast the new process's channel to all other processes
+        channel_write(processes[s].channel[0], &ch, sizeof(channel_t), 
+            dfs_cycle->error_log);
+    }
+}
+
+void process_set_title(string_t *title)
+{
+    // copy the title to argv[0], and set argv[1] to NULL
+    string_strncpy(dfs_argv[0], title->data, title->len);
+
+    dfs_argv[0][title->len] = 0;
+    dfs_argv[1] = NULL;
+}
+
+void process_get_status()
+{
+    int   i = 0;
+    int   status = 0;
+    pid_t pid = -1;
+
+    for ( ;; ) 
+	{
+        pid = waitpid(-1, &status, WNOHANG);
+
+        if (pid == 0) 
+		{
+            return;
+        }
+
+        if (pid == DFS_INVALID_PID) 
+		{
+
+            if (errno == DFS_EINTR) 
+			{
+                continue;
+            }
+
+            return;
+        }
+
+        for (i = 0; i < process_last; i++) 
+		{
+            if (processes[i].pid == pid) 
+			{
+                processes[i].status = status;
+                processes[i].ps = PROCESS_STATUS_EXITED;
+
+                break;
+            }
+        }
+
+        processes[i].status = status;
+        processes[i].ps = PROCESS_STATUS_EXITED;
+    }
+}
+
+int process_change_workdir(string_t *dir)
+{
+    if (chdir((char*)dir->data) < 0) 
+	{
+        dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
+            "process_change_workdir failed!\n");
+
+        return DFS_ERROR;
+    }
+
+    return DFS_OK;
+}
+
+void process_set_old_workers()
+{
+    int i = 0;
+
+    for (i = 0; i < process_last; i++) 
+	{
+        if (processes[i].pid != DFS_INVALID_PID
+            && (processes[i].ps & PROCESS_STATUS_RUNNING)) 
+        {
+            processes[i].ow = DFS_TRUE;
+        }
+    }
+}
+
+void process_signal_workers(int signo)
+{
+    int       i = 0;
+    channel_t ch;
+
+    switch (signo) 
+	{
+        case SIGNAL_QUIT:
+            ch.command = CHANNEL_CMD_QUIT;
+            break;
+
+        case SIGNAL_TERMINATE:
+            ch.command = CHANNEL_CMD_TERMINATE;
+            break;
+			
+        default:
+            ch.command = CHANNEL_CMD_NONE;
+            break;
+    }
+
+    ch.fd = DFS_INVALID_FILE;
+
+    for (i = 0; i < process_last; i++) 
+	{
+        if (processes[i].pid == DFS_INVALID_PID
+            || processes[i].ow == DFS_FALSE) 
+        {
+            continue;
+        }
+
+        if (ch.command != CHANNEL_CMD_NONE) 
+		{
+            if (channel_write(processes[i].channel[0], &ch,
+                sizeof(channel_t), dfs_cycle->error_log) == DFS_OK)
+            {
+                processes[i].ps |= PROCESS_STATUS_EXITING;
+                processes[i].ow = DFS_FALSE;
+				
+                continue;
+            }
+        }
+
+        dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0,
+            "kill (%P, %d)", processes[i].pid, signo);
+		
+        if (kill(processes[i].pid, signo) == DFS_ERROR) 
+		{
+            dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
+                "kill(%P, %d) failed", processes[i].pid, signo);
+        }
+		
+        processes[i].pid = DFS_INVALID_PID;
+        channel_close(processes[i].channel, dfs_cycle->error_log);
+        processes[i].channel[0] = DFS_INVALID_FILE;
+        processes[i].channel[1] = DFS_INVALID_FILE;
+        processes[i].ps = 0;
+        processes[i].ow = DFS_FALSE;
+    }
+}
+
+void process_notify_workers_backup()
+{
+    int       idx = 0;
+    channel_t ch;
+	
+    ch.fd = DFS_INVALID_FILE;
+    ch.command = CHANNEL_CMD_BACKUP;
+
+    for (idx = 0; idx < process_last; idx++) 
+	{
+        if (processes[idx].pid == DFS_INVALID_PID) 
+		{
+            continue;
+        }
+
+        if (channel_write(processes[idx].channel[0], &ch,
+                    sizeof(channel_t), dfs_cycle->error_log) != DFS_OK) 
+        {
+            dfs_log_error(dfs_cycle->error_log, DFS_LOG_WARN,
+                    0, "send backup command error!");
+        }
+    }
+
+    return;
+}
+
+
+// process_spawn 上面的进程生成？ worker_processer //from dn_worker_process.c
+int process_start_workers(cycle_t *cycle)
+{
+    dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "process_start_workers");
+
+	// 如果是子进程，那么这里就会从worker_processer 开始执行了
+	// worker_processer 初始化了 storage 并开启 name node 的线程
+    if (process_spawn(cycle, worker_processer, NULL, // from dn_worker_process.c
+        (char *)"worker process", PROCESS_SLOT_AUTO) == DFS_INVALID_PID) 
+    {
+        return DFS_ERROR;
+    }
+
+    process_broadcast(process_slot, CHANNEL_CMD_OPEN);
+
+    return DFS_OK;
+}
+
+// 开启监听端口并start worker ，执行上面的 startworkers
+
+void process_master_cycle(cycle_t *cycle, int argc, char **argv)
+{
+    int       i = 0;
+    int       live = 1;
+    size_t    size = 0;
+    uchar_t  *p_title = NULL;
+    sigset_t  set; // 信号集用来描述信号的集合
+    string_t  title;
+
+    sigemptyset(&set); //将参数set信号集初始化并清空
+    sigaddset(&set, SIGCHLD); //在set指向的信号集中加入SIGCHLD信号 //在一个进程终止或者停止时，将SIGCHLD信号发送给其父进程
+    sigaddset(&set, SIGALRM);
+    sigaddset(&set, SIGIO);
+    sigaddset(&set, SIGINT);
+    sigaddset(&set, SIGNAL_RECONF);
+    sigaddset(&set, SIGNAL_TERMINATE);
+    sigaddset(&set, SIGNAL_QUIT);
+    sigaddset(&set, SIGNAL_TEST_STORE);
+
+
+	//SIG_BLOCK 该值代表的功能是将newset所指向的信号集中所包含的信号加到当前的信号掩码中，作为新的信号屏蔽字
+    if (sigprocmask(SIG_BLOCK, &set, NULL) == DFS_ERROR)  //用于改变进程的当前阻塞信号集,也可以用来检测当前进程的信号掩码。
+	{
+        dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno,
+            "sigprocmask() failed");
+    }
+
+    process_type = PROCESS_MASTER;
+
+	// thread  多线程私有数据pthread_key_create
+	thread_env_init();
+	
+	main_thread = thread_new(NULL);
+    if (!main_thread) 
+	{
+        return;
+    }
+	
+    main_thread->type = THREAD_MASTER;
+    thread_bind_key(main_thread);
+	
+    size = sizeof(MASTER_TITLE) - 1;
+
+    for (i = 0; i < argc; i++) 
+	{
+        size += string_strlen(argv[i]) + 1;
+    }
+
+    title.data = (uchar_t *)pool_alloc(cycle->pool, size);
+    if (!title.data) 
+	{
+        return;
+    }
+
+    p_title = memory_cpymem(title.data, MASTER_TITLE,
+        sizeof(MASTER_TITLE) - 1);
+
+    for (i = 0; i < argc; i++) 
+	{
+        *p_title++ = ' ';
+        p_title = memory_cpymem(p_title, argv[i], string_strlen(argv[i]));
+    }
+
+    title.len = size;
+
+    process_set_title(&title);
+
+    memset(processes, 0x00, sizeof(processes));
+
+    for (i = 0; i < PROCESSES_MAX; i++) 
+	{
+        processes[i].pid = DFS_INVALID_PID;
+    }
+
+	// 本质上这是一个跨进程的互斥锁，以这个互斥锁来保证只有一个进程具备监听accept事件的能力
+	accept_lock_init();
+    // 开启监听端口, 初始化监听事件
+    // listen_rev_handler 处理 listening 事件
+    if (conn_listening_init(cycle) != DFS_OK) 
+	{
+        return;
+    }
+
+	// 打开worker // process_spawn 设计到子进程
+    if (process_start_workers(cycle) != DFS_OK) 
+	{
+        return;
+    }
+
+    sigemptyset(&set);
+
+    for ( ;; ) 
+	{
+        dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "sigsuspend");
+
+        sigsuspend(&set);
+
+        time_update();
+
+        while (process_doing) 
+		{
+            if (!stop && process_doing & PROCESS_DOING_REAP) 
+			{
+                process_doing &= ~PROCESS_DOING_REAP;
+
+                process_get_status();
+
+                dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, 
+					"reap children");
+				// 有子进程意外结束，这时需要监控所有子进程
+				/*ngx_reap_children(会遍历ngx_process数组，检查每个子进程的状态，对于非正常退出的子进程会重新拉起，
+			最后，返回一个live标志位，如果所有的子进程都已经正常退出，则live为0，初次之外live为1。*/
+                live = process_reap_workers(cycle);
+
+                process_old_alived = DFS_FALSE;
+				
+                continue;
+            }
+ 
+			/*当live标志为0，并且 	process_doing 或PROCESS_DOING_QUIT 中的一个标志位1时，
+			都将调用ngx_master_process_exit方法退出master进程*/
+            if (!live && ((process_doing & PROCESS_DOING_QUIT) 
+                || (process_doing & PROCESS_DOING_TERMINATE))) 
+            {
+                return;
+            }
+
+			/*ngx_terminate标志为1，则向所有子进程发送信号TERM，通知子进程强制退出进程*/
+            if ((process_doing & PROCESS_DOING_QUIT)) 
+			{
+
+                // process_doing &= ~PROCESS_DOING_QUIT;
+
+                if (!stop) 
+				{
+                    stop = 1;
+					
+                    process_set_old_workers();
+                    process_signal_workers(SIGNAL_QUIT);
+                    process_get_status();
+
+                    live = 0;
+                }
+
+                break;
+            }
+			//优雅地退出服务，向所有子进程发送QUIT信号，通知它们退出进程
+            if ((process_doing & PROCESS_DOING_TERMINATE)) 
+			{
+                //process_doing &= ~PROCESS_DOING_TERMINATE;
+
+                if (!stop) 
+				{
+                    stop = 1;
+
+                    process_set_old_workers();
+                    process_signal_workers(SIGNAL_KILL);
+                    process_get_status();
+
+                    live = 0;
+                }
+
+                break;
+            }
+            /*
+			重新读取配置文件。Nginx不会让原先的worker等子进程在从新读取配置文件。
+			它的策略是重新初始化ngx_cycle_t结构体，用它来读取新的配置文件，再拉起
+			新的worker进程，销毁就的worker进程。
+			*/
+            if (process_doing & PROCESS_DOING_RECONF) 
+			{
+                process_set_old_workers();
+                process_signal_workers(SIGNAL_QUIT);
+                process_doing &= ~PROCESS_DOING_RECONF;
+                process_get_status();
+
+                live = process_reap_workers(cycle);
+				
+                process_old_alived = DFS_FALSE;
+            }
+
+            if (process_doing & PROCESS_DOING_BACKUP && live == DFS_TRUE) 
+			{
+                process_notify_workers_backup();
+                process_doing &= ~PROCESS_DOING_BACKUP;
+            }
+        }
+    }
+	
+    exit(-1);
+}
+
+static int process_reap_workers(cycle_t *cycle)
+{
+    int i = 0;
+    int live = DFS_FALSE;
+	
+    for (i = 0; i < process_last; i++) 
+	{
+        if (processes[i].pid == DFS_INVALID_PID)
+		{
+            continue;
+        }
+
+        if (!(processes[i].ps & PROCESS_STATUS_EXITED)) 
+		{
+            live = DFS_TRUE;
+			
+            if (processes[i].ow == DFS_TRUE) 
+			{
+                process_old_alived = DFS_TRUE;
+            }
+			
+            continue;
+        }
+		
+        if (processes[i].ow == DFS_TRUE) 
+		{
+            processes[i].pid = DFS_INVALID_PID;
+            processes[i].ow = 0;
+            channel_close(processes[i].channel, cycle->error_log);
+            processes[i].channel[0] = DFS_INVALID_FILE;
+            processes[i].channel[1] = DFS_INVALID_FILE;           
+            continue;
+        }
+		
+        // detach this process
+        processes[i].pid = DFS_INVALID_PID;
+        processes[i].ps = PROCESS_STATUS_EXITED;
+        channel_close(processes[i].channel, cycle->error_log);
+        processes[i].channel[0] = DFS_INVALID_FILE;
+        processes[i].channel[1] = DFS_INVALID_FILE;
+        // respawn the process if need
+
+        if (dfs_time->tv_sec - processes[i].restart_gap <= MAX_RESTART_NUM) 
+		{
+            dfs_log_error(cycle->error_log, DFS_LOG_ALERT, 0,
+                "over max restart num %s", processes[i].name);
+			
+            continue;
+        }
+		// 进程生成
+        if (process_spawn(cycle, processes[i].proc,
+            processes[i].data, processes[i].name, i)
+            == DFS_INVALID_PID) 
+        {
+            dfs_log_error(cycle->error_log, DFS_LOG_ALERT, 0,
+                "can not respawn %s", processes[i].name);
+			
+            continue;
+        }
+
+        live = DFS_TRUE;
+    }
+
+    return live;
+}
+
+int process_write_pid_file(pid_t pid)
+{
+    int            fd = -1;
+    ssize_t        n = 0;
+    uchar_t        buf[10] = {0};
+    uchar_t       *last = 0;
+    uchar_t       *pid_file = NULL;
+    conf_server_t *sconf = NULL;
+
+    sconf = (conf_server_t *)dfs_cycle->sconf; 
+    if (!sconf) 
+	{
+        return DFS_ERROR;
+    }
+	
+    pid_file = sconf->pid_file.data;
+    last = string_xxsnprintf(buf, 10, "%d", pid);
+	
+    fd = dfs_sys_open(pid_file, O_RDWR | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) 
+	{
+        dfs_log_error(dfs_cycle->error_log, DFS_LOG_WARN, 0,
+                "process_write_pid_file failed!");
+		
+        return DFS_ERROR;
+    }
+
+    n = write(fd, buf, last - buf);
+
+    close(fd);
+
+    if (n < 0) 
+	{
+        return DFS_ERROR;
+    }
+
+    return DFS_OK;
+}
+
+//get pid from pid file?
+int process_get_pid(cycle_t *cycle)
+{
+    int            n = 0;
+    int            fd = -1;
+    char           buf[11] = {0};
+    uchar_t       *pid_file = NULL;
+    conf_server_t *sconf  = (conf_server_t *)dfs_cycle->sconf;
+
+    pid_file = sconf->pid_file.data;
+
+    fd = dfs_sys_open(pid_file, O_RDWR , 0644);
+    if (fd < 0) 
+	{
+        dfs_log_error(cycle->error_log,DFS_LOG_WARN, errno,
+            "process_write_pid_file failed!");
+		
+        return DFS_ERROR;
+    }
+
+    n = read(fd, buf, 10);
+
+    close(fd);
+
+    if (n <= 0) 
+	{
+        return DFS_ERROR;
+    }
+
+    return atoi(buf);
+}
+
+void process_del_pid_file(void)
+{
+    uchar_t       *pid_file = NULL;
+    conf_server_t *sconf = NULL;
+    
+    sconf = (conf_server_t *)dfs_cycle->sconf;
+    pid_file = sconf->pid_file.data;
+    
+    unlink((char *)pid_file);
+}
+
+void process_close_other_channel()
+{
+    int i = 0;
+	
+    for (i = 0; i < process_last; i++) 
+	{
+        if (processes[i].pid == DFS_INVALID_PID) 
+		{
+            continue;
+        }
+		
+        if (i == process_slot) 
+		{
+            continue;
+        }
+		
+        if (processes[i].channel[1] == DFS_INVALID_FILE) 
+		{
+            continue;
+        }
+		
+        if (close(processes[i].channel[1]) == DFS_ERROR) 
+		{
+            dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
+                "close() channel failed");
+        }
+    }
+
+    // close this process's write fd
+    if (close(processes[process_slot].channel[0]) == DFS_ERROR) 
+	{
+        dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
+            "close() channel failed");
+    }
+}
+
+int process_quit_check()
+{
+    return (process_doing & PROCESS_DOING_QUIT) ||
+        (process_doing & PROCESS_DOING_TERMINATE);
+}
+
+int process_run_check()
+{
+    return (!(process_doing & PROCESS_DOING_QUIT))
+        && (!(process_doing & PROCESS_DOING_TERMINATE));
+}
+
+process_t * get_process(int slot)
+{
+    return &processes[slot];
+}
+
+void process_set_doing(int flag)
+{
+    process_doing |= flag;
+}
+
+int process_get_curslot() 
+{
+    return process_slot;
+}
+

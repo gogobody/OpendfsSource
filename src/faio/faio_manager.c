@@ -29,11 +29,12 @@ int faio_manager_init(faio_manager_t *faio_mgr, faio_properties_t *faio_prop,
 
     faio_mgr->release_flag = FAIO_FALSE;
 
+	// 初始化 faio_data_manager
     if (faio_data_manager_init(faio_mgr, max_task_num, error) == FAIO_ERROR) 
 	{
         goto release;
     }
-
+	// 初始化 worker manager 并开启线程 处理 task
     if (faio_worker_manager_init(faio_mgr, faio_prop, error) == FAIO_ERROR) 
 	{
         goto release;
@@ -41,6 +42,7 @@ int faio_manager_init(faio_manager_t *faio_mgr, faio_properties_t *faio_prop,
 
     handler_mgr = &faio_mgr->handler_manager;
 
+	// 初始化 handler 数组为null
     faio_handler_manager_init(handler_mgr);
 
     return FAIO_OK;

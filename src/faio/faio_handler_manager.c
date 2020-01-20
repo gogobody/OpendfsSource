@@ -45,6 +45,7 @@ int faio_handler_register(faio_handler_manager_t *handler_mgr,
     return FAIO_ERROR;
 }
 
+// worker 线程处理 task
 void faio_handler_exec(faio_handler_manager_t *handler_mgr, 
     faio_data_task_t *task)
 {

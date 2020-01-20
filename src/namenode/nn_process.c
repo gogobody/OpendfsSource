@@ -21,7 +21,7 @@
 
 int        process_slot;             // process' slot
 int        process_last;
-pid_t      process_pid;
+pid_t      process_pid;     		 // 子进程 pid？
 uint32_t   process_doing = 0;        // the action that process will do
 uint32_t   process_type;
 uint32_t   stop;
@@ -478,7 +478,8 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 	{
         processes[i].pid = DFS_INVALID_PID;
     }
-    
+
+	// cli 相关
     if (conn_listening_init(cycle) != DFS_OK) 
 	{
         return;

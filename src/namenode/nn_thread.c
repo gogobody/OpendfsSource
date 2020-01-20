@@ -8,7 +8,7 @@ static pthread_key_t dfs_thread_key;
 
 void thread_env_init()
 {
-    pthread_key_create(&dfs_thread_key, NULL);
+    pthread_key_create(&dfs_thread_key, NULL); //第二个参数是一个清理函数，用来在线程释放该线程存储的时候被调用。该函数指针可以设成 NULL，这样系统将调用默认的清理函数。
 }
 
 dfs_thread_t *thread_new(pool_t *pool)

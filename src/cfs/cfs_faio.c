@@ -59,11 +59,15 @@ static int cfs_faio_ioinit(int thread_num)
 
     faio_mgr = (faio_manager_t *)malloc(sizeof(faio_manager_t));
 
+	// 初始化 data manager
+	// worker manager ，开启worker线程，用处理函数处理 task
+	// handler manaher
     if (faio_manager_init(faio_mgr, &property, 0, &error) != FAIO_OK) 
 	{
         return DFS_ERROR;
     }
 
+	// 注册处理函数
     if (faio_register_handler(faio_mgr, cfs_faio_io_read, FAIO_IO_TYPE_READ, 
         &error) != FAIO_OK) 
     {

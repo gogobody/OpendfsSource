@@ -57,7 +57,7 @@ struct faio_data_task_s
 {
     faio_data_task_t        *next;
     FAIO_IO_TYPE             io_type;
-    faio_callback_t          io_callback;
+    faio_callback_t          io_callback; // task 执行完之后执行回调
     faio_notifier_manager_t *notifier;
     faio_task_errno_t        err;
     int                      cancel_flag;
@@ -99,8 +99,8 @@ struct faio_worker_properties_s
 {
     unsigned int                max_idle;//等待新请求的最大空闲时间
     unsigned int                idle_timeout;
-    unsigned int                max_thread;
-    unsigned int                pre_start; 
+    unsigned int                max_thread;// cpu num x2
+    unsigned int                pre_start;  // cpu num x2
 };
 
 struct faio_worker_manager_s 
@@ -110,8 +110,8 @@ struct faio_worker_manager_s
     unsigned int                want_quit; 
     faio_queue_t                worker_queue;
     faio_worker_properties_t    worker_properties;
-    faio_mutex_t                work_lock;
-    faio_cond_t                 worker_wait;
+    faio_mutex_t                work_lock; // 互斥锁
+    faio_cond_t                 worker_wait; // 条件变量
     faio_cond_t                 quit_wait;
     faio_data_manager_t        *data_mgr;
     faio_handler_manager_t     *handler_mgr;

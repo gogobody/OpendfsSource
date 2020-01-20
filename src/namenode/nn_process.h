@@ -18,7 +18,7 @@ typedef struct
 {
     pid_t                pid;
     int                  status;
-    int                  channel[2];
+    int                  channel[2]; // 用于父子进程通信？
     spawn_proc_pt        proc;
     void                *data;
     char                *name;

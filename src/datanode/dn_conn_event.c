@@ -22,7 +22,8 @@
 
 static void listen_rev_handler(event_t *ev);
 
-
+// 初始化 listening_for_cli， 绑定cli的处理函数： listen_rev_handler 
+// open listening_for_cli
 int conn_listening_init(cycle_t *cycle)
 {
     listening_t   *ls = NULL; // ls is listening socket
@@ -51,6 +52,7 @@ int conn_listening_init(cycle_t *cycle)
 	for (i = 0; i < sconf->bind_for_cli.nelts; i++) 
 	{
 		// bind for cli
+		// inet_addr 将字符串形式的IP地址 -> 网络字节顺序  的整型值
         ls = conn_listening_add(&cycle->listening_for_cli, cycle->pool,
             cycle->error_log, inet_addr((char *)bind_for_cli[i].addr.data), 
             bind_for_cli[i].port, listen_rev_handler, 
@@ -65,6 +67,7 @@ int conn_listening_init(cycle_t *cycle)
 		strcpy(cycle->listening_ip, (const char *)bind_for_cli[i].addr.data);
     }
 
+	// 打开 监听 socket
 	if (conn_listening_open(&cycle->listening_for_cli, cycle->error_log) 
 		!= DFS_OK) 
     {

@@ -110,6 +110,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
           送来的数据：而在子进程中则关闭sv[0]套接字，仅使用sv[l]套接字既可以接收父进程发来的数据，也可以向父进程发送数据。
           注意socketpair的协议族为AF_UNIX UNXI域
           */  
+    // 用于父子进程通信
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, processes[slot].channel) == DFS_ERROR)
     {
         return DFS_INVALID_PID;
@@ -175,6 +176,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 
     process_slot = slot; // 这一步将在ngx_pass_open_channel()中用到，就是设置下标，用于寻找本次创建的子进程  
 
+	// 创建 子进程 
     pid = fork();
 
     switch (pid) 
@@ -457,9 +459,10 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
     process_type = PROCESS_MASTER;
 
-	// thread  多线程私有数据pthread_key_create
+	// thread  多线程 共享数据 pthread_key_create
 	thread_env_init();
-	
+
+	// 初始化主线程
 	main_thread = thread_new(NULL);
     if (!main_thread) 
 	{
@@ -467,6 +470,8 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     }
 	
     main_thread->type = THREAD_MASTER;
+
+	// 将主线程的结构体数据作为 线程共享？
     thread_bind_key(main_thread);
 	
     size = sizeof(MASTER_TITLE) - 1;
@@ -492,7 +497,9 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     }
 
     title.len = size;
-
+	
+	// 进程设置 title 
+	// ngx 实现是修改 argv[0]
     process_set_title(&title);
 
     memset(processes, 0x00, sizeof(processes));

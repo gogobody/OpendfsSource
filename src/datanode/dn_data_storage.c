@@ -85,6 +85,8 @@ int dn_data_storage_worker_init(cycle_t *cycle)
 	    return DFS_ERROR;
 	}
 
+	// 初始化faio，worker，handler，
+	// worker 开启线程处理 task
 	if (cfs_prepare_work(cycle) != DFS_OK)  // cfs_faio_ioinit(int thread_num)
 	{
         return DFS_ERROR;
@@ -448,7 +450,7 @@ static int create_storage_subdirs(char *path)
 // mgmt is management
 static blk_cache_mgmt_t *blk_cache_mgmt_new_init()
 {
-    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN);  //blk num
+    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN);  //blk num 2的x次方
 
     blk_cache_mgmt_t *bcm = blk_cache_mgmt_create(index_num);
     if (!bcm) 

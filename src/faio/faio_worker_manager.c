@@ -183,6 +183,8 @@ static int faio_worker_create_thread(faio_worker_t *tid,
     return retval;
 }
 
+// 初始化 worker 的各个变量
+// 
 int faio_worker_manager_init(faio_manager_t *faio_mgr, 
     faio_worker_properties_t *properties, faio_errno_t *err)
 {
@@ -203,21 +205,23 @@ int faio_worker_manager_init(faio_manager_t *faio_mgr,
     manager->handler_mgr = &(faio_mgr->handler_manager);
     manager->init_flag = FAIO_FALSE;
 
+	// 初始化 worker property
     retval = faio_worker_init_properties(manager, properties, err);
     if (retval != FAIO_OK) 
 	{
         goto quit;
     }
     
-    faio_mutex_init(manager->work_lock);
-    faio_cond_init(&manager->worker_wait);
-    faio_cond_init(&manager->quit_wait);
-	faio_queue_init(&manager->worker_queue);
+    faio_mutex_init(manager->work_lock); // 初始化互斥锁
+    faio_cond_init(&manager->worker_wait); // 初始化worker条件变量
+    faio_cond_init(&manager->quit_wait); // 初始化quit条件变量
+	faio_queue_init(&manager->worker_queue); // 初始化 worker queue
     manager->started = 0;
     manager->idle = 0;
     manager->want_quit = FAIO_WORKER_NO_QUIT;
     manager->init_flag = FAIO_TRUE;
-    
+
+	// 根据 pre_start 开启线程
     for (i = 0; i < manager->worker_properties.pre_start; i++) 
 	{
         retval = faio_worker_start_thread(manager, err);
@@ -249,6 +253,8 @@ static void faio_worker_name_set(void)
     return;
 }
 
+// worker thread 的处理函数
+// worker_arg 是 worker thread
 static void *faio_worker_fun(void *worker_arg)
 {
     faio_data_task_t               *req;
@@ -268,17 +274,20 @@ static void *faio_worker_fun(void *worker_arg)
     data_mgr = worker_mgr->data_mgr;
     hanle_mgr = worker_mgr->handler_mgr;
     
-
+	// 将状态改为unjoinable状态，确保资源的释放
     pthread_detach(pthread_self());
+	// 线程命名 /faio
     faio_worker_name_set();
 
     ts.tv_nsec = 0UL;
     ts.tv_sec = 0;
-    
+
+	// 双重遍历
     for (;;) 
 	{
         for (;;) 
 		{
+			// 遍历 faio_data_task
             req = faio_data_pop_req(data_mgr);
             if (!req) 
 			{
@@ -289,6 +298,7 @@ static void *faio_worker_fun(void *worker_arg)
             if (req->cancel_flag == FAIO_FALSE) 
 			{
                 req->state = FAIO_STATE_DOING;
+				// 处理 task
                 faio_handler_exec(hanle_mgr, req);
                 req->state = FAIO_STATE_DONE;
             } 
@@ -297,8 +307,10 @@ static void *faio_worker_fun(void *worker_arg)
                 req->state = FAIO_STATE_CANCEL;
             }
                 
-            notifier = req->notifier;
+            notifier = req->notifier; // 通知者
+			
             req->io_callback(req);
+			// 没有找到 faio_notifier_manager_s
             faio_notifier_send(notifier, &err);
             faio_notifier_count_dec(notifier, &err);
         }
@@ -323,11 +335,11 @@ static void *faio_worker_fun(void *worker_arg)
         }
 
         ++worker_mgr->idle;
-        if (faio_data_manager_get_size(data_mgr) == 0) 
+        if (faio_data_manager_get_size(data_mgr) == 0) // task size
 		{
             if (worker_mgr->idle <= worker_ctl->max_idle) 
 			{
-                faio_cond_wait(&worker_mgr->worker_wait, 
+                faio_cond_wait(&worker_mgr->worker_wait,  // 线程阻塞等待
                     &worker_mgr->work_lock);
             } 
 			else 
@@ -375,6 +387,7 @@ static int faio_worker_start_thread(faio_worker_manager_t *worker_mgr,
     }
 	
     faio_lock(worker_mgr->work_lock);
+	// queue
     faio_queue_insert_tail(&(worker_mgr->worker_queue), &(wrk->q));
     ++worker_mgr->started;
     faio_unlock(worker_mgr->work_lock);

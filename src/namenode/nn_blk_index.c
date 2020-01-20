@@ -59,9 +59,10 @@ int nn_blk_index_worker_release(cycle_t *cycle)
     return DFS_OK;
 }
 
+// 初始化cache mgmt
 static blk_cache_mgmt_t *blk_cache_mgmt_new_init()
 {
-    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN);
+    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN); // 2的x次方的一个数
 
     blk_cache_mgmt_t *bcm = blk_cache_mgmt_create(index_num);
     if (!bcm) 

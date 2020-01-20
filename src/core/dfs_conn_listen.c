@@ -10,6 +10,7 @@
 
 #define DFS_INET_ADDRSTRLEN            (sizeof("255.255.255.255") - 1)
 
+// 打开监听 socket
 int conn_listening_open(array_t *listening, log_t *log)
 {
     int          s = DFS_INVALID_FILE;
@@ -59,7 +60,7 @@ int conn_listening_open(array_t *listening, log_t *log)
 				
                 return DFS_ERROR;
             }
-
+			// 一般来说，一个端口释放后会等待两分钟之后才能再被使用，SO_REUSEADDR是让端口释放后立即就可以被再次使用
             if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                 (const void *) &reuseaddr, sizeof(int)) == DFS_ERROR) 
             {
@@ -70,7 +71,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 goto error;
             }
 
-            if (ls[i].rcvbuf != -1) 
+            if (ls[i].rcvbuf != -1)  // 设置接收缓冲区
 			{
                 if (setsockopt(s, SOL_SOCKET, SO_RCVBUF,
                     (const void *) &ls[i].rcvbuf, sizeof(int)) == DFS_ERROR) 
@@ -83,7 +84,7 @@ int conn_listening_open(array_t *listening, log_t *log)
 
             }
 
-            if (ls[i].sndbuf != -1) 
+            if (ls[i].sndbuf != -1)  // 设置发送缓冲区
 		    {
                 if (setsockopt(s, SOL_SOCKET, SO_SNDBUF,
                     (const void *) &ls[i].sndbuf, sizeof(int)) == DFS_ERROR) 
@@ -97,6 +98,7 @@ int conn_listening_open(array_t *listening, log_t *log)
             }
 
             // we can't set linger onoff = 1 on listening socket
+            // conn 连接有超时时间， 非阻塞可以缩短
             if (conn_nonblocking(s) == DFS_ERROR) 
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,

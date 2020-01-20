@@ -64,6 +64,7 @@ static void faio_data_push_req(faio_data_queue_t *que,
     faio_atomic_unlock(&que->lock);
 }
 
+// return  faio_data_task
 faio_data_task_t *faio_data_pop_req(faio_data_manager_t *data_mgr)
 {
     faio_data_task_t  *req_task = NULL;

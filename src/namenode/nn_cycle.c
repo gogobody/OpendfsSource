@@ -46,7 +46,7 @@ int cycle_init(cycle_t *cycle)
   
     cycle->conf_file.data = string_xxpdup(cycle->pool , &config_file);
     cycle->conf_file.len = config_file.len;
-
+    // return cuserid
     uchar_t *login = (uchar_t *)getlogin();
 	string_t admin;
     string_set(admin, login);
@@ -74,13 +74,13 @@ int cycle_init(cycle_t *cycle)
         goto error;
     }
     
-    conf_objects = get_nn_conf_object();
+    conf_objects = get_nn_conf_object(); // init funcs
     
     if (conf_context_init(ctx, &config_file, log, conf_objects) != DFS_OK) 
 	{
         goto error;
     }
-    
+    // parse conf file
     if (conf_context_parse(ctx) != DFS_OK) 
 	{
         printf("configure parse failed at line %d\n", ctx->conf_line); 

@@ -57,6 +57,7 @@ int dfscli_get(char *src, char *dst)
     return DFS_OK;
 }
 
+//
 static int dfs_open(rw_context_t *rw_ctx)
 {
     conf_server_t     *sconf = NULL;

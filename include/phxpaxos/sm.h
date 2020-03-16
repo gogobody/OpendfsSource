@@ -30,14 +30,14 @@ See the AUTHORS file for names of contributors.
 namespace phxpaxos
 {
 
-class SMCtx
+class SMCtx //SMCtx类型参数作为一个上下文，由写入者提供（怎么提供后面会提到），并由PhxPaxos带到Execute函数，最终传递给用户使用。
 {
 public:
     SMCtx();
     SMCtx(const int iSMID, void * pCtx);
 
-    int m_iSMID;
-    void * m_pCtx;
+    int m_iSMID; //m_iSMID与上文提到的SMID()函数相对应，PhxPaxos会将这个上下文带给SMID()等于m_iSMID的状态机
+    void * m_pCtx; // m_pCtx则记录了用户自定义的上下文数据的所在地址
 };
 
 //////////////////////////////////////////////

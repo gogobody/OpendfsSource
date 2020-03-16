@@ -19,7 +19,7 @@ typedef struct task_s
 	cmd_t     cmd;
 	int       ret;
 	uint32_t  seq;
-	void     *opq;
+	void     *opq; // wbt
 	int       master_nodeid;
 	char      key[KEY_LEN]; // eg: cli 的 ip
 	char      user[OWNER_LEN];

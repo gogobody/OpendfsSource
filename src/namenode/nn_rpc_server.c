@@ -43,7 +43,7 @@ int nn_rpc_service_run(task_t *task)
 	case NN_GET_FILE_INFO:
 		nn_get_file_info(task);
 		break;
-
+    // cli 
 	case NN_CREATE:
 		nn_create(task);
 		break;

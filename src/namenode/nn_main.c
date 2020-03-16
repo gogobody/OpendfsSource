@@ -188,14 +188,14 @@ int main(int argc, char **argv)
     }
 
     umask(0022);
-    
+    // init conf 
     if ((ret = cycle_init(cycle)) != DFS_OK) 
 	{
         fprintf(stderr, "cycle_init fail\n");
 		
         goto out;
     }
-
+    // format the file system
 	if (g_format) 
 	{
 	    format(cycle);
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     }
     
 	dfs_module_setup();
-
+// nn_error_log_init
 	if ((ret = dfs_module_master_init(cycle)) != DFS_OK) 
 	{
 		fprintf(stderr, "master init fail\n");
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 		
         goto failed;
     }
-
+// namespaceid
 	if (get_ns_version(cycle) != DFS_OK) 
 	{
 	    dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
@@ -273,6 +273,8 @@ int main(int argc, char **argv)
     dfs_argc = argc;
     dfs_argv = argv;
 
+	
+//
     process_master_cycle(cycle, dfs_argc, dfs_argv);
 
     process_del_pid_file();
@@ -465,6 +467,7 @@ static int sys_limit_init(cycle_t *cycle)
     return sys_set_limit(sconf->connection_n, 0);
 }
 
+// format the filesystem 
 static int format(cycle_t *cycle)
 {
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;
@@ -498,6 +501,8 @@ static int format(cycle_t *cycle)
     return DFS_OK;
 }
 
+
+// format 1
 static int clear_current_dir(cycle_t *cycle)
 {
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;

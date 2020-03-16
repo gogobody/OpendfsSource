@@ -125,11 +125,11 @@ PROTOBUF_EXPORT bool wcs_to_utf8(const wchar_t* input, std::string* out);
 #endif
 
 #ifndef STDIN_FILENO
-#define STDIN_FILENO 0 //接收键盘的输入
+#define STDIN_FILENO 0
 #endif
 
 #ifndef STDOUT_FILENO
-#define STDOUT_FILENO 1 //向屏幕输出
+#define STDOUT_FILENO 1
 #endif
 
 #include <google/protobuf/port_undef.inc>

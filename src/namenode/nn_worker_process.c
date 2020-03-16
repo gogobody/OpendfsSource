@@ -147,6 +147,7 @@ void register_thread_exit(void)
     pthread_mutex_unlock(&init_lock);
 }
 
+// dispatch task when recv it
 void dispatch_task(void *data)
 {
     task_queue_node_t *node = NULL;
@@ -162,6 +163,8 @@ void dispatch_task(void *data)
     notice_wake_up(&last_task->tq_notice);
 }
 
+
+// child process
 void worker_processer(cycle_t *cycle, void *data)
 {
     int            ret = 0;
@@ -186,7 +189,7 @@ void worker_processer(cycle_t *cycle, void *data)
 		
         exit(PROCESS_FATAL_EXIT);
     }
-
+// worker init 
     if (dfs_module_woker_init(cycle) != DFS_OK) 
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -210,8 +213,10 @@ void worker_processer(cycle_t *cycle, void *data)
     
     thread_registration_init();
 
+	// load fsimage
 	load_image();
 
+	// paxos thread
 	if (create_paxos_thread(cycle) != DFS_OK) 
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -319,6 +324,7 @@ int create_paxos_thread(cycle_t *cycle)
     return DFS_OK;
 }
 
+//
 static void * thread_paxos_cycle(void *arg)
 {
     dfs_thread_t *me = (dfs_thread_t *)arg;

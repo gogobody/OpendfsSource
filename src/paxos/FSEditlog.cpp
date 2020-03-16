@@ -33,14 +33,15 @@ void FSEditlog::setCheckpointInstanceID(const uint64_t llInstanceID)
 int FSEditlog::RunPaxos()
 {
     Options oOptions;
-
+    // MakeLogStoragePath函数生成我们存放PhxPaxos产生的数据的目录路径
     int ret = MakeLogStoragePath(oOptions.sLogStoragePath);
     if (ret != DFS_OK)
     {
         return ret;
     }
-
-    oOptions.iGroupCount = m_iGroupCount;
+    //this groupcount means run paxos group count.
+    //every paxos group is independent, there are no any communicate between any 2 paxos group.
+    oOptions.iGroupCount = m_iGroupCount; //标识我们想同时运行多少个PhxPaxos实例
     oOptions.oMyNode = m_oMyNode;
     oOptions.vecNodeInfoList = m_vecNodeList;
 
@@ -51,7 +52,7 @@ int FSEditlog::RunPaxos()
         oSMInfo.vecSMList.push_back(&m_oEditlogSM);
         oSMInfo.bIsUseMaster = true;
 
-        oOptions.vecGroupSMInfoList.push_back(oSMInfo);
+        oOptions.vecGroupSMInfoList.push_back(oSMInfo); //描述了多个PhxPaxos实例对应的状态机列表
     }
 
     oOptions.pLogFunc = nn_log_paxos;

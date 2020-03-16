@@ -1,4 +1,4 @@
-SRC_BASE_PATH=/home/gogobody/文档/phxpaxos
+SRC_BASE_PATH=/home/gogobody/Documents/Projects/dfs/github/phxpaxos
 
 all:sub_dir
 

@@ -67,6 +67,7 @@ int process_check_running(cycle_t *cycle)
     return DFS_TRUE;
 }
 
+//worker_processer
 static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc, 
 	                              void *data, char *name, int slot)
 {
@@ -378,6 +379,7 @@ void process_notify_workers_backup()
     return;
 }
 
+// start workers
 int process_start_workers(cycle_t *cycle)
 {
     dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "process_start_workers");
@@ -480,6 +482,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     }
 
 	// cli 相关
+	// listen cli and datanode
     if (conn_listening_init(cycle) != DFS_OK) 
 	{
         return;

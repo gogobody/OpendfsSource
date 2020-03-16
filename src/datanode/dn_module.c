@@ -67,7 +67,7 @@ int dfs_module_master_init(cycle_t *cycle)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (dfs_modules[i].master_init != NULL &&
-            dfs_modules[i].master_init(cycle) == DFS_ERROR) 
+            dfs_modules[i].master_init(cycle) == DFS_ERROR) // dn_data_storage_master_init
         {
             printf("process_master_init: module %s init failed\n",
                 dfs_modules[i].name.data);

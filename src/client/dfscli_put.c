@@ -33,14 +33,18 @@ int dfscli_put(char *src, char *dst)
 
 	strcpy(rw_ctx->src, src);
 	strcpy(rw_ctx->dst, dst);
-	rw_ctx->blk_sz = sconf->blk_sz;
-	rw_ctx->blk_rep = sconf->blk_rep;
-	
+	rw_ctx->blk_sz = sconf->blk_sz; // default 256MB
+	rw_ctx->blk_rep = sconf->blk_rep; // default 3
+	// connect to namenode and send task
+    // task.cmd NN_CREATE
+    // task.key dst
+    // task - userinfo - blk_info
+    // recv task ret,blk id,namespace id
 	if (dfs_create(rw_ctx) != DFS_OK) 
 	{
         return DFS_ERROR;
 	}
-
+    // 
 	dfs_write_blk(rw_ctx);
 
 	dfs_close(rw_ctx);
@@ -63,6 +67,15 @@ int dfscli_put(char *src, char *dst)
     return DFS_OK;
 }
 
+// connect to namenode and send task
+// task.cmd NN_CREATE
+// task.key dst
+// task - userinfo - blk_info
+// recv task ret
+// rw_ctx->nn_fd = sockfd;
+// rw_ctx->blk_id = resp_info.blk_id;
+// rw_ctx->namespace_id = resp_info.namespace_id;
+// rw_ctx->dn_num = resp_info.dn_num;
 static int dfs_create(rw_context_t *rw_ctx)
 {
     conf_server_t     *sconf = NULL;
@@ -238,7 +251,7 @@ static int dfs_close(rw_context_t *rw_ctx)
 static int dfs_write_blk(rw_context_t *rw_ctx)
 {
     int   ret = -1;
-    short dn_num = rw_ctx->dn_num; //
+    short dn_num = rw_ctx->dn_num; // dn_num for nn in dfs_create
 
 	for (short i = 0; i < dn_num; i++) 
 	{
@@ -281,6 +294,7 @@ static int dfs_write_blk(rw_context_t *rw_ctx)
 }
 
 //write blk start
+// send header to datanode: header.op_type = OP_WRITE_BLOCK
 static void *write_blk_start(void *arg)
 {
     rw_context_t  *rw_ctx = (rw_context_t *)arg;
@@ -288,7 +302,7 @@ static void *write_blk_start(void *arg)
 	int            res = -1;
 	conf_server_t *sconf = (conf_server_t *)dfs_cycle->sconf;
 
-	int datafd = open(rw_ctx->src, O_RDONLY);
+	int datafd = open(rw_ctx->src, O_RDONLY);//open source file 
 	if (datafd < 0) 
 	{
         dfscli_log(DFS_LOG_WARN, "open %s err, %s", 
@@ -298,7 +312,7 @@ static void *write_blk_start(void *arg)
 			
         return NULL;
 	}
-
+    // connect to datanode
 	int sockfd = dfs_connect(rw_ctx->dn_ips[dn_index], DN_PORT);
 	if (sockfd < 0) 
 	{
@@ -308,7 +322,7 @@ static void *write_blk_start(void *arg)
 		
 	    return NULL;
 	}
-
+    // stat the file 
 	struct stat datastat;
 	fstat(datafd, &datastat);
 	long fsize = datastat.st_size;
@@ -319,14 +333,14 @@ static void *write_blk_start(void *arg)
 
 	data_transfer_header_t header;
 	memset(&header, 0x00, sizeof(data_transfer_header_t));
-
+    
 	header.op_type = OP_WRITE_BLOCK;
 	header.namespace_id = rw_ctx->namespace_id;
 	header.block_id = rw_ctx->blk_id;
 	header.generation_stamp = 0;
 	header.start_offset = 0;
 	header.len = blk_sz;
-
+    // 
 	res = send(sockfd, &header, sizeof(data_transfer_header_t), 0);
 	if (res < 0) 
 	{
@@ -340,7 +354,7 @@ static void *write_blk_start(void *arg)
 		
 	    return NULL;
 	}
-
+    //rsp
     data_transfer_header_rsp_t rsp;
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
@@ -356,7 +370,8 @@ static void *write_blk_start(void *arg)
 		
 	    return NULL;
 	}
-
+    // write blk to datanode
+	// transfer file between two sockfd, data fd
     long write_sz = write_blk_to_dn(blk_sz, sockfd, datafd);
 	if (write_sz != blk_sz) 
 	{
@@ -372,6 +387,7 @@ static void *write_blk_start(void *arg)
 	}
 
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
+	// recv rsp 
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
 	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != DFS_OK)) 
 	{
@@ -413,7 +429,8 @@ static void *write_blk_start(void *arg)
     return NULL;
 }
 
-static int write_blk_to_dn(long fsize, int out_fd, int in_fd)
+// transfer file between two sockfd, data fd
+static int write_blk_to_dn(long fsize, int out_fd, int in_fd) // sockfd, data fd
 {
     loff_t off = 0;
 	long send_sz = 0;

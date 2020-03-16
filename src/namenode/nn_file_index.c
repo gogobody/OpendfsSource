@@ -63,7 +63,8 @@ static int update_fi_get_additional_blk(fi_inode_t *fin,
 	uint64_t blk_id);
 static int update_fi_close(fi_inode_t *fin);
 static int update_fi_rm(fi_inode_t *fin);
-	
+
+//
 int nn_file_index_worker_init(cycle_t *cycle)
 {
     conf_server_t *conf = (conf_server_t *)cycle->sconf;
@@ -556,6 +557,7 @@ int nn_get_file_info(task_t *task)
     return DFS_OK;
 }
 
+//
 int nn_create(task_t *task)
 {
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
@@ -1184,6 +1186,7 @@ int load_image()
 	}
 
     read_checkpoinID();
+	// geditlog
     set_checkpoint_instanceID(lastCheckpointInstanceID);
 	
     return DFS_OK;

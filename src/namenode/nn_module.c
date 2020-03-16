@@ -7,7 +7,12 @@
 #include "nn_blk_index.h"
 
 static int dfs_mod_max = 0;
-
+//int       (*master_init)(cycle_t *cycle); //初始化master
+//int       (*master_release)(cycle_t *cycle); 
+//int       (*worker_init)(cycle_t *cycle); 
+//int       (*worker_release)(cycle_t *cycle);
+//int       (*worker_thread_init)(dfs_thread_t *thread);//初始化线程
+//int       (*worker_thread_release)(dfs_thread_t *thread);
 dfs_module_t dfs_modules[] = 
 {
     // please miss the beginning;
@@ -102,6 +107,7 @@ void dfs_module_setup(void)
     }
 }
 
+// nn_error_log_init
 int dfs_module_master_init(cycle_t *cycle)
 {
     int i = 0;
@@ -155,6 +161,11 @@ int dfs_module_woker_init(cycle_t *cycle)
 	
     for (i = 0; i < dfs_mod_max; i++) 
 	{
+		//nn_paxos_worker_init
+		//nn_rpc_worker_init
+		//nn_file_index_worker_init
+		//nn_dn_index_worker_init
+		//nn_blk_index_worker_init
         if (dfs_modules[i].worker_init != NULL &&
             dfs_modules[i].worker_init(cycle) == DFS_ERROR) 
         {

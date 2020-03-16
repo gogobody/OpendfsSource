@@ -31,8 +31,8 @@ private:
     int GetGroupIdx(const string & sKey);
     
 private:
-    NodeInfo m_oMyNode;
-    NodeInfoList m_vecNodeList;
+    NodeInfo m_oMyNode; //oMyNode标识本机的IP/PORT信息
+    NodeInfoList m_vecNodeList; //vecNodeList标识多副本集群的所有机器信息
     string m_sPaxosLogPath;
     int m_iGroupCount;
 

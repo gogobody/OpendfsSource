@@ -6,7 +6,7 @@
 #include "dfs_task_codec.h"
 #include "nn_request.h"
 
-struct nn_wb_s 
+struct nn_wb_s // write back?
 {
     nn_conn_t    *mc;
     dfs_thread_t *thread;

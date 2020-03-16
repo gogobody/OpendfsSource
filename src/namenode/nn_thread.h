@@ -21,7 +21,7 @@ struct dfs_thread_s
     event_base_t   event_base;
     event_timer_t  event_timer;
     conn_pool_t    conn_pool;
-    task_queue_t   tq;
+    task_queue_t   tq; // task queue
     task_queue_t  *bque;
     int            queue_size;
     notice_t       tq_notice;

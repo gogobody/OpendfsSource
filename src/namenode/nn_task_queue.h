@@ -8,15 +8,15 @@
 
 typedef struct task_queue_node_s
 {
-	task_t  tk;
-	queue_t qe;
+	task_t  tk; // task
+	queue_t qe; // task que ele
 } task_queue_node_t;
 
 typedef void (*opq_free)(void*);
 
 typedef struct
-{
-	queue_t            qh;
+{ 
+	queue_t            qh; // task queue
 	pthread_spinlock_t lock;
 } task_queue_t;
 

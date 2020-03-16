@@ -19,7 +19,7 @@ enum
 struct nn_conn_s 
 {
     conn_t              *connection;
-    buffer_t            *in;
+    buffer_t            *in; // in buffer
     buffer_t            *out;
     queue_t              out_task;
     nn_event_handler_pt  read_event_handler;

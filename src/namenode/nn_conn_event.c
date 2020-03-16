@@ -23,6 +23,7 @@
 static void listen_rev_handler(event_t *ev);
 
 // listen_rev_handler 处理 listening 事件
+// listen cli and datanode
 int conn_listening_init(cycle_t *cycle)
 {
     listening_t   *ls = NULL;

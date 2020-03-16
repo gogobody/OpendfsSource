@@ -17,7 +17,7 @@ struct cycle_s
     array_t    listening_for_cli;
     array_t    listening_for_dn;
     string_t   conf_file;
-    string_t   admin;
+    string_t   admin; // suserid
 	uint64_t   namespace_id;
 };
 

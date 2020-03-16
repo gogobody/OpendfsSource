@@ -14,6 +14,13 @@ int write_back(task_queue_node_t *node)
 
     task = &node->tk;
     wbt  = (nn_wb_t *)task->opq;
+	/*
+	*struct nn_wb_s 
+{
+    nn_conn_t    *mc;
+    dfs_thread_t *thread;
+};
+	*/
 	
     queue_init(&node->qe);
 	
@@ -55,7 +62,7 @@ void net_response_handler(void *data)
     } 
 	else 
 	{
-        tq = &th->tq;
+        tq = &th->tq; //task queue
 		
         queue_init(&q);
         pop_all(tq, &q);
@@ -75,6 +82,7 @@ void write_back_notice_call(void *data)
     write_back_pack_queue(&q, DFS_TRUE);
 }
 
+// 
 static void write_back_pack_task(task_queue_node_t *node, int send)
 {
     task_t  *task = NULL;
@@ -86,6 +94,7 @@ static void write_back_pack_task(task_queue_node_t *node, int send)
     nn_conn_outtask(wbt->mc, task);
 }
 
+// write tasks which in queue q back , send is status code
 void write_back_pack_queue(queue_t *q, int send)
 {
     queue_t           *qn = NULL;

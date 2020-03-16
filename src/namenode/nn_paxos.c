@@ -82,6 +82,7 @@ static int parse_ipport_list(const char * pcStr,
     return DFS_OK;
 }
 
+// paxos worker
 int nn_paxos_worker_init(cycle_t *cycle)
 {
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;

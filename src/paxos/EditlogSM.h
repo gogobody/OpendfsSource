@@ -8,7 +8,7 @@
 
 using namespace phxpaxos;
 using namespace std;
-
+//Echo上下文数据类型定义：
 class PhxEditlogSMCtx
 {
 public:
@@ -18,21 +18,25 @@ public:
 
     PhxEditlogSMCtx()
     {
-        iExecuteRet = -1;
+        iExecuteRet = -1;//iExecuteRet可以获得Execute的执行情况
 		llInstanceID = 0;
 		data = NULL;
     }
 };
 
+// 状态机
 class PhxEditlogSM : public StateMachine
 {
 public:
     PhxEditlogSM();
     ~PhxEditlogSM();
 
+    //状态转移函数 param sPaxosValue
+    //函数的参数出现了一个陌生的类型SMCtx
     bool Execute(const int iGroupIdx, const uint64_t llInstanceID, 
             const string & sPaxosValue, SMCtx * poSMCtx);
 
+    //返回这个状态机的唯一标识ID
     const int SMID() const;
 
     const uint64_t GetCheckpointInstanceID(const int iGroupIdx) const;

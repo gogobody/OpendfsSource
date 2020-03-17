@@ -12,10 +12,9 @@ static void atomic_test_and_reset(faio_atomic_t *x);
 static inline unsigned char cmp_and_swap(volatile uint64_t *ptr, 
 	uint64_t old, uint64_t nw);
 
-// faio 的初始化
-// 线程的notifier 和全局的 faio_mgr 相关变量
-// 最后将 notifier 的manager指向了 faio_mgr
-int faio_notifier_manager_init(faio_notifier_manager_t *notifier, 
+// 初始化 notifier
+// 创建 event fd 初始化 0
+int faio_notifier_manager_init(faio_notifier_manager_t *notifier,
     faio_manager_t *fm, faio_errno_t *err_no)
 {
     if (!notifier || !fm) 
@@ -26,17 +25,17 @@ int faio_notifier_manager_init(faio_notifier_manager_t *notifier,
     }
 
     notifier->release = FAIO_FALSE;
-    faio_notifier_count_reset(&notifier->count);
-    faio_notifier_count_reset(&notifier->noticed);
-        
-    notifier->nfd = faio_notifier_create(); // 创建事件通知的描述符
+    faio_notifier_count_reset(&notifier->count);// set count -> 0
+    faio_notifier_count_reset(&notifier->noticed); // set noticed -> 0
+    // 创建 event fd 初始化 0
+    notifier->nfd = faio_notifier_create();
     if (notifier->nfd < 0) 
 	{
         err_no->notifier = FAIO_ERR_NOTIFIER_INIT_NFD_CREATE;
 		
         return FAIO_ERROR;
     }
-    // faio condition 初始化条件变量，包括锁
+    // 初始化 锁和条件变量
     if (faio_condition_init(&notifier->cond) == FAIO_ERROR) 
 	{
         err_no->notifier = FAIO_ERR_NOTIFIER_INIT_CONDITION_INIT;
@@ -84,11 +83,14 @@ int faio_notifier_manager_release(faio_notifier_manager_t *notifier,
     return FAIO_OK;
 }
 
+// eventfd 用于进程间通信
+//eventfd是Linux 2.6提供的一种系统调用，它可以用来实现事件通知
 static int faio_notifier_create(void)
 {
     int nfd = 0;
-    
-    nfd = eventfd(0, 0); //创建一个文件描述符用于事件通知
+    //创建eventfd时会返回一个文件描述符，进程可以通过对这个文件描述符进行read/write来读取/改变计数器的值，
+    // 从而实现进程间通信。
+    nfd = eventfd(0, 0);
 
     return nfd;
 }
@@ -116,7 +118,7 @@ int faio_notifier_send(faio_notifier_manager_t *notifier,
         return FAIO_ERROR;
     }
 
-    if (atomic_test_and_set(&notifier->noticed)) 
+    if (atomic_test_and_set(&notifier->noticed)) // set noticed -> 1
 	{
         if (write(notifier->nfd, &count, sizeof(count)) < 0) 
 		{
@@ -130,7 +132,9 @@ int faio_notifier_send(faio_notifier_manager_t *notifier,
     return FAIO_OK;
 }
 
-int faio_notifier_receive(faio_notifier_manager_t *notifier, 
+// 读取 eventfd
+// 设置 noticed FAIO_FALSE ??
+int faio_notifier_receive(faio_notifier_manager_t *notifier,
 	faio_errno_t *err_no)
 {
     uint64_t count = -1;
@@ -150,6 +154,7 @@ int faio_notifier_receive(faio_notifier_manager_t *notifier,
         return FAIO_ERROR;
     }
 
+    // reset noticed -> 0
     atomic_test_and_reset(&notifier->noticed);
     
     return FAIO_OK;
@@ -235,12 +240,19 @@ static int atomic_test_and_set(faio_atomic_t *x)
 
 /*
  * test 1 and set 0
+ * CAS是compare and swap,   简单来说就是，在写入新值之前， 读出旧值， 当且仅当旧值与存储中的当前值一致时，才把新值写入存储
  */
 static void atomic_test_and_reset(faio_atomic_t *x)
 {
     uint64_t value;
     uint64_t set = FAIO_FALSE;
-
+//    do{
+//
+//        备份旧数据；
+//
+//        基于旧数据构造新数据；
+//
+//    }while(!CAS( 内存的最新值，备份的旧数据，新数据 ))
     do {
         value = x->value;
     } while (!CAS(&x->value, value, set));

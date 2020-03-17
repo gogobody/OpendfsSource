@@ -31,7 +31,7 @@ void faio_cond_wait(faio_cond_t *cond, faio_mutex_t *mutex)
     pthread_cond_wait(&cond->wait, mutex);
 }
 
-// 初始化条件变量和锁
+//
 int faio_condition_init(faio_condition_t *cond)
 {
     pthread_condattr_t   *cond_attr = NULL;

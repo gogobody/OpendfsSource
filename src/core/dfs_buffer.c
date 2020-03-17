@@ -59,7 +59,7 @@ buffer_t * buffer_create(pool_t *pool, size_t size)
 	
     return b;
 }
-// 收缩？》
+// 收缩 buffer , 相当于将pos之后的移动到start
 void buffer_shrink(buffer_t* buf)
 {
 	int blen = 0;

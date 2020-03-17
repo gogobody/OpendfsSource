@@ -67,7 +67,7 @@ int dfs_module_master_init(cycle_t *cycle)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (dfs_modules[i].master_init != NULL &&
-            dfs_modules[i].master_init(cycle) == DFS_ERROR) // dn_data_storage_master_init
+            dfs_modules[i].master_init(cycle) == DFS_ERROR) 
         {
             printf("process_master_init: module %s init failed\n",
                 dfs_modules[i].name.data);
@@ -107,7 +107,8 @@ int dfs_module_master_release(cycle_t *cycle)
     return DFS_OK;
 }
 
-//set flag
+// set flag
+// dn_data_storage_worker_init
 int dfs_module_woker_init(cycle_t *cycle)
 {
     int i = 0;
@@ -150,7 +151,6 @@ int dfs_module_woker_release(cycle_t *cycle)
 }
 
 
-//do nothing
 // dn_data_storage_thread_init
 int dfs_module_workethread_init(dfs_thread_t *thread)
 {

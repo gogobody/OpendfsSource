@@ -44,7 +44,7 @@ static void dn_request_send_write_done_response(dn_request_t *r);
 static void dn_request_read_done_response(dn_request_t *r);
 static void dn_request_send_read_done_response(dn_request_t *r);
 
-// 
+// listen_rev_handler
 void dn_conn_init(conn_t *c)
 {
     event_t       *rev = NULL;
@@ -55,10 +55,11 @@ void dn_conn_init(conn_t *c)
 	thread = get_local_thread();
 
 	rev = c->read;
-	rev->handler = dn_request_init; // rec handler
+	// 连接完成后，设置读事件的处理函数，用于下一次epoll event 回调
+	rev->handler = dn_request_init; //process request
 
 	wev = c->write;
-	wev->handler = dn_empty_handler; // 
+	wev->handler = dn_empty_handler;
 
 	if (!c->conn_data) 
     {
@@ -96,6 +97,7 @@ void dn_conn_init(conn_t *c)
 	c->ev_base = &thread->event_base;
 	c->ev_timer = &thread->event_timer;
 
+	// if not ready and not active then add it to epoll
 	if (event_handle_read(c->ev_base, rev, 0) == DFS_ERROR) 
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
@@ -119,6 +121,7 @@ static void dn_empty_handler(event_t *ev)
     }
 }
 
+// 连接成功后，开始处理请求
 void dn_request_init(event_t *rev)
 {
     conn_t       *c = NULL;
@@ -129,14 +132,19 @@ void dn_request_init(event_t *rev)
 	r = (dn_request_t *)c->conn_data;
 	wev = c->write;
 
-	rev->handler = dn_request_process_handler; // 
-    wev->handler = dn_request_process_handler; // 
+    //这个函数执行后，dn_request_process_handler。这样下次再有事件时
+    //将调用dn_request_process_handler函数来处理，而不会再调用ngx_http_process_request了
+	rev->handler = dn_request_process_handler;
+    wev->handler = dn_request_process_handler;
 
-    r->read_event_handler = dn_request_read_header; // read event
+    r->read_event_handler = dn_request_read_header;
 
+    // 处理头信息
 	dn_request_read_header(r);
 }
 
+// 连接完成之后的读写事件处理函数
+// 处理request
 static void dn_request_process_handler(event_t *ev)
 {
     conn_t       *c = NULL;
@@ -171,8 +179,7 @@ static void dn_request_process_handler(event_t *ev)
     }
 }
 
-
-// 
+// 处理头信息
 static void dn_request_read_header(dn_request_t *r)
 {
     conn_t   *c = NULL;
@@ -199,6 +206,7 @@ static void dn_request_read_header(dn_request_t *r)
 
 	if (rev->ready) 
 	{
+	    // sysio_unix_recv in dfs_sysio.c
         rs = c->recv(c, (uchar_t *)&r->header, sizeof(data_transfer_header_t));
     } 
 	else 
@@ -208,6 +216,7 @@ static void dn_request_read_header(dn_request_t *r)
 
 	if (rs > 0) 
 	{
+	    // 解析头信息
 		dn_request_parse_header(r);
     }
     else if (rs <= 0) 
@@ -261,7 +270,7 @@ static void dn_request_close(dn_request_t *r, uint32_t err)
     conn_pool_free_connection(&thread->conn_pool, c);
 }
 
-// 解析头信息
+// 解析 header
 static void dn_request_parse_header(dn_request_t *r)
 {
     int op_type = r->header.op_type;
@@ -314,7 +323,7 @@ static void dn_request_block_writing(dn_request_t *r)
 	c = r->conn;
 	wev = c->read;
 	
-    if (event_delete(c->ev_base, wev, EVENT_WRITE_EVENT, EVENT_CLEAR_EVENT) 
+    if (epoll_del_event(c->ev_base, wev, EVENT_WRITE_EVENT, EVENT_CLEAR_EVENT)
 		== DFS_ERROR)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
@@ -360,6 +369,7 @@ static void dn_request_read_file(dn_request_t *r)
 	dn_request_header_response(r);
 }
 
+//
 static void dn_request_write_file(dn_request_t *r)
 {
     conf_server_t *sconf = NULL;
@@ -378,6 +388,7 @@ static void dn_request_write_file(dn_request_t *r)
 		return;
 	}
 
+	//
 	if (get_block_temp_path(r) != DFS_OK) 
 	{
 		dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
@@ -389,7 +400,7 @@ static void dn_request_write_file(dn_request_t *r)
 	{
         fd = cfs_open((cfs_t *)dfs_cycle->cfs, r->path, 
 			O_CREAT | O_WRONLY | O_TRUNC, dfs_cycle->error_log);
-		if (fd < 0) 
+		if (fd < 0)
 		{
 		    dfs_log_error(dfs_cycle->error_log, 
 				DFS_LOG_FATAL, errno, "open file %s err", r->path);
@@ -431,7 +442,7 @@ static void dn_request_header_response(dn_request_t *r)
 	}
 
 	b = buffer_create(r->pool, header_sz);
-	if (!b) 
+	if (!b)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"buffer_create failed");
@@ -441,10 +452,11 @@ static void dn_request_header_response(dn_request_t *r)
 		return;
 	}
 
+	// header_rsp 放在 chain的buffer里
 	out->buf = b;
 	b->last = memory_cpymem(b->last, &header_rsp, header_sz);
 
-    if (!r->output) 
+    if (!r->output)
 	{
         r->output = (chain_output_ctx_t *)pool_alloc(r->pool, 
 			sizeof(chain_output_ctx_t));
@@ -460,11 +472,14 @@ static void dn_request_header_response(dn_request_t *r)
 	}
 
 	r->output->out = NULL;
+    // out 链接到chain
 	chain_append_all(&r->output->out, out);
 
+	// request handler
 	r->write_event_handler = dn_request_send_header_response;
     r->read_event_handler = dn_request_check_read_connection;
 
+    // 第一次的时候为false，因为还没有添加write事件，
 	if (c->write->ready) 
 	{
         dn_request_send_header_response(r);
@@ -485,6 +500,7 @@ static void dn_request_header_response(dn_request_t *r)
     event_timer_add(c->ev_timer, c->write, CONN_TIME_OUT);
 }
 
+//
 static void dn_request_send_header_response(dn_request_t *r)
 {
     conn_t  *c = NULL;
@@ -509,6 +525,7 @@ static void dn_request_send_header_response(dn_request_t *r)
         event_timer_del(c->ev_timer, wev);
     }
 
+	// send res header
 	rs = send_header_response(r);
 	if (rs == DFS_OK) 
 	{
@@ -593,7 +610,8 @@ static int send_header_response(dn_request_t *r)
 
 	while (c->write->ready && ctx->out) 
 	{
-        ctx->out = c->send_chain(c, ctx->out, 0);
+	    //如果一次发送不完，需要将剩下的响应头部保存到r->out链表中，以备后续发送：
+        ctx->out = c->send_chain(c, ctx->out, 0); // sysio_writev_chain
 
 		if (ctx->out == DFS_CHAIN_ERROR || !c->write->ready) 
 		{ 
@@ -858,14 +876,15 @@ static void recv_block_handler(dn_request_t *r)
 
 	while (1) 
 	{
-		buffer_shrink(r->input);
+		buffer_shrink(r->input);// 紧缩buffer
 		
     	blen = buffer_free_size(r->input);
 	    if (!blen) 
 		{
 	        break;
 	    }
-		
+		// sysio_unix_recv
+		//
    		rs = c->recv(c, r->input->last, blen);
 		if (rs > 0) 
 		{
@@ -907,7 +926,7 @@ static void recv_block_handler(dn_request_t *r)
 	r->fio->need = buffer_size(r->input);
 	r->fio->offset = r->done;
     r->fio->data = r;
-    r->fio->h = block_write_complete;
+    r->fio->h = block_write_complete; // fio handler
     r->fio->io_event = &get_local_thread()->io_events;
     r->fio->faio_ret = DFS_ERROR;
     r->fio->faio_noty = &get_local_thread()->faio_notify;
@@ -919,6 +938,7 @@ static void recv_block_handler(dn_request_t *r)
     }
 }
 
+// param data is request , task is fio it self
 static int block_write_complete(void *data, void *task)
 {
     dn_request_t *r = NULL;
@@ -949,8 +969,8 @@ static int block_write_complete(void *data, void *task)
         return DFS_ERROR;
 	}
 
-	r->done += rs;
-	if (r->done < r->header.len) 
+	r->done += rs;// 完成了多少
+	if (r->done < r->header.len)  // 数据没有发送或者接受完就继续发送或者接收
 	{
 	    buffer_reset(r->input);
 		//dn_request_recv_block(r);
@@ -959,6 +979,7 @@ static int block_write_complete(void *data, void *task)
         return DFS_OK;
 	}
 
+	// close fd
 	cfs_close((cfs_t *)dfs_cycle->cfs, r->store_fd);
 	r->store_fd = -1;
 

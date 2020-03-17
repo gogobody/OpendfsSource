@@ -26,18 +26,18 @@ struct dfs_thread_s
 {
     pthread_t               thread_id;
     int                     type;
-    event_base_t            event_base; // epoll 相关
+    event_base_t            event_base;
     event_timer_t           event_timer;
     conn_pool_t             conn_pool;
     queue_t                 posted_accept_events;
     queue_t                 posted_events;
-    TREAD_FUNC              run_func;
-    uint32_t                state;
+    TREAD_FUNC              run_func;  // handler
+    uint32_t                state;  // THREAD_ST_UNSTART
     int                     running;
-	ns_srv_info_t           ns_info; // 从datanode 发起的连接namenode 的info
-	faio_notifier_manager_t faio_notify;  // notifiier 通知者
+	ns_srv_info_t           ns_info;
+	faio_notifier_manager_t faio_notify;
 	io_event_t              io_events;
-	fio_manager_t           fio_mgr; // fast io
+	fio_manager_t           fio_mgr;
 };
 
 enum 

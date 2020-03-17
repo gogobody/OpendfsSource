@@ -18,7 +18,7 @@ typedef struct
 {
     pid_t                pid; //代表该进程PID
     int                  status; //用于保存子进程的退出状态
-    int                  channel[2]; //进程的channel，通过socketpair来创建 ，可用于进程通信
+    int                  channel[2]; //进程的channel，通过socketpair来创建
     spawn_proc_pt        proc; //进程的初始化函数，在每次创建完worker进程时调用
     void                *data; //向进程初始化函数传递的参数
     char                *name; //进程名称

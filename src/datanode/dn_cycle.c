@@ -32,6 +32,7 @@ cycle_t *cycle_create()
     return cycle;
 }
 
+// conf 和error log init
 int cycle_init(cycle_t *cycle)
 {
     log_t          *log = NULL;
@@ -67,14 +68,14 @@ int cycle_init(cycle_t *cycle)
 	{
         goto error;
     }
-    
+    // 配置文件相关
     conf_objects = get_dn_conf_object();
     
     if (conf_context_init(ctx, &config_file, log, conf_objects) != DFS_OK) 
 	{
         goto error;
     }
-    
+    // parse conf file and make default
     if (conf_context_parse(ctx) != DFS_OK) 
 	{
         printf("configure parse failed at line %d\n", ctx->conf_line); 
@@ -89,7 +90,9 @@ int cycle_init(cycle_t *cycle)
 		
         goto error;
     }
-	
+
+    // error log init
+    // 这一块应该移动到 dfs module init
     dn_error_log_init(dfs_cycle);
 	
     return DFS_OK;

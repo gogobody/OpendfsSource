@@ -86,7 +86,7 @@ int conf_context_parse(conf_context_t *ctx)
 
     file->size = s.st_size;
 
-	// 把文件读取到用户空间
+	// mmap 把文件读取到 file -> buf
     if (conf_file_read(file, ctx->log) != DFS_OK) 
 	{
         conf_file_close(file, ctx->log);
@@ -120,6 +120,7 @@ int conf_context_parse(conf_context_t *ctx)
 
     conf_file_close(file, ctx->log);
 
+    // make default
     if (conf_make_objects_default(ctx) != DFS_OK) 
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0, 
@@ -193,7 +194,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 
     q = option;
 
-    p = buf;
+    p = buf; // position
     end = buf + size;
 
     for ( ; p < end; ) 
@@ -206,14 +207,13 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 			
             continue;
         }
-        // added to avoid \r
-/*
-		if (ch == '\r'){
+        // added
+        if (ch == '\r'){
             p++;
 
             continue;
         }
-*/
+
         switch(ch) 
 		{
             case ' ':
@@ -311,7 +311,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 				
                 break;
 				
-            case '#':
+            case '#': // 说明是注释
                 if (first_quote && !last_quote) 
 				{
                     goto normal_char;
@@ -573,7 +573,8 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
         {
             continue;
         }
-        
+
+        //
         if (conf_parse_object(ctx, &word[1], &objects[i]) != DFS_OK) 
 		{
             dfs_log_error(log, DFS_LOG_ERROR, 0, 
@@ -593,7 +594,6 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
     return DFS_ERROR;
 }
 
-// parse option ,eg:server.
 static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 {
     int              i = 0;
@@ -637,7 +637,8 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
             {
                 continue;
             }
-            
+
+            // 在这里调用了 init 函数
             if (conf_parse_object(ctx, &word[1], &objects[i]) != DFS_OK) 
 			{
                 return DFS_ERROR;
@@ -662,9 +663,9 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
             return DFS_ERROR;
         }
 		
-        var.data = word[0].data; //eg:server +1去掉\r
+        var.data = word[0].data ;
         var.len = ch - var.data;
-        att.data = ch + 1;       //eg:deamon
+        att.data = ch + 1;
         att.len = word[0].len - var.len - 1;
         vclass = conf_get_vobject(ctx, &var);
         if (!vclass) 
@@ -743,6 +744,7 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
     }
 	
     // malloc memory from conf
+    // conf init
     v->conf = obj->init(ctx->pool);
     if (v->conf == NULL) 
 	{
@@ -755,7 +757,6 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
     return DFS_OK;
 }
 
-// parse attr :eg:
 static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v, 
 	                                    string_t *att, string_t *args, 
 	                                    int args_n, conf_option_t *option)

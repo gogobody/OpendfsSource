@@ -2,10 +2,11 @@
 #include "dfs_memory.h"
 #include "dfs_commpool.h"
 
+//
 static int mpool_mgmt_allocator_init(dfs_mem_allocator_t *me, 
                                                void *param_data)
 {
-    struct mpool_mgmt_param_s *param = (mpool_mgmt_param_s *)param_data;
+    struct mpool_mgmt_param_s *param = (mpool_mgmt_param_t *)param_data;
     mpool_mgmt_t              *pool = NULL;
     
     if (!param) 
@@ -41,6 +42,7 @@ static int mpool_mgmt_allocator_release(dfs_mem_allocator_t *me,
     return DFS_MEM_ALLOCATOR_OK;
 }
 
+// 根据 mpool_mgmt 分配size
 static void * mpool_mgmt_allocator_alloc(dfs_mem_allocator_t *me,
                                                     size_t size, 
                                                     void *param_data)

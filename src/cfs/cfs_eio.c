@@ -2055,7 +2055,7 @@ eio__wd_open_sync (struct tmpbuf *tmpbuf, eio_wd wd, const char *path)
     return EIO_INVALID_WD;
 #endif
 
-  res = (eio_pwd *)malloc (sizeof (*res) + len); /* one extra 0-byte */
+  res = (struct  eio_pwd *)malloc (sizeof (*res) + len); /* one extra 0-byte */
 
 #if HAVE_AT
   res->fd = fd;

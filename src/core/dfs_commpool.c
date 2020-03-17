@@ -4,6 +4,7 @@
 #define dfs_align_ptr(p, a)       \
         (uchar_t *) (((uintptr_t)(p) + ((uintptr_t)(a) - 1)) & ~((uintptr_t)(a) - 1))
 
+
 mpool_mgmt_t * mpool_mgmt_create(mpool_mgmt_param_t *param)
 {
     mpool_mgmt_t *pm = NULL;

@@ -37,24 +37,25 @@ enum
     CONN_ERROR_EOF
 };
 
+// 这种连接是指 客户端发起的，服务器被动接受的连接
 struct conn_s 
 {
-    int                    fd;
+    int                    fd; //
     void                  *next;
-    void                  *conn_data; // dfs_thread_t
-    event_t               *read;
+    void                  *conn_data; // thread dn_request_t
+    event_t               *read;  // 连接对应的读事件
     event_t               *write;
-    sysio_recv_pt          recv;
-    sysio_send_pt          send;
-    sysio_recv_chain_pt    recv_chain;
-    sysio_send_chain_pt    send_chain;
+    sysio_recv_pt          recv;   //直接接收网络字符流的方法
+    sysio_send_pt          send;   // 直接发送网络字符流的办法
+    sysio_recv_chain_pt    recv_chain;  // 以ngx_chain_t链表为 参数来 接收 网络 字符流的方法
+    sysio_send_chain_pt    send_chain;  // 以ngx_chain_t链表为 参数来 发送 网络 字符流的方法
     sysio_sendfile_pt      sendfile_chain;
-    listening_t           *listening;
-    size_t                 sent;
-    pool_t                *pool;
+    listening_t           *listening;  /*这个连接对应的ngx_listening_t监听对象，此连接由listening监听端口的事件建立*/
+    size_t                 sent; //这个连接上已经发送出去的字节数
+    pool_t                *pool;  /* 内存池。一般在accept一个新连接时，会创建一个 内存池，而在这个 连接结束时会销毁内存池。所有的ngx_connectionn_t结构 体都是预分配，这个内存池的大小将由上面的listening 监听对象中的 pool_size成员决定*/
     struct sockaddr       *sockaddr;
     socklen_t              socklen;
-    string_t               addr_text;
+    string_t               addr_text; // 连接客户端字符串形式的IP地址
     struct timeval         accept_time;
     uint32_t               error:1;
     uint32_t               sendfile:1;
@@ -66,12 +67,13 @@ struct conn_s
     log_t                 *log;
 };
 
+// 主动连接
 struct conn_peer_s 
 {
-    conn_t                *connection;
-    struct sockaddr       *sockaddr;
-    socklen_t              socklen;
-    string_t              *name;
+    conn_t                *connection;  /*一个主动连接实际 上也需要ngx_connection_t结构体的大部分成员，并且处于重用的考虑 而定义 了connecion*/
+    struct sockaddr       *sockaddr;  // 远端服务器的socketaddr
+    socklen_t              socklen;  // sockaddr地址长度
+    string_t              *name;   // 远端服务器的名称
     int                    rcvbuf;
 };
 

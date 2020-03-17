@@ -30,8 +30,8 @@ struct conf_file_read_s
 
 struct conf_context_s 
 {
-    conf_file_read_t  file;
-    log_t            *log;
+    conf_file_read_t  file; // conf file
+    log_t            *log; //
     pool_t           *pool;
     array_t          *conf_objects_array;
     int               conf_line;

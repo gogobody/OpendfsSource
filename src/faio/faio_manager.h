@@ -57,7 +57,7 @@ struct faio_data_task_s
 {
     faio_data_task_t        *next;
     FAIO_IO_TYPE             io_type;
-    faio_callback_t          io_callback; // task 执行完之后执行回调
+    faio_callback_t          io_callback; // 回调
     faio_notifier_manager_t *notifier;
     faio_task_errno_t        err;
     int                      cancel_flag;
@@ -86,7 +86,15 @@ struct faio_handler_manager_s
     faio_io_handler_t        handler[FAIO_IO_TYPE_END];
 };
 
-
+struct faio_notifier_manager_s 
+{
+    int                 nfd; // eventfd 进程间通信// 创建 event fd 初始化 0
+    faio_manager_t     *manager; // faio_manager
+    faio_atomic_t       count;
+    faio_condition_t    cond;    
+    faio_atomic_t       noticed; //
+    int                 release;
+};
 
 struct faio_worker_thread_s 
 {
@@ -99,19 +107,19 @@ struct faio_worker_properties_s
 {
     unsigned int                max_idle;//等待新请求的最大空闲时间
     unsigned int                idle_timeout;
-    unsigned int                max_thread;// cpu num x2
-    unsigned int                pre_start;  // cpu num x2
+    unsigned int                max_thread;
+    unsigned int                pre_start; 
 };
 
 struct faio_worker_manager_s 
 {
-    unsigned int                idle; //空闲时间
-    unsigned int                started;
+    unsigned int                idle; //空闲的
+    unsigned int                started; // 已经开始的线程
     unsigned int                want_quit; 
     faio_queue_t                worker_queue;
     faio_worker_properties_t    worker_properties;
-    faio_mutex_t                work_lock; // 互斥锁
-    faio_cond_t                 worker_wait; // 条件变量
+    faio_mutex_t                work_lock;
+    faio_cond_t                 worker_wait;
     faio_cond_t                 quit_wait;
     faio_data_manager_t        *data_mgr;
     faio_handler_manager_t     *handler_mgr;

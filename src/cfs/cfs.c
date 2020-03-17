@@ -23,8 +23,6 @@ int cfs_setup(pool_t *pool, cfs_t *cfs, log_t *log)
 	// init parse func \ done func \ faio
     cfs_faio_setup(cfs->meta);
 
-	// meta->parsefunc = cfs_faio_parse
-	// 初始化 sp.io 的各个function
     cfs->meta->parsefunc(cfs->sp, cfs->meta);
 
     return DFS_OK;
@@ -62,7 +60,7 @@ int cfs_sendfile_chain(cfs_t *cfs, file_io_t *fio, log_t *log)
         return DFS_ERROR;
     }
 
-    rc = cfs->sp->io_opt.sendfilechain(fio, log);
+    rc = cfs->sp->io_opt.sendfilechain(fio, log); //cfs_faio_sendfile
     if (rc == DFS_ERROR) 
 	{
         return DFS_ERROR;
@@ -73,6 +71,7 @@ int cfs_sendfile_chain(cfs_t *cfs, file_io_t *fio, log_t *log)
     }
 }
 
+//
 int cfs_write(cfs_t *cfs, file_io_t *fio, log_t *log)
 {
     int rc = DFS_ERROR;
@@ -81,7 +80,8 @@ int cfs_write(cfs_t *cfs, file_io_t *fio, log_t *log)
         return DFS_ERROR;
     }
 
-    rc = cfs->sp->io_opt.write(fio, log);
+    // push fio data task to data queue
+    rc = cfs->sp->io_opt.write(fio, log);//cfs_faio_write
     if (rc == DFS_ERROR) 
 	{
         return DFS_ERROR;
@@ -92,6 +92,7 @@ int cfs_write(cfs_t *cfs, file_io_t *fio, log_t *log)
     }
 }
 
+// 调用 cfs_faio_read
 int cfs_read(cfs_t *cfs, file_io_t *fio, log_t *log)
 {
     int rc = DFS_ERROR;
@@ -100,7 +101,7 @@ int cfs_read(cfs_t *cfs, file_io_t *fio, log_t *log)
         return DFS_ERROR;
     }
 
-    rc = cfs->sp->io_opt.read(fio, log);
+    rc = cfs->sp->io_opt.read(fio, log); // cfs_faio_read
     if (rc == DFS_ERROR) 
 	{
         return DFS_ERROR;
@@ -113,9 +114,10 @@ int cfs_read(cfs_t *cfs, file_io_t *fio, log_t *log)
 
 void cfs_close(cfs_t *cfs, int fd)
 {
-    cfs->sp->io_opt.close(fd);
+    cfs->sp->io_opt.close(fd); // close fd
 }
 
+// 调用  cfs_faio_open
 int cfs_open(cfs_t *cfs, uchar_t *path, int flags, log_t *log)
 {
     if (!cfs || !path) 
@@ -166,11 +168,11 @@ int cfs_size_sub(volatile uint64_t *old_size, uint64_t size, log_t *log)
 int cfs_prepare_work(cycle_t *cycle)
 {
 	cfs_t *cfs = (cfs_t *)cycle->cfs;
-	
+	//  cfs_faio_ioinit
 	return cfs->sp->io_opt.ioinit(/*sconf->dio_thread_num*/20);
 }
 
-// 
+//
 int cfs_ioevent_init(io_event_t *io_event)
 {
     if (!io_event) 
@@ -178,13 +180,14 @@ int cfs_ioevent_init(io_event_t *io_event)
         return DFS_ERROR;
     }
 
-    queue_init((queue_t*)&io_event->posted_events);
+    queue_init((queue_t*)&io_event->posted_events); // thread->
     queue_init((queue_t*)&io_event->posted_bad_events);
 
     return DFS_OK;
 }
 
-void ioevents_process_posted(volatile queue_t *posted,
+// fio 回调
+void    ioevents_process_posted(volatile queue_t *posted,
     dfs_atomic_lock_t *lock, fio_manager_t *fio_manager)
 {
     int               i = 0;
@@ -214,23 +217,24 @@ void ioevents_process_posted(volatile queue_t *posted,
             return;
         }
 
+        // block_write_complete
         fio->h(fio->data, fio);
-        //cfs_fio_manager_free(fio, fio_manager);
+        // cfs_fio_manager_free(fio, fio_manager);
         i++;
     }
 }
 
-// 将io event 的queue对应到file_io 并启动file io 的 handler 处理 data
+// fio 回调
 void cfs_ioevents_process_posted(io_event_t *io_event,
     fio_manager_t *fio_manager)
 {
-	// 将io event 的queue对应到file_io 并启动file io 的 handler 处理 data
     ioevents_process_posted(&io_event->posted_bad_events, 
 		&io_event->bad_lock, fio_manager);
     ioevents_process_posted(&io_event->posted_events, 
 		&io_event->lock, fio_manager);
 }
 
+// 初始化 notifier
 int cfs_notifier_init(faio_notifier_manager_t *faio_notify)
 {
     faio_errno_t error;
@@ -247,6 +251,7 @@ int cfs_notifier_init(faio_notifier_manager_t *faio_notify)
     return DFS_OK;
 }
 
+//
 void cfs_recv_event(faio_notifier_manager_t *faio_notify)
 {
     faio_errno_t error;

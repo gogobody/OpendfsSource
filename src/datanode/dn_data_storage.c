@@ -46,6 +46,7 @@ static int scan_subdir(char *dir, long namespace_id);
 static int scan_subdir_subdir(char *dir, long namespace_id);
 static void get_blk_id(char *src, char *id);
 
+// 主进程
 //数据节点master初始化，pool and cfs
 int dn_data_storage_master_init(cycle_t *cycle)
 {
@@ -57,8 +58,7 @@ int dn_data_storage_master_init(cycle_t *cycle)
 
 		return DFS_ERROR;
 	}
-
-	// 初始化 cfs
+	// 初始化 cfs 的各项函数
 	if (cfs_setup(cycle->pool, (cfs_t *)cycle->cfs, cycle->error_log) 
 		!= DFS_OK) 
 	{
@@ -68,37 +68,35 @@ int dn_data_storage_master_init(cycle_t *cycle)
     return DFS_OK;
 }
 
+// 子进程
 // from dn_worker_process 的worker_processer
 // 入口函数
 int dn_data_storage_worker_init(cycle_t *cycle)
 {
     queue_init(&g_storage_dir_q);
 
-	// 初始化 storage_dir 并存储到g_storage_dir_q 队列里
 	if (init_storage_dirs(cycle) != DFS_OK) 
 	{
 	    return DFS_ERROR;
 	}
-	// 创建 current 目录
+    puts("##dn_data_storage_worker_init");
 	if (create_storage_dirs(cycle) != DFS_OK) 
 	{
 	    return DFS_ERROR;
 	}
-
-	// 初始化faio，worker，handler，
-	// worker 开启线程处理 task
+    // faio thread process queue task
 	if (cfs_prepare_work(cycle) != DFS_OK)  // cfs_faio_ioinit(int thread_num)
 	{
         return DFS_ERROR;
     }
-
-	// cache management
+    // blk cache management
 	g_dn_bcm = blk_cache_mgmt_new_init();
     if (!g_dn_bcm) 
 	{
         return DFS_ERROR;
     }
-	
+
+    // init blk report queue
 	blk_report_queue_init();
 	
     return DFS_OK;
@@ -114,22 +112,26 @@ int dn_data_storage_worker_release(cycle_t *cycle)
     return DFS_OK;
 }
 
-// 跑在 worker 线程里
+
+// worker thread
+// init faio \ fio
+// init notifier eventfd
+// 初始化 io events 队列 posted events, posted bad events
 int dn_data_storage_thread_init(dfs_thread_t *thread)
 {
-	// fast io 数据结构初始化
+    // init fio_manager
+    // 初始化 n 个fio ，并且添加到 fio manager 的free queue
     if (cfs_fio_manager_init(dfs_cycle, &thread->fio_mgr) != DFS_OK) 
 	{
         return DFS_ERROR;
 	}
-
-	// cfs 通知者初始化 
-	// 变量以及 faio_notify 的faio_manager
+    // 初始化 notifier
+    // 创建 event fd 初始化 0
 	if (cfs_notifier_init(&thread->faio_notify) != DFS_OK) 
 	{
         return DFS_ERROR;
     }
-	// 初始化 ioevent 的queue
+    // 初始化 io events 队列 posted events, posted bad events
     return cfs_ioevent_init(&thread->io_events);
 }
 
@@ -199,6 +201,7 @@ static int create_storage_dirs(cycle_t *cycle)
     return DFS_OK;
 }
 
+// namenode
 int setup_ns_storage(dfs_thread_t *thread)
 {
     char path[PATH_LEN] = "";
@@ -228,7 +231,6 @@ int setup_ns_storage(dfs_thread_t *thread)
     return DFS_OK;
 }
 
-// write version to path 
 static int check_version(char *path)
 {
     if (access(path, F_OK) != DFS_OK) 
@@ -306,7 +308,7 @@ static int check_version(char *path)
     return DFS_OK;
 }
 
-// check namespace and create sub and  sub/sub dir
+//
 static int check_namespace(char *path, int64_t namespaceID)
 {
     char bbwDir[PATH_LEN] = "";
@@ -365,7 +367,7 @@ static int check_namespace(char *path, int64_t namespaceID)
 	    }
 
 	    close(fd);
-
+        // 创建了很多个subdir
 		create_storage_subdirs(curDir);
 	}
 	else 
@@ -450,7 +452,7 @@ static int create_storage_subdirs(char *path)
 // mgmt is management
 static blk_cache_mgmt_t *blk_cache_mgmt_new_init()
 {
-    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN);  //blk num 2的x次方
+    size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN);  //blk num
 
     blk_cache_mgmt_t *bcm = blk_cache_mgmt_create(index_num);
     if (!bcm) 
@@ -516,7 +518,8 @@ static int blk_mem_mgmt_create(blk_cache_mem_t *mem_mgmt,
 	mpool_mgmt_param_t param;
     param.mem_addr = mem_mgmt->mem;
     param.mem_size = mem_size;
-
+    // allocator
+    // allocator.init => create pool
     mem_mgmt->allocator = dfs_mem_allocator_new_init(
 		DFS_MEM_ALLOCATOR_TYPE_COMMPOOL, &param);
     if (!mem_mgmt->allocator) 
@@ -524,6 +527,7 @@ static int blk_mem_mgmt_create(blk_cache_mem_t *mem_mgmt,
         goto err_allocator;
     }
 
+    // 创建index 个blk info t的块
     mem_mgmt->free_mblks = blk_mblks_create(mem_mgmt, index_num);
     if (!mem_mgmt->free_mblks) 
 	{
@@ -552,9 +556,12 @@ static struct mem_mblks *blk_mblks_create(blk_cache_mem_t *mem_mgmt,
     mblk_param.mem_free = allocator_free;
     mblk_param.priv = mem_mgmt->allocator;
 
-    return mem_mblks_new(block_info_t, count, &mblk_param);
+    // mem_mblks_new = > mem_mblks_new_fn
+    // 初始化新的 mem mblks
+    return mem_mblks_new_fn(sizeof(block_info_t), count, &mblk_param);
 }
 
+// 调用参数 allocator 的 alloc 分配mem size 大小的内存
 static void *allocator_malloc(void *priv, size_t mem_size)
 {
     if (!priv) 
@@ -600,6 +607,7 @@ static int uint64_cmp(const void *s1, const void *s2, size_t sz)
     return *(uint64_t *)s1 == *(uint64_t *)s2 ? DFS_FALSE : DFS_TRUE; 
 }
 
+// 取余
 static size_t req_hash(const void *data, size_t data_size, 
 	size_t hashtable_size)
 {
@@ -608,10 +616,10 @@ static size_t req_hash(const void *data, size_t data_size,
     return u % hashtable_size;
 }
 
-// 根据 id 获取blk
+// 去hash table 里面找到对应 id 的blk info
 block_info_t *block_object_get(long id)
 {
-    pthread_rwlock_rdlock(&g_dn_bcm->cache_rwlock);
+    pthread_rwlock_rdlock(&g_dn_bcm->cache_rwlock); //读锁定读写锁
 
 	block_info_t *blk = (block_info_t *)dfs_hashtable_lookup(g_dn_bcm->blk_htable, 
 		&id, sizeof(id));
@@ -621,13 +629,12 @@ block_info_t *block_object_get(long id)
     return blk;
 }
 
-// blk add 到memo 和 hashtable
-// 并且 notify 一个 blk report
-
+// 更新 hashtable 和 g_blk_report
+// 数据节点每次初始化就需要重建一次hash table
 int block_object_add(char *path, long ns_id, long blk_id)
 {
     block_info_t *blk = NULL;
-
+    // 去hash table 里面找到对应 id 的blk info
 	blk = block_object_get(blk_id);
 	if (blk) 
 	{
@@ -639,9 +646,9 @@ int block_object_add(char *path, long ns_id, long blk_id)
 	stat(path, &sb);
 	long blk_sz = sb.st_size;
 
-	pthread_rwlock_wrlock(&g_dn_bcm->cache_rwlock);
+	pthread_rwlock_wrlock(&g_dn_bcm->cache_rwlock); // 写锁定？
 
-	// 加到缓存？
+	// 从之前初始化的 gbcm缓存中分配一个blk
 	blk = (block_info_t *)mem_get0(g_dn_bcm->mem_mgmt.free_mblks);
 	if (!blk)
 	{
@@ -661,13 +668,14 @@ int block_object_add(char *path, long ns_id, long blk_id)
 	dfs_hashtable_join(g_dn_bcm->blk_htable, &blk->ln);
 
 	pthread_rwlock_unlock(&g_dn_bcm->cache_rwlock);
-	
+
+    // blk info插入 g_blk_report
+    // 不在hashtable里的向nn上报
     notify_blk_report(blk);
 	
     return DFS_OK;
 }
 
-// 根据id 删除blk
 int block_object_del(long blk_id)
 {
     block_info_t *blk = NULL;
@@ -684,7 +692,7 @@ int block_object_del(long blk_id)
 
     dfs_hashtable_remove_link(g_dn_bcm->blk_htable, &blk->ln);
 
-	mem_put(blk); // 放进缓存？
+	mem_put(blk);
 
 	pthread_rwlock_unlock(&g_dn_bcm->cache_rwlock);
     
@@ -759,6 +767,7 @@ int write_block_done(dn_request_t *r)
 		curDir, r->header.namespace_id, suddir_id, suddir_id2, 
 		r->header.block_id);
 
+	// 调用rename快速移动文件，但是rename不能跨分区跨磁盘
 	if (rename((char *)r->path, blkDir) != DFS_OK) 
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
@@ -825,14 +834,14 @@ static int recv_blk_report(dn_request_t *r)
 	dfs_hashtable_join(g_dn_bcm->blk_htable, &blk->ln);
 
 	pthread_rwlock_unlock(&g_dn_bcm->cache_rwlock);
-	
+
+	// 提示name node 收到 blk
     notify_nn_receivedblock(blk);
     
     return DFS_OK;
 }
 
-// blk scanner 线程处理函数
-// 扫描 blk 的目录 以及sub/sub dir 和命名空间，添加blk 到缓存和 hashtable，并notify一个blk report
+// scanner线程
 void *blk_scanner_start(void *arg)
 {
 	conf_server_t *sconf = NULL;
@@ -848,7 +857,7 @@ void *blk_scanner_start(void *arg)
 
 	//last_blk_report = diff;
 
-	while (blk_scanner_running) 
+	while (blk_scanner_running)  // 默认 true
 	{
         //gettimeofday(&now, NULL);
 	    //diff = (now.tv_sec * 1000 + now.tv_usec / 1000) - last_blk_report;
@@ -868,7 +877,7 @@ void *blk_scanner_start(void *arg)
 
 			entry = queue_next(entry);
 
-			scan_current_dir(sd->current);// 扫描 blk 的目录 以及sub/sub dir 和命名空间，添加blk 到缓存和 hashtable，并notify一个blk report
+			scan_current_dir(sd->current);
 		}
 
 		sleep(blk_report_interval);
@@ -877,7 +886,6 @@ void *blk_scanner_start(void *arg)
     return NULL;
 }
 
-// 
 static int scan_current_dir(char *dir)
 {
     char           root[PATH_LEN] = "";
@@ -902,10 +910,10 @@ static int scan_current_dir(char *dir)
 		else if (0 == strncmp(ent->d_name, "NS-", 3)) 
 		{
             char namespace_id[16] = "";
-			get_namespace_id(ent->d_name, namespace_id); // NS-xxxx ,xxx is namespace_id
+			get_namespace_id(ent->d_name, namespace_id);
 
             sprintf(root, "%s/%s/current", dir, ent->d_name);
-			scan_namespace_dir(root, atol(namespace_id)); // 检查 subdir
+			scan_namespace_dir(root, atol(namespace_id));
 		}
 	}
 
@@ -924,7 +932,7 @@ static void get_namespace_id(char *src, char *id)
 	}
 }
 
-static int scan_namespace_dir(char *dir, long namespace_id)
+    static int scan_namespace_dir(char *dir, long namespace_id)
 {
     char           root[PATH_LEN] = "";
 	DIR           *p_dir = NULL;
@@ -948,7 +956,7 @@ static int scan_namespace_dir(char *dir, long namespace_id)
 		else if (0 == strncmp(ent->d_name, "subdir", 6)) 
 		{
             sprintf(root, "%s/%s", dir, ent->d_name);
-            scan_subdir(root, namespace_id); // 检查 sub/subdir
+            scan_subdir(root, namespace_id);
 		}
 	}
 
@@ -981,7 +989,7 @@ static int scan_subdir(char *dir, long namespace_id)
 		else if (0 == strncmp(ent->d_name, "subdir", 6)) 
 		{
 		    sprintf(root, "%s/%s", dir, ent->d_name);
-            scan_subdir_subdir(root, namespace_id);// 检查 blk_ xxx is blkid
+            scan_subdir_subdir(root, namespace_id);
 		}
 	}
 
@@ -1007,12 +1015,14 @@ static int scan_subdir_subdir(char *dir, long namespace_id)
 
 	while (NULL != (ent = readdir(p_dir))) 
 	{
-        if (8 == ent->d_type && 0 == strncmp(ent->d_name, "blk_", 4)) 
+	    // 如果是常规文件，
+        if (DT_REG == ent->d_type && 0 == strncmp(ent->d_name, "blk_", 4))
 		{
 	        char blk_id[16] = "";
 			get_blk_id(ent->d_name, blk_id);
 
 			sprintf(path, "%s/%s", dir, ent->d_name);
+            // 更新 hashtable 和 g_blk_report
 			block_object_add(path, namespace_id, atol(blk_id));
 		}
 	}

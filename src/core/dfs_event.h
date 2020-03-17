@@ -1,9 +1,11 @@
 #ifndef DFS_EVENT_H
 #define DFS_EVENT_H
 
+#include "dfs_epoll.h"
 #include "dfs_types.h"
 #include "dfs_queue.h"
 #include "dfs_rbtree.h"
+
 
 #define EVENT_HAVE_EPOLL       1 // use epoll
 #define EVENT_HAVE_CLEAR_EVENT 1
@@ -15,20 +17,21 @@ typedef void (*event_handler_pt)(event_t *ev);
 
 struct event_s 
 {
-    void            *data;   //数据指针 eg： thread
-    uint32_t         write:1;
-    uint32_t         accepted:1; 
-    uint32_t         instance:1;
+    void            *data;    /*事件相关的对象，通常data指向ngx_connection_t连接对象。开启文件异步I/O 时，它可能会指向*/
+    uint32_t         write:1;   /* 标志位，标识事件可写，意味着对应的TCP连接可写，也即连接处于发送网络包状态 */
+    uint32_t         accepted:1;   /* 标志位，标识可建立新的连接，一般是在ngx_listening_t对应的读事件中标记 */
+    uint32_t         instance:1;  /*检测当前事件是否是过期的，它仅仅是给驱动模块使用的，而事件消费模块可以不用关心 */
+    /* used to detect the stale events in kqueue and epoll */
     uint32_t         last_instance:1;
-    uint32_t         active:1;  //标记这个事件是否已经被管理, 
-    uint32_t         ready:1;
+    uint32_t         active:1; //一个fd第一次加入到epoll中的时候，active会被置1
+    uint32_t         ready:1;   //可读写时，ready就会被置1
     uint32_t         timedout:1;
     uint32_t         timer_set:1;
     uint32_t         timer_event:1;
     uint32_t         delayed:1;
-    event_handler_pt handler; //回调函数
-    rbtree_node_t    timer; //超时机制, 使用红黑树管理
-    queue_t          post_queue;  //events本身用链表管理
+    event_handler_pt handler;
+    rbtree_node_t    timer;
+    queue_t          post_queue;
     int              available; 
 };
 
@@ -169,7 +172,7 @@ struct event_s
 
 #define event_init            epoll_init
 #define event_process_events  epoll_process_events
-#define event_add             epoll_add_event
+#define event_add             epoll_add_event  // dfs_epoll.c
 #define event_delete          epoll_del_event
 #define event_add_conn        epoll_add_connection
 #define event_del_conn        epoll_del_connection

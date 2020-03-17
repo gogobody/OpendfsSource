@@ -35,7 +35,7 @@ int notice_init(event_base_t *base, notice_t *n,
     rev = c->read;
     rev->handler = noice_read_event_handler;
     
-    if (event_add(base,rev, EVENT_READ_EVENT, 0) == DFS_ERROR) 
+    if (epoll_add_event(base,rev, EVENT_READ_EVENT, 0) == DFS_ERROR)
 	{
         dfs_log_error(base->log, DFS_LOG_FATAL, 0,"event adde failed");
 		

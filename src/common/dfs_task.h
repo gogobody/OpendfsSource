@@ -16,12 +16,12 @@
 
 typedef struct task_s
 {
-	cmd_t     cmd;
+	cmd_t     cmd; // 命令
 	int       ret;
 	uint32_t  seq;
-	void     *opq; // wbt
+	void     *opq;
 	int       master_nodeid;
-	char      key[KEY_LEN]; // eg: cli 的 ip
+	char      key[KEY_LEN];
 	char      user[OWNER_LEN];
 	char      group[GROUP_LEN];
 	short     permission;

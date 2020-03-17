@@ -10,7 +10,6 @@
 
 #define DFS_INET_ADDRSTRLEN            (sizeof("255.255.255.255") - 1)
 
-// 打开监听 socket
 int conn_listening_open(array_t *listening, log_t *log)
 {
     int          s = DFS_INVALID_FILE;
@@ -25,7 +24,7 @@ int conn_listening_open(array_t *listening, log_t *log)
         return DFS_ERROR;
     }
 
-    for (tries = 5; tries; tries--) 
+    for (tries = 5; tries; tries--) //bind和listen最多重试5次
 	{
         failed = 0;
         ls = (listening_t *)listening->elts; // element?
@@ -60,7 +59,10 @@ int conn_listening_open(array_t *listening, log_t *log)
 				
                 return DFS_ERROR;
             }
-			// 一般来说，一个端口释放后会等待两分钟之后才能再被使用，SO_REUSEADDR是让端口释放后立即就可以被再次使用
+            /*
+                默认情况下,server重启,调用socket,bind,然后listen,会失败.因为该端口正在被使用.如果设定SO_REUSEADDR,那么server重启才会成功.因此,
+                所有的TCP server都必须设定此选项,用以应对server重启的现象.
+                */
             if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                 (const void *) &reuseaddr, sizeof(int)) == DFS_ERROR) 
             {
@@ -71,7 +73,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 goto error;
             }
 
-            if (ls[i].rcvbuf != -1)  // 设置接收缓冲区
+            if (ls[i].rcvbuf != -1) 
 			{
                 if (setsockopt(s, SOL_SOCKET, SO_RCVBUF,
                     (const void *) &ls[i].rcvbuf, sizeof(int)) == DFS_ERROR) 
@@ -84,7 +86,7 @@ int conn_listening_open(array_t *listening, log_t *log)
 
             }
 
-            if (ls[i].sndbuf != -1)  // 设置发送缓冲区
+            if (ls[i].sndbuf != -1) 
 		    {
                 if (setsockopt(s, SOL_SOCKET, SO_SNDBUF,
                     (const void *) &ls[i].sndbuf, sizeof(int)) == DFS_ERROR) 
@@ -98,7 +100,6 @@ int conn_listening_open(array_t *listening, log_t *log)
             }
 
             // we can't set linger onoff = 1 on listening socket
-            // conn 连接有超时时间， 非阻塞可以缩短
             if (conn_nonblocking(s) == DFS_ERROR) 
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
@@ -112,7 +113,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 "conn_listening_open: bind fd:%d on addr:%V",
                 s, &ls[i].addr_text);
 			
-            if (bind(s, ls[i].sockaddr, ls[i].socklen) == DFS_ERROR) // 绑定端口
+            if (bind(s, ls[i].sockaddr, ls[i].socklen) == DFS_ERROR) 
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
                     "conn_listening_open: bind fd:%d on addr:%V failed",
@@ -130,7 +131,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 continue;
             }
 
-            if (listen(s, ls[i].backlog) == DFS_ERROR)  // 监听端口 
+            if (listen(s, ls[i].backlog) == DFS_ERROR) 
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
                     "conn_listening_open: listen fd:%d on addr:%V, "
@@ -190,7 +191,7 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
         return NULL;
     }
     
-    sin = (sockaddr_in *)pool_alloc(pool, sizeof(struct sockaddr_in));
+    sin = (struct sockaddr_in *)pool_alloc(pool, sizeof(struct sockaddr_in));
     if (!sin) 
 	{
         dfs_log_error(log, DFS_LOG_ALERT, 0,
@@ -204,7 +205,7 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
     sin->sin_port = htons(port);
     address = (uchar_t *)inet_ntoa(sin->sin_addr);
     
-    ls = (listening_t *)array_push(listening); // push array 在强制转换
+    ls = (listening_t *)array_push(listening);
     if (!ls) 
 	{
         dfs_log_error(log, DFS_LOG_ALERT, 0,
@@ -213,7 +214,7 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
         return NULL;
     }
 	
-    memory_zero(ls, sizeof(listening_t)); // 申请空间
+    memory_zero(ls, sizeof(listening_t));
     ls->addr_text.data = (uchar_t *)pool_calloc(pool,
         INET_ADDRSTRLEN - 1 + sizeof(":65535") - 1);
 	
@@ -226,14 +227,14 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
     }
 	
     ls->addr_text.len = string_xxsprintf(ls->addr_text.data,
-        "%s:%d", address, port) - ls->addr_text.data; // 赋值并计算出len
+        "%s:%d", address, port) - ls->addr_text.data;
     ls->fd = DFS_INVALID_FILE;
     ls->family = AF_INET;
     ls->type = SOCK_STREAM;
     ls->sockaddr = (struct sockaddr *) sin;
     ls->socklen = sizeof(struct sockaddr_in);
     ls->backlog = CONN_DEFAULT_BACKLOG;
-   	ls->rcvbuf = rbuff_len > CONN_DEFAULT_RCVBUF? rbuff_len: CONN_DEFAULT_RCVBUF; 
+   	ls->rcvbuf = rbuff_len > CONN_DEFAULT_RCVBUF? rbuff_len: CONN_DEFAULT_RCVBUF;
     ls->sndbuf = sbuff_len > CONN_DEFAULT_SNDBUF? sbuff_len: CONN_DEFAULT_SNDBUF;
     ls->conn_psize = CONN_DEFAULT_POOL_SIZE;
     ls->log = log;
@@ -260,6 +261,8 @@ int conn_listening_close(array_t *listening)
     return DFS_OK;
 }
 
+// thread_event_process
+// listen for cli
 int conn_listening_add_event(event_base_t *base, array_t *listening)
 {
     conn_t      *c = NULL;
@@ -267,7 +270,7 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
     uint32_t     i = 0;
     listening_t *ls = NULL;
       
-    ls = (listening_t *)listening->elts;
+    ls = (listening_t *)listening->elts;// cli
 	
     for (i = 0; i < listening->nelts; i++) 
 	{
@@ -275,7 +278,8 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
 		
         if (!c) 
 		{
-            c = conn_get_from_mem(ls->fd);
+            //为当前监听套接字的文件描述符分配一个connection，函数返回值c是当前监听套接字关联的connection
+            c = conn_get_from_mem(ls->fd); // init conn
             if (!c) 
 			{
                 dfs_log_debug(ls[i].log, DFS_LOG_DEBUG, 0,
@@ -286,14 +290,14 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
             }
 			
             dfs_log_debug(ls[i].log, DFS_LOG_DEBUG, 0,
-                "add listening %V,fd %d", &ls[i].addr_text, ls[i].fd);
+                "add listening %V,fd %d ", &ls[i].addr_text, ls[i].fd);
             
-            c->listening = &ls[i];
+            c->listening = &ls[i]; //当前连接的监听端口
             c->log = ls[i].log;
-            ls[i].connection = c;
-            rev = c->read;
-            rev->accepted = DFS_TRUE;
-            rev->handler = ls->handler;
+            ls[i].connection = c; //当前监听端口的connection
+            rev = c->read;  //rev指向当前connection的读事件
+            rev->accepted = DFS_TRUE; //表示当前的读事件是监听端口的accept事件，可以用于epoll区分是一般的读事件还是监听对口的accept事件
+            rev->handler = ls->handler; // listen_rev_handler
         }
 		else 
 		{
@@ -301,7 +305,7 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
         }
 		
         // setup listenting event
-        if (event_add(base, rev, EVENT_READ_EVENT, 0) == DFS_ERROR) 
+        if (epoll_add_event(base, rev, EVENT_READ_EVENT, 0) == DFS_ERROR)
 		{
             return DFS_ERROR;
         }
@@ -321,8 +325,7 @@ int conn_listening_del_event(event_base_t *base, array_t *listening)
     for (i = 0; i < listening->nelts; i++) 
 	{
         c = ls[i].connection;
-
-		// 
+		
         if (event_delete(base, c->read, EVENT_READ_EVENT, 0) == DFS_ERROR) 
 		{
             return DFS_ERROR;

@@ -26,7 +26,7 @@
 
 #define DFS_SENDFILE_LIMIT 2147479552L
 
-faio_manager_t *faio_mgr;
+faio_manager_t *faio_mgr; //cfs_faio_ioinit 中初始化
 
 typedef struct chain_s 
 {
@@ -44,7 +44,8 @@ static void cfs_faio_parse(swap_opt_t *sp, fs_meta_t *meta);
 static void cfs_faio_done(void);
 
 // init faio property and manager
-// register faio read and write 
+// register faio read and write
+// faio thread process queue task
 static int cfs_faio_ioinit(int thread_num)
 {
     faio_errno_t      error;
@@ -57,17 +58,19 @@ static int cfs_faio_ioinit(int thread_num)
     property.max_thread = thread_num;
     property.pre_start = 2;
 
+    // data worker handle manager
+    // global
     faio_mgr = (faio_manager_t *)malloc(sizeof(faio_manager_t));
 
-	// 初始化 data manager
-	// worker manager ，开启worker线程，用处理函数处理 task
-	// handler manaher
-    if (faio_manager_init(faio_mgr, &property, 0, &error) != FAIO_OK) 
+    // fast io manager init
+    // faio thread process queue task
+    // faio worker thread handle data req task
+    if (faio_manager_init(faio_mgr, &property, 0, &error) != FAIO_OK)
 	{
         return DFS_ERROR;
     }
 
-	// 注册处理函数
+    // register handle func to process data req task in faio worker thread
     if (faio_register_handler(faio_mgr, cfs_faio_io_read, FAIO_IO_TYPE_READ, 
         &error) != FAIO_OK) 
     {
@@ -94,6 +97,9 @@ faio_mgr_release:
     return DFS_ERROR;
 }
 
+// => faio_read
+// 设置回调函数 => cfs_faio_read_callback
+//
 static int cfs_faio_read(file_io_t *data, log_t *log)
 {
     faio_errno_t             error;
@@ -142,11 +148,12 @@ static int cfs_faio_sendfile(file_io_t *data, log_t *log)
     return DFS_OK;
 }
 
+//
 static int cfs_faio_open(uchar_t *path, int flags, log_t *log)
 {
     int fd = DFS_INVALID_FILE;
 
-    fd = dfs_sys_open(path, flags, 0400);
+    fd = dfs_sys_open(path, flags, 0400); // open
     if (fd < 0) 
 	{
         return fd;
@@ -202,11 +209,13 @@ void cfs_faio_read_callback(faio_data_task_t *task)
 
         dfs_atomic_lock_off(&((io_event_t *)file_io->io_event)->bad_lock, 
             &error);
-    } 
+    }
+    // 插入posted_event queue
 	else if (file_io->result == AIO_OK)
 	{
         dfs_atomic_lock_on(&((io_event_t *)file_io->io_event)->lock, &error);
 
+        // 将fio 插入 io_event队列，也是thread->ioevents
         queue_insert_tail((queue_t *)&(
             ((io_event_t *)file_io->io_event)->posted_events),
             &file_io->q);
@@ -215,6 +224,7 @@ void cfs_faio_read_callback(faio_data_task_t *task)
     }
 }
 
+// fio init in dn_data_storage_thread_init
 int cfs_faio_io_read(faio_data_task_t *task)
 {
     file_io_t *file_task = NULL;

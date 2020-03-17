@@ -43,8 +43,8 @@ struct log_s
     uint32_t      log_level;
     open_file_t   *file;
     log_flog_str_t log_flog;
-    log_time_ptr   log_time_handler;
-    log_level_ptr  log_level_handler;
+    log_time_ptr   log_time_handler; // time ptr dfs_err_log_time
+    log_level_ptr  log_level_handler; // log level
 };
 
 enum 

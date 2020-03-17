@@ -27,6 +27,7 @@ static dfs_mem_allocator_t dfs_mempool_allocator;
 //    .stat         = NULL
 //};
 
+// me->private_data = pool_create
 static int dfs_mempool_allocator_init(dfs_mem_allocator_t *me, 
 	                                           void *param_data)
 {

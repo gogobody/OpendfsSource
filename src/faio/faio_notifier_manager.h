@@ -10,6 +10,9 @@
 #define faio_notifier_get_manager(n) ((n)->manager)
 
 #if (__GNUC__ >= 4 && __GNUC_MINOR__ >=2 )
+// A数据是内存的最新值，是volatile类型的，对于所有线程都是可见的
+//B是相当于是A的快照数据（一份缓存）
+//C是A期望的值，也就是结果值
 #define CAS(val, old, set) \
     __sync_bool_compare_and_swap((val), (old), (set))
 #else

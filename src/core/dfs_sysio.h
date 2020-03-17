@@ -28,13 +28,13 @@ typedef struct sysio_s sysio_t;
 
 struct sysio_s 
 {
-    sysio_recv_pt       recv;
-    sysio_recv_chain_pt recv_chain;
-    sysio_recv_pt       udp_recv;
-    sysio_send_pt       send;
-    sysio_send_chain_pt send_chain;
-	sysio_sendfile_pt   sendfile_chain;
-    uint32_t            flags;
+    sysio_recv_pt       recv;//sysio_unix_recv
+    sysio_recv_chain_pt recv_chain;//sysio_readv_chain
+    sysio_recv_pt       udp_recv;//sysio_udp_unix_recv
+    sysio_send_pt       send;//sysio_unix_send
+    sysio_send_chain_pt send_chain;//sysio_writev_chain
+	sysio_sendfile_pt   sendfile_chain;//sysio_sendfile_chain
+    uint32_t            flags;//0
 };
 
 typedef struct iovec sysio_vec;

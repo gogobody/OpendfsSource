@@ -2,6 +2,7 @@
 
 #include "dfs_mblks.h"
 
+// 初始化 mem mblks ，初始化空间
 struct mem_mblks * mem_mblks_new_fn(size_t sizeof_type, int64_t count, 
                                               mem_mblks_param_t *param)
 {
@@ -16,9 +17,11 @@ struct mem_mblks * mem_mblks_new_fn(size_t sizeof_type, int64_t count,
         return NULL;
     }
 
+    // 计算每个 mem blk 的大小 为要存放数据的 size
     sizeof_mblks = SIZEOF_PER_MEM_BLOCK(sizeof_type) * count 
 		+ sizeof(struct mem_mblks);
 
+    // 这里实际上也是调用 allocator 的 alloc 分配 sizeof_mblks的空间
     mblks = (struct mem_mblks *)param->mem_alloc(param->priv, sizeof_mblks);
     if (!mblks) 
 	{
@@ -78,6 +81,7 @@ void * mem_get(struct mem_mblks *mblks)
     return (void *)pdata->data;
 }
 
+// mem set to zero
 void * mem_get0(struct mem_mblks *mblks)
 {
 	void *ptr = NULL;

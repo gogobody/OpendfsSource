@@ -1,6 +1,7 @@
 #include "faio_manager.h"
 #include "faio_error.h"
 
+//
 int faio_data_manager_init(faio_manager_t *faio_mgr, 
     unsigned int max_task, faio_errno_t *error)
 {   
@@ -64,7 +65,7 @@ static void faio_data_push_req(faio_data_queue_t *que,
     faio_atomic_unlock(&que->lock);
 }
 
-// return  faio_data_task
+//
 faio_data_task_t *faio_data_pop_req(faio_data_manager_t *data_mgr)
 {
     faio_data_task_t  *req_task = NULL;
@@ -100,6 +101,8 @@ faio_data_task_t *faio_data_pop_req(faio_data_manager_t *data_mgr)
     return req_task;
 }
 
+// io_callback => cfs_faio_read_callback
+//
 int faio_data_push_task(faio_data_manager_t *data_mgr, 
 	faio_data_task_t *task, faio_notifier_manager_t *notifier, 
 	faio_callback_t io_callback, FAIO_IO_TYPE io_type, faio_errno_t *error)
@@ -120,11 +123,11 @@ int faio_data_push_task(faio_data_manager_t *data_mgr,
         return FAIO_ERROR;
     }
 
-    task->state = FAIO_STATE_WAIT;
+    task->state = FAIO_STATE_WAIT; //
     task->cancel_flag = FAIO_FALSE;
     task->next = NULL;
-    task->io_type = io_type;
-    task->io_callback = io_callback;
+    task->io_type = io_type;// FAIO_IO_TYPE_WRITE // FAIO_IO_TYPPE_SENDFILE
+    task->io_callback = io_callback;//cfs_faio_write_callback
     task->notifier = notifier;
     task->err.err = FAIO_ERR_TASK_NO_ERR; 
     task->err.sys =FAIO_ERR_TASK_NO_ERR;
@@ -143,7 +146,8 @@ int faio_data_push_task(faio_data_manager_t *data_mgr,
 	{
         return FAIO_ERROR;
     }
-    
+
+
     faio_data_push_req(que, task);
     
     return FAIO_OK;

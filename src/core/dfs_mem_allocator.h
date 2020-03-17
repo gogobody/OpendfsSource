@@ -22,7 +22,7 @@ typedef int (*dfs_stat_ptr_t) (dfs_mem_allocator_t *me, void *stat_data);
 
 struct dfs_mem_allocator_s 
 {
-    void                 *private_data;
+    void                 *private_data; // pool  mpool_mgmt_t
     int                   type;
     dfs_init_ptr_t        init;
     dfs_release_ptr_t     release;

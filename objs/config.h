@@ -1,6 +1,6 @@
 
 #ifndef DFS_COMPILER
-#define DFS_COMPILER  "gcc 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1) "
+#define DFS_COMPILER  "gcc 7.4.0 (gogobody 7.4.0-1gogobody1~18.04.1) "
 #endif
 
 
@@ -75,11 +75,11 @@
 
 
 #ifndef PREFIX
-#define PREFIX  "/home/ubuntu/opendfs"
+#define PREFIX  "/home/gogobody/opendfs"
 #endif
 
 
 #ifndef PID_FILE
-#define PID_FILE  "/home/ubuntu/opendfs/logs/namenode.pid"
+#define PID_FILE  "/home/gogobody/opendfs/logs/namenode.pid"
 #endif
 

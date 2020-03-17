@@ -13,9 +13,15 @@
 
 #define MAX_PATH 512 
 
+/*
+ *
+ * Cluster File System
+ *
+ * */
+
 typedef struct fs_meta_s fs_meta_t;
 typedef struct swap_opt_s swap_opt_t;
-typedef struct cfs_s cfs_t;
+typedef struct cfs_s cfs_t;  // Cluster File System
 
 typedef void (*FSPARSE)(swap_opt_t *, fs_meta_t *);
 typedef void (*FSSHUTDOWN)(void);
@@ -60,10 +66,10 @@ typedef struct swap_opt_s
     } log_opt;
 } swap_opt_t;
 
-typedef struct cfs_s 
+typedef struct cfs_s  // Cluster File System
 {
 	fs_meta_t          *meta;
-	swap_opt_t	       *sp;//swap option
+	swap_opt_t	       *sp;   // swap option read write open
 	volatile uint64_t  *cursize;
 	dfs_slab_manager_t *slab_mgr;            
     int                 state;
@@ -71,7 +77,7 @@ typedef struct cfs_s
 
 typedef struct io_event_s 
 {
-    volatile queue_t  posted_events;
+    volatile queue_t  posted_events; // 普通读写事件
     dfs_atomic_lock_t lock;
     volatile queue_t  posted_bad_events;
     dfs_atomic_lock_t bad_lock;
@@ -87,8 +93,8 @@ typedef struct sendfile_chain_task_s
     void     *file_io;
 } sendfile_chain_task_t;
 
-int  cfs_setup(pool_t *, cfs_t *, log_t *);
-int  cfs_open(cfs_t *, uchar_t *, int, log_t *);
+int  cfs_setup(pool_t *, cfs_t *, log_t *); // setup cfs meta \sp \ faio
+int  cfs_open(cfs_t *, uchar_t *, int, log_t *); //
 void cfs_close(cfs_t *, int);
 int  cfs_read(cfs_t *, file_io_t *, log_t *);
 int  cfs_write(cfs_t *, file_io_t *, log_t *);

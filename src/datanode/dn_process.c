@@ -66,6 +66,8 @@ int process_check_running(cycle_t *cycle)
     return DFS_TRUE;
 }
 
+// 该函数在主线程循环中需要创建工作进程的地方被调用
+// 用ngx_spawn_process函数创建工作进程，然后通知所有进程
 static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc, 
 	                              void *data, char *name, int slot)
 {
@@ -75,11 +77,11 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
     
     log = cycle->error_log;
 
-    if (slot == PROCESS_SLOT_AUTO) 
+    if (slot == PROCESS_SLOT_AUTO) //-1
 	{
         for (slot = 0; slot < process_last; slot++) 
 		{
-            if (processes[slot].pid == DFS_INVALID_PID)  //先找到一个被回收的进程表象  
+            if (processes[slot].pid == DFS_INVALID_PID)  //先找到一个可用的slot
 			{
                 break;
             }
@@ -110,7 +112,6 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
           送来的数据：而在子进程中则关闭sv[0]套接字，仅使用sv[l]套接字既可以接收父进程发来的数据，也可以向父进程发送数据。
           注意socketpair的协议族为AF_UNIX UNXI域
           */  
-    // 用于父子进程通信
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, processes[slot].channel) == DFS_ERROR)
     {
         return DFS_INVALID_PID;
@@ -176,9 +177,9 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 
     process_slot = slot; // 这一步将在ngx_pass_open_channel()中用到，就是设置下标，用于寻找本次创建的子进程  
 
-	// 创建 子进程 
     pid = fork();
-
+    // 这里是第三个进程了
+    printf("pid:%d\n",pid);
     switch (pid) 
 	{
         case DFS_INVALID_PID:
@@ -188,7 +189,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
             return DFS_INVALID_PID;
 			
         case 0: //子进程
-
+            puts("子进程run");
             process_pid = getpid();  // 设置子进程ID 
             
             proc(cycle, data); // 调用proc回调函数，即ngx_worker_process_cycle。之后worker子进程从这里开始执行
@@ -199,9 +200,9 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 
             break;
     }
-
+    puts("main thread first out log");
     processes[slot].pid = pid;
-    processes[slot].proc = proc; // worker_processer 主进程
+    processes[slot].proc = proc;
     processes[slot].data = data;
     processes[slot].name = name;
     processes[slot].ps = PROCESS_STATUS_RUNNING;
@@ -345,6 +346,11 @@ void process_signal_workers(int signo)
 
     ch.fd = DFS_INVALID_FILE;
 
+    /* 子进程创建的时候，父进程的东西都会被子进程继承，
+     * 所以后面创建的进程能够得到前面进程的channel信息，
+     * 直接可以和他们通信，那么前面创建的进程如何知道后面的进程信息呢？
+     * 很简单，既然前面创建的进程能够接受消息，那么我就发个信息告诉他后面的进程的channel,并把信息保存在channel[0]中，
+     * 这样就可以相互通信了。*/
     for (i = 0; i < process_last; i++) 
 	{
         if (processes[i].pid == DFS_INVALID_PID
@@ -355,6 +361,7 @@ void process_signal_workers(int signo)
 
         if (ch.command != CHANNEL_CMD_NONE) 
 		{
+            //向 每个进程 channel[0]发送信息
             if (channel_write(processes[i].channel[0], &ch,
                 sizeof(channel_t), dfs_cycle->error_log) == DFS_OK)
             {
@@ -415,9 +422,7 @@ int process_start_workers(cycle_t *cycle)
 {
     dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "process_start_workers");
 
-	// 如果是子进程，那么这里就会从worker_processer 开始执行了
-	// worker_processer 初始化了 storage 并开启 name node 的线程
-    if (process_spawn(cycle, worker_processer, NULL, // from dn_worker_process.c
+    if (process_spawn(cycle, worker_processer, NULL,
         (char *)"worker process", PROCESS_SLOT_AUTO) == DFS_INVALID_PID) 
     {
         return DFS_ERROR;
@@ -429,7 +434,6 @@ int process_start_workers(cycle_t *cycle)
 }
 
 // 开启监听端口并start worker ，执行上面的 startworkers
-
 void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 {
     int       i = 0;
@@ -459,10 +463,9 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
     process_type = PROCESS_MASTER;
 
-	// thread  多线程 共享数据 pthread_key_create
+	// thread  多线程私有数据pthread_key_create
 	thread_env_init();
-
-	// 初始化主线程
+	
 	main_thread = thread_new(NULL);
     if (!main_thread) 
 	{
@@ -470,9 +473,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     }
 	
     main_thread->type = THREAD_MASTER;
-
-	// 将主线程的结构体数据作为 线程共享？
-    thread_bind_key(main_thread);
+    thread_bind_key(main_thread); // 将master thread 作为线程共享
 	
     size = sizeof(MASTER_TITLE) - 1;
 
@@ -497,9 +498,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     }
 
     title.len = size;
-	
-	// 进程设置 title 
-	// ngx 实现是修改 argv[0]
+
     process_set_title(&title);
 
     memset(processes, 0x00, sizeof(processes));
@@ -511,26 +510,36 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
 	// 本质上这是一个跨进程的互斥锁，以这个互斥锁来保证只有一个进程具备监听accept事件的能力
 	accept_lock_init();
-    // 开启监听端口, 初始化监听事件
+    // 开启监听端口 listening fd = sockfd
     // listen_rev_handler 处理 listening 事件
+    // cli 的listening初始化，并加入listening数组
+
     if (conn_listening_init(cycle) != DFS_OK) 
 	{
         return;
     }
-
-	// 打开worker // process_spawn 设计到子进程
+    // start worker
     if (process_start_workers(cycle) != DFS_OK) 
 	{
         return;
     }
 
+    // 由于前面已经对set进行了清空，因而这里重新监听这些信号，以对这些信号进行处理，这里需要注意的是，
+    // 如果没有收到任何信号，主进程就会被挂起在这个位置。
+    // 关于master进程处理信号的流程，这里需要说明的是，在nginx.c的main()方法中，会调用
+    // ngx_init_signals()方法将全局变量signals中定义的信号及其会调用方法设置到当前进程的信号集中。
+    // 而signals中定义的信号的回调方法都是ngx_signal_handler()方法，
+    // 该方法在接收到对应的信号之后，会设置对应的标志位，也即下面多个if判断中的参数，
+    // 通过这种方式来触发相应的逻辑的执行。
+
     sigemptyset(&set);
 
+    // master thread
     for ( ;; ) 
 	{
         dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "sigsuspend");
 
-        sigsuspend(&set);
+        sigsuspend(&set); // 继续等待新的信号
 
         time_update();
 
@@ -544,8 +553,8 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
                 dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, 
 					"reap children");
-				// 有子进程意外结束，这时需要监控所有子进程
-				/*ngx_reap_children(会遍历ngx_process数组，检查每个子进程的状态，对于非正常退出的子进程会重新拉起，
+                // 有子进程意外结束，这时需要监控所有子进程
+                /*ngx_reap_children(会遍历ngx_process数组，检查每个子进程的状态，对于非正常退出的子进程会重新拉起，
 			最后，返回一个live标志位，如果所有的子进程都已经正常退出，则live为0，初次之外live为1。*/
                 live = process_reap_workers(cycle);
 
@@ -553,16 +562,13 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 				
                 continue;
             }
- 
-			/*当live标志为0，并且 	process_doing 或PROCESS_DOING_QUIT 中的一个标志位1时，
-			都将调用ngx_master_process_exit方法退出master进程*/
+
             if (!live && ((process_doing & PROCESS_DOING_QUIT) 
                 || (process_doing & PROCESS_DOING_TERMINATE))) 
             {
                 return;
             }
 
-			/*ngx_terminate标志为1，则向所有子进程发送信号TERM，通知子进程强制退出进程*/
             if ((process_doing & PROCESS_DOING_QUIT)) 
 			{
 
@@ -581,7 +587,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
                 break;
             }
-			//优雅地退出服务，向所有子进程发送QUIT信号，通知它们退出进程
+
             if ((process_doing & PROCESS_DOING_TERMINATE)) 
 			{
                 //process_doing &= ~PROCESS_DOING_TERMINATE;
@@ -599,11 +605,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
                 break;
             }
-            /*
-			重新读取配置文件。Nginx不会让原先的worker等子进程在从新读取配置文件。
-			它的策略是重新初始化ngx_cycle_t结构体，用它来读取新的配置文件，再拉起
-			新的worker进程，销毁就的worker进程。
-			*/
+            
             if (process_doing & PROCESS_DOING_RECONF) 
 			{
                 process_set_old_workers();
@@ -676,7 +678,7 @@ static int process_reap_workers(cycle_t *cycle)
 			
             continue;
         }
-		// 进程生成
+		
         if (process_spawn(cycle, processes[i].proc,
             processes[i].data, processes[i].name, i)
             == DFS_INVALID_PID) 
@@ -709,14 +711,14 @@ int process_write_pid_file(pid_t pid)
     }
 	
     pid_file = sconf->pid_file.data;
-    last = string_xxsnprintf(buf, 10, "%d", pid);
+    last = string_xxsnprintf(buf, 10, "%d", pid); // ?
 	
     fd = dfs_sys_open(pid_file, O_RDWR | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) 
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_WARN, 0,
                 "process_write_pid_file failed!");
-		
+		fprintf(stderr,"%s\n",strerror(errno));
         return DFS_ERROR;
     }
 
@@ -823,6 +825,7 @@ int process_run_check()
         && (!(process_doing & PROCESS_DOING_TERMINATE));
 }
 
+// 对于父进程而言，他知道所有进程的channel[0]， 直接可以向子进程发送命令
 process_t * get_process(int slot)
 {
     return &processes[slot];

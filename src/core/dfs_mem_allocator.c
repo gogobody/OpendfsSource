@@ -55,7 +55,7 @@ dfs_mem_allocator_t *dfs_mem_allocator_new_init(int allocator_type,
             *allocator = *dfs_get_mempool_allocator();
             break;
 			
-        case DFS_MEM_ALLOCATOR_TYPE_COMMPOOL:
+        case DFS_MEM_ALLOCATOR_TYPE_COMMPOOL: //
             *allocator = *dfs_get_commpool_allocator();
             break;
 			

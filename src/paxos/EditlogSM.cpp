@@ -1,8 +1,12 @@
+
 #include "EditlogSM.h"
 #include "dfs_types.h"
-#include "dfs_error_log.h"
-#include "nn_cycle.h"
+
 #include "nn_file_index.h"
+
+#include "dfs_error_log.h"
+
+
 
 PhxEditlogSM::PhxEditlogSM() : m_llCheckpointInstanceID(NoCheckpoint)
 {

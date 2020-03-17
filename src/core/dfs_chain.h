@@ -6,6 +6,7 @@
 
 #define DFS_CHAIN_ERROR (chain_t *) DFS_ERROR
 
+// 链表
 struct chain_s 
 {
     buffer_t *buf; //buf指向当前的ngx_buf_t缓冲区
@@ -19,7 +20,7 @@ typedef struct chain_output_ctx_s
     off_t    limit;
     pool_t  *pool;
     conn_t  *connection;
-    chain_t *out;
+    chain_t *out; // chain 链表
 	int      fd;
     uint32_t sendfile;
 } chain_output_ctx_t;

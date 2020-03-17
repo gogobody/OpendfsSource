@@ -366,13 +366,19 @@ void rbtree_delete(_xvolatile rbtree_t *tree, rbtree_node_t *node)
     return;
 }
 
+/*
+    rbtree左旋调整
+    param root: 根节点指针的指针
+      sentinel: 作为哨兵的NIL节点指针
+          node: 作为旋转基点的节点指针
+*/
 static _xinline void rbtree_left_rotate(rbtree_node_t **root, 
 	                                       rbtree_node_t *sentinel, 
 	                                       rbtree_node_t *node)
 {
     rbtree_node_t *temp = NULL;
 
-    temp = node->right;
+    temp = node->right; // temp指向node的右子节点
     node->right = temp->left;
 	
     if (temp->left != sentinel) 
@@ -433,8 +439,16 @@ static _xinline void rbtree_right_rotate(rbtree_node_t **root,
     node->parent = temp;
 }
 
+
+/*
+    rbtree获取值最小的节点
+    param node: 根节点指针的指针
+      sentinel: 作为哨兵的NIL节点指针
+*/
 rbtree_node_t * rbtree_min(rbtree_node_t *node, rbtree_node_t *sentinel)
 {
+    // 二叉搜索数: 节点的左子树的值都比其小
+    // 那么只需要找到最左侧的节点即为最小节点
     while (node->left != sentinel) 
 	{
         node = node->left;

@@ -45,6 +45,7 @@ dfs_thread_t *get_local_thread()
 
 event_base_t *thread_get_event_base()
 {
+    //同一线程内的各个函数间共享数据
     dfs_thread_t *thread = (dfs_thread_t *)pthread_getspecific(dfs_thread_key);
 	
     return thread != NULL ? &thread->event_base : NULL;
@@ -71,9 +72,7 @@ int thread_create(void *args)
     dfs_thread_t   *thread = (dfs_thread_t *)args;
 
     pthread_attr_init(&attr);
-
-	// 创建线程：
-	// eg: run_func 来自于 dn_thread.c 的 thread_ns_service_cycle
+    
     if ((ret = pthread_create(&thread->thread_id, &attr, 
 		thread->run_func, thread)) != 0) 
     {
@@ -90,11 +89,12 @@ void thread_clean(dfs_thread_t *thread)
 {
 }
 
-// epoll timer 初始化
+// 初始化 thread 的event
 int thread_event_init(dfs_thread_t *thread)
 {
-    io_event_t *ioevents = NULL;
-	
+    io_event_t *ioevents = NULL; // 读写事件
+
+    // 初始化 epoll句柄和 event list 空间分配
     if (epoll_init(&thread->event_base, dfs_cycle->error_log) == DFS_ERROR) 
 	{
         return DFS_ERROR;
@@ -102,8 +102,9 @@ int thread_event_init(dfs_thread_t *thread)
 
     event_timer_init(&thread->event_timer, time_curtime, dfs_cycle->error_log);
 
-	queue_init((queue_t *)&thread->posted_accept_events); //
-    queue_init((queue_t *)&thread->posted_events); //
+    //niginx是通过将获取的事件先不调用其回调，而是把他们先放入俩个post队列，这俩个队列分别为
+	queue_init((queue_t *)&thread->posted_accept_events);
+    queue_init((queue_t *)&thread->posted_events);
 
 	ioevents = &thread->io_events;
     ioevents->lock.lock = DFS_LOCK_OFF;
@@ -115,7 +116,7 @@ int thread_event_init(dfs_thread_t *thread)
     return DFS_OK;
 }
 
-// 
+// 线程 event 处理
 void thread_event_process(dfs_thread_t *thread)
 {
     uint32_t      flags = EVENT_UPDATE_TIME;
@@ -125,31 +126,31 @@ void thread_event_process(dfs_thread_t *thread)
 	array_t      *listens = NULL;
     
     ev_base = &thread->event_base;
-	listens = cycle_get_listen_for_cli(); // cli 的listen 数组
-
+	listens = cycle_get_listen_for_cli(); // 所有cli的listening
 
 	if ((!(process_doing & PROCESS_DOING_QUIT))
         && (!(process_doing & PROCESS_DOING_TERMINATE))) 
     {
-        if (thread->type == THREAD_WORKER 
-			&& event_trylock_accept_lock(thread))  // lock
+        if (thread->type == THREAD_WORKER // 抢锁
+			&& event_trylock_accept_lock(thread)) 
 		{
         }
     }
-	// 当前线程 持有 accept lock 并且允许 accept
+
 	if (accecpt_enable && accept_lock_held == thread->thread_id &&
         ((process_doing & PROCESS_DOING_QUIT) ||
-        (process_doing & PROCESS_DOING_TERMINATE))) 
+        (process_doing & PROCESS_DOING_TERMINATE)))
     {
-    	// delete event
-        conn_listening_del_event(ev_base, listens);
+        conn_listening_del_event(ev_base, listens); // 删除listening 事件
         accecpt_enable = DFS_FALSE;
-		// 释放 accept lock
         event_free_accept_lock(thread);
     }
-	// add event
-	if (accept_lock_held == thread->thread_id
-        && conn_listening_add_event(ev_base, listens) == DFS_OK) 
+
+	// add epoll event
+	// add listening event
+	if (accept_lock_held == thread->thread_id // 添加listening 事件
+        //rev->handler = ls->handler; // listen_rev_handler
+        && conn_listening_add_event(ev_base, listens) == DFS_OK)
     {
         flags |= EVENT_POST_EVENTS;
     } 
@@ -157,7 +158,8 @@ void thread_event_process(dfs_thread_t *thread)
     {
         event_free_accept_lock(thread);
     }
-    
+
+	//
     timer = event_find_timer(&thread->event_timer);
 
     if ((timer > 10) || (timer == EVENT_TIMER_INFINITE)) 
@@ -166,23 +168,36 @@ void thread_event_process(dfs_thread_t *thread)
     }
     
     delta = dfs_current_msec;
+    //
+    (void) epoll_process_events(ev_base, timer, flags);
 
-	// 
-    (void) event_process_events(ev_base, timer, flags);
+    /*ngx_posted_accept_events是一个事件队列
+      暂存epoll从监听套接口wait到的accept事件。
+      前文提到的NGX_POST_EVENTS标志被使用后，就会将
+      所有的accept事件暂存到这个队列。
 
+      这里完成对队列中的accept事件的处理，实际就是调用
+      ngx_event_accept函数来获取一个新的连接，然后放入
+      epoll中。
+    */
     if ((THREAD_WORKER == thread->type) 
 		&& !queue_empty(&ev_base->posted_accept_events)) 
     {
         event_process_posted(&ev_base->posted_accept_events, ev_base->log);
     }
-
-	if (accept_lock_held == thread->thread_id) 
+    /*所有accept事件处理完成，如果拥有锁的话，就赶紧释放了。
+      其他进程还等着抢了。
+    */
+    if (accept_lock_held == thread->thread_id)
 	{
         conn_listening_del_event(ev_base, listens);
         event_free_accept_lock(thread);
     }
-
-    if ((THREAD_WORKER == thread->type) 
+    /*处理普通事件（连接上获得的读写事件）队列上的所有事件，
+      因为每个事件都有自己的handler方法，该怎么处理事件就
+      依赖于事件的具体handler了。
+    */
+    if ((THREAD_WORKER == thread->type)
 		&& !queue_empty(&ev_base->posted_events)) 
     {
         event_process_posted(&ev_base->posted_events, ev_base->log);

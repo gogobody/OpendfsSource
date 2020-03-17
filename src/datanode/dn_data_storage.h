@@ -33,16 +33,16 @@ typedef struct storage_dir_s
 typedef struct block_info_s
 {
     dfs_hashtable_link_t ln;
-    queue_t              me;
-    long                 id;
-	long                 size;
-	char                 path[PATH_LEN];
+    queue_t              me;//
+    long                 id; // blk id
+	long                 size; // length
+	char                 path[PATH_LEN]; // store path
 } block_info_t;
 
 typedef struct blk_cache_mem_s 
 {
-    void                *mem;
-    size_t               mem_size;
+    void                *mem;  // mem addr
+    size_t               mem_size; // BLK_POOL_SIZE
     dfs_mem_allocator_t *allocator;
     struct mem_mblks    *free_mblks;
 } blk_cache_mem_t;

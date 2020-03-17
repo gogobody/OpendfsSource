@@ -20,6 +20,7 @@ static int   conf_server_make_default(void *var);
 static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     int type, string_t *args, int args_n);
 
+// option handler type offset
 static conf_option_t conf_server_option[] = 
 {
     { string_make("daemon"), conf_parse_nn_macro,

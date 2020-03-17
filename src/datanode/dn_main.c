@@ -41,7 +41,7 @@ static int parse_cmdline( int argc, char *const *argv)
     char ch = 0;
     char buf[255] = {0};
 
-    while ((ch = getopt(argc, argv, "c:vqhV")) != -1) 
+    while ((ch = getopt(argc, argv, "c:vqhV")) != -1)
 	{
         switch (ch) 
 		{
@@ -151,7 +151,8 @@ int main(int argc, char **argv)
     }
 
     umask(0022);//默认创建新文件权限为755
-    
+
+    // cycle init 主要初始化配置文件结构体，解析配置文件，初始化error log相关结构体
     if ((ret = cycle_init(cycle)) != DFS_OK) 
 	{
         fprintf(stderr, "cycle_init fail\n");
@@ -172,9 +173,10 @@ int main(int argc, char **argv)
 		
     	goto out;
     }
+
     // init module index
 	dfs_module_setup();
-	// dn_data_storage_master_init // 初始化 cfs
+    // dn_data_storage_master_init // 初始化 cfs io func
 	if ((ret = dfs_module_master_init(cycle)) != DFS_OK)  // init master 函数
 	{
 		fprintf(stderr, "master init fail\n");
@@ -185,10 +187,10 @@ int main(int argc, char **argv)
     sconf = (conf_server_t *)cycle->sconf;
 
     if (process_change_workdir(&sconf->coredump_dir) != DFS_OK) // change dir to coredump_dir
-	{
+    {
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
-                "process_change_workdir failed!\n");
-		
+                      "process_change_workdir failed!\n");
+
         goto failed;
     }
 
@@ -199,18 +201,18 @@ int main(int argc, char **argv)
 		
         goto failed;
     }
-    
-    if (sconf->daemon == DFS_TRUE && dn_daemon() == DFS_ERROR) 
-	{
-        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
-                "dfs_daemon failed");
-		
-        goto failed;
-    }
+    // 临时屏蔽fork
+//    if (sconf->daemon == DFS_TRUE && dn_daemon() == DFS_ERROR)
+//	{
+//        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
+//                "dfs_daemon failed");
+//
+//        goto failed;
+//    }
 
     process_pid = getpid();
-	
-    if (process_write_pid_file(process_pid) == DFS_ERROR) // write pif to sconfig file
+
+    if (process_write_pid_file(process_pid) == DFS_ERROR) // write pid to sconfig file
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_WARN, 0, 
                 "write pid file error");
@@ -221,10 +223,11 @@ int main(int argc, char **argv)
     dfs_argc = argc;
     dfs_argv = argv;
 
-	// 主进程运行到这里后就开始循环检查进程状态
+    // 监听和start worker
     process_master_cycle(cycle, dfs_argc, dfs_argv);
 
     process_del_pid_file();
+
 
 failed:
     dfs_module_master_release(cycle);
@@ -244,28 +247,30 @@ out:
     return ret;
 }
 
+// 设置守护进程
 int dn_daemon()
 {
     int fd = DFS_INVALID_FILE;
     int pid = DFS_ERROR;
-	
+
     pid = fork();
 
-    if (pid > 0) 
+    if (pid > 0)
 	{
         exit(0);
-    } 
-	else if (pid < 0) 
+    }
+	else if (pid < 0)
 	{
         printf("dfs_daemon: fork failed\n");
-		
+
         return DFS_ERROR;
     }
-	
-    if (setsid() == DFS_ERROR)  // 为子进程设置一个新的会话
+
+    if (setsid() == DFS_ERROR)  // 为子进程设置一个新的会话
+
 	{
         printf("dfs_daemon: setsid failed\n");
-		
+
         return DFS_ERROR;
     }
 
@@ -277,26 +282,28 @@ int dn_daemon()
         return DFS_ERROR;
     }
 
-    if (dup2(fd, STDIN_FILENO) == DFS_ERROR)  // 0
-	{
-        printf("dfs_daemon: dup2(STDIN) failed\n");
-		
-        return DFS_INVALID_FILE;
-    }
+    // 为了打印输入输出注释了dup2
 
-    if (dup2(fd, STDOUT_FILENO) == DFS_ERROR) // 1
-	{
-        printf("dfs_daemon: dup2(STDOUT) failed\n");
-		
-        return DFS_ERROR;
-    }
-
-    if (dup2(fd, STDERR_FILENO) == DFS_ERROR) // 2 /* Standard error output. */
-	{
-        printf("dfs_daemon: dup2(STDERR) failed\n");
-		
-        return DFS_ERROR;
-    }
+//    if (dup2(fd, STDIN_FILENO) == DFS_ERROR)  // 0
+//	{
+//        printf("dfs_daemon: dup2(STDIN) failed\n");
+//
+//        return DFS_INVALID_FILE;
+//    }
+//
+//    if (dup2(fd, STDOUT_FILENO) == DFS_ERROR) // 1
+//	{
+//        printf("dfs_daemon: dup2(STDOUT) failed\n");
+//
+//        return DFS_ERROR;
+//    }
+//
+//    if (dup2(fd, STDERR_FILENO) == DFS_ERROR) // 2 /* Standard error output. */
+//	{
+//        printf("dfs_daemon: dup2(STDERR) failed\n");
+//
+//        return DFS_ERROR;
+//    }
 
     if (fd > STDERR_FILENO) 
 	{
@@ -329,16 +336,16 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
 		
         return ret;
     }
-	
-    if (rl.rlim_max < file_limit) //hard limit
+	/*
+    if (rl.rlim_max < file_limit)
 	{
-        rl.rlim_max = file_limit; 
+        rl.rlim_max = file_limit; //hard limit
         need_set = DFS_TRUE;
     }
-	/*
+
     if (rl.rlim_cur < file_limit) 
 	{
-        rl.rlim_cur = file_limit;//soft limit 一个进程能打开的最大文件 数，内核默认是1024)，soft limit最大也只能达到1024
+        rl.rlim_cur = file_limit; //soft limit
         need_set = DFS_TRUE;
     }
 	*/
@@ -349,7 +356,8 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set RLIMIT_NOFILE error");
-			
+
+            fprintf(stderr, "%s\n", strerror(errno));
             return ret;
         }
     }

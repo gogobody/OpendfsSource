@@ -57,6 +57,7 @@ uchar_t * string_xxstrlchr(uchar_t *p, uchar_t *last, uchar_t c)
     return NULL;
 }
 
+// deepcopy
 uchar_t * string_xxpdup(pool_t *pool, string_t *src)
 {
     uchar_t *dst = NULL;

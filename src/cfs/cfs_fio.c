@@ -12,6 +12,8 @@ static void cfs_fio_manager_indeed_free(uint64_t n,
 	fio_manager_t *fio_manager);
 static size_t my_align(size_t d, uint32_t a);
 
+// init fio_manager
+// 初始化 n 个fio ，并且添加到 fio manager 的free queue
 int cfs_fio_manager_init(cycle_t *cycle, fio_manager_t *fio_manager)
 {
     queue_t       *one = NULL;
@@ -32,12 +34,14 @@ int cfs_fio_manager_init(cycle_t *cycle, fio_manager_t *fio_manager)
     fio_manager->batch = fio_manager->idle >> 2;
     fio_manager->refill_level = fio_manager->idle >> 3;
 
+    // 初始化 MAX_TASK_IDLE 个fio ，并且添加到 fio manager 的free queue
     n = cfs_fio_manager_refill(MAX_TASK_IDLE, fio_manager);
     if (n == MAX_TASK_IDLE) 
 	{
         return DFS_OK;
     }
 
+    // 失败后的处理: 归还存储空间
     while (n) 
 	{
         if (queue_empty(&fio_manager->freeq)) 
@@ -91,6 +95,7 @@ file_io_t *cfs_fio_manager_alloc(fio_manager_t *fio_manager)
     return fio;
 }
 
+// 初始化 n 个fio ，并且添加到 fio manager 的free queue
 static uint32_t cfs_fio_manager_refill(uint32_t n, fio_manager_t *fio_manager)
 {
     uint32_t    i = 0;
@@ -107,6 +112,7 @@ static uint32_t cfs_fio_manager_refill(uint32_t n, fio_manager_t *fio_manager)
         batch = fio_manager->max - fio_manager->nelts;
     }
 
+    // 初始化batch个fio
     while (i < batch) 
 	{
         hdrlength = sizeof(file_io_t) + sizeof(buffer_t);
@@ -119,13 +125,15 @@ static uint32_t cfs_fio_manager_refill(uint32_t n, fio_manager_t *fio_manager)
         }
 
         fio->b = (buffer_t *)(fio + 1);
-        reallength = my_align(extralength, 512);
+        reallength = my_align(extralength, 512); // 512 字节对齐
+        // 预对齐内存的分配 512 的倍数
+        // 给 buffer 分配内存
         posix_memalign((void **)&fio->b->start, 512, reallength);
 
         fio->b->temporary = DFS_FALSE;
-        fio->b->pos = fio->b->start;
+        fio->b->pos = fio->b->start; /* 待处理缓冲区起始位置 */
         fio->b->last = fio->b->start;
-        fio->b->end = fio->b->last + reallength;
+        fio->b->end = fio->b->last + reallength; /* end of buffer 缓冲区结束地址 */
         fio->b->memory = DFS_TRUE;
         fio->b->in_file = DFS_FALSE;
 
@@ -140,6 +148,7 @@ static uint32_t cfs_fio_manager_refill(uint32_t n, fio_manager_t *fio_manager)
     return i;
 }
 
+// get fio from freeqs
 static file_io_t *cfs_fio_manager_get_task(fio_manager_t *fio_manager)
 {
     uint32_t    n = 0;

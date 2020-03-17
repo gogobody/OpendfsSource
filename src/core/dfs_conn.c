@@ -113,7 +113,7 @@ int conn_tcp_delay(int s)
         (const void *) &nodelay, sizeof(int));
 }
 
-// s 是 eventfd 为事件通知创建文件描述符
+// 根据 fd 初始化 connection
 conn_t * conn_get_from_mem(int s)
 {
     conn_t  *c   = NULL;
@@ -131,15 +131,13 @@ conn_t * conn_get_from_mem(int s)
 	
     c->read = rev;
     c->write = wev;
-	// 初始化conn_t 结构体
-	// 设置默认值
+    // 根据 eventfd 初始化 connection
     conn_set_default(c, s);
 	
     return c;
 }
 
-// 初始化conn_t 结构体
-// 设置默认值
+// 根据 eventfd 设置conn
 void conn_set_default(conn_t *c, int s)
 {
     event_t  *rev = NULL;
@@ -147,10 +145,10 @@ void conn_set_default(conn_t *c, int s)
     uint32_t  instance;
     uint32_t  last_instance;
 
-    c->fd = s;
+    c->fd = s; // set conn fd
 
-    rev = c->read;
-    wev = c->write;
+    rev = c->read; // read event
+    wev = c->write; // write event
     instance = rev->instance;
     last_instance = rev->last_instance;
     c->sent = 0;

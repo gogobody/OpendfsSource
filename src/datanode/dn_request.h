@@ -44,18 +44,23 @@ typedef void (*dn_event_handler_pt)(dn_request_t *);
 
 typedef struct dn_request_s 
 {
-    conn_t                 *conn;
-    dn_event_handler_pt     read_event_handler;
-    dn_event_handler_pt     write_event_handler;
-    pool_t                 *pool;
-	buffer_t               *input;
-	chain_output_ctx_t     *output;
+    conn_t                 *conn;//请求对应的客户端连接
+    dn_event_handler_pt     read_event_handler;    /*
+     * 在接收完http头部，第一次在业务上处理http请求时，http框架提供的处理方法是ngx_http_process_request。
+     但如果该方法无法一次处理完该请求的全部业务，在归还控制权到epoll时间模块后，该请求再次被回调时，
+     将通过Ngx_http_request_handler方法来处理，而这个方法中对于可读事件的处理就是调用read_event_handler处理请求。
+     也就是说，http模块希望在底层处理请求的读事件时，重新实现read_event_handler方法
+    */
+	dn_event_handler_pt     write_event_handler;
+    pool_t                 *pool; //这个请求的内存池
+	buffer_t               *input; // input buffer
+	chain_output_ctx_t     *output;/*这里要注意ngx_http_request_t中有一个out的chain，这个chain保存的是上一次还没有被发完的buf，这样每次我们接收到新的chain的话，就需要将新的chain连接到老的out chain上，然后再发出去*/
 	event_t			        ev_timer;
     char                    ipaddr[32];
 	data_transfer_header_t  header; // 头信息
-	int                     store_fd; // 存储文件的fd
+	int                     store_fd; // 接收时用于存储文件的fd
 	uchar_t                *path;
-	long                    done;
+	long                    done;// 数据完成的长度
 	file_io_t              *fio;
 } dn_request_t;
 

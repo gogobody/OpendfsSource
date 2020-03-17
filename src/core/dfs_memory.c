@@ -1,5 +1,10 @@
 #include "dfs_memory.h"
-
+/*
+ *
+ <1>alloca是向栈申请内存,因此无需释放.
+ <2>malloc分配的内存是位于堆中的,并且没有初始化内存的内容,因此基本上malloc之后,调用函数memset来初始化这部分的内存空间.
+ <3>calloc则将初始化这部分的内存,设置为0.
+ * */
 void * memory_alloc(size_t size)
 {
     void *p = NULL;
@@ -14,6 +19,7 @@ void * memory_alloc(size_t size)
     return p;
 }
 
+// 申请内存并初始化为 0
 void * memory_calloc(size_t size)
 {
     void *p = memory_alloc(size);
@@ -34,6 +40,7 @@ void memory_free(void *p, size_t size)
     }
 }
 
+// 内存对其的分配
 void * memory_memalign(size_t alignment, size_t size)
 {
     void *p = NULL;
@@ -42,7 +49,7 @@ void * memory_memalign(size_t alignment, size_t size)
 	{
         return NULL;
     }
-	
+	// 分配size大小的字节，并将分配的内存地址存放在memptr中。分配的内存的地址将是alignment的倍数
     posix_memalign(&p, alignment, size);
     
     return p;

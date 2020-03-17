@@ -255,6 +255,9 @@ ssize_t sysio_unix_send(conn_t *c, uchar_t *buf, size_t size)
     return DFS_OK;
 }
 
+// ngx_writev_chain
+//调用writev一次发送多个缓冲区，如果没有发送完毕，则返回剩下的链接结构头部。
+//ngx_chain_writer调用这里，调用方式为 ctx->out = c->send_chain(c, ctx->out, ctx->limit);
 chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
 {
     int        pack_count = 0;
@@ -294,15 +297,19 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
     
     while (in && packall_size < limit) 
 	{
-        last_size = packall_size;
+        last_size = packall_size; //last_size为上一次调用ngx_writev发送出去的字节数
 		if (in->buf->memory == DFS_FALSE) 
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
-                "%s, file data break", __func__); 
+                "%s, file data break", __func__);
 			
 			break;
 		}
-		
+        //把in链中的buf拷贝到vec->iovs[n++]中，注意只会拷贝内存中的数据到iovec中，不会拷贝文件中的
+        //返回为ngx_output_chain_to_iovec中组包的in链中所有数据长度和
+
+        // need recheck
+        // iovs count
         pack_count = sysio_pack_chain_to_iovs(iovs,
             DFS_IOVS_MAX, in, &packall_size, limit);
         if (pack_count == 0) 
@@ -316,25 +323,28 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
         dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
             "sysio_writev_chain: pack_count:%d, packall_size:%ul",
             pack_count, packall_size);
-		
+
+
+        // writev
         sent_size = sysio_writev_iovs(c, iovs, pack_count);
-		
+        //我期望发送vec->size字节数据，但是实际上内核发送出去的很可能比vec->size小，n为实际发送出去的字节数，因此需要继续发送
         dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
             "sysio_writev_chain: write:%d, iovs_size:%ul, sent:%d",
             sent_size, packall_size - last_size, c->sent);
 		
         if (sent_size > 0) 
 		{
-            c->sent += sent_size;
-            cl = chain_write_update(in, sent_size);
+            c->sent += sent_size;//递增统计数据，这个链接上发送的数据大小
+            cl = chain_write_update(in, sent_size);//sent_size是此次调用ngx_wrtev发送成功的字节数
+            //chain_write_update返回后的in链已经不包括之前发送成功的in节点了，这上面只包含剩余的数据
 			
-            if (packall_size - last_size > (size_t)sent_size) 
+            if (packall_size - last_size > (size_t)sent_size) //这里说明最多调用ngx_writev两次成功发送后，这里就会返回
 			{
                 dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                     "sysio_writev_chain: write size < iovs_size");
             }
 			
-            if (packall_size >= limit) 
+            if (packall_size >= limit) //数据发送完毕，或者本次发送成功的字节数比limit还多，则返回出去
 			{
                 dfs_log_debug(c->log, DFS_LOG_DEBUG, errno,
                     "sysio_writev_chain: writev to limit");
@@ -347,12 +357,12 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
             continue;
         }
 		
-        if (sent_size == DFS_AGAIN) 
+        if (sent_size == DFS_AGAIN)  //
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                 "%s, writev_chain again", __func__);
 			
-            wev->ready = 0;
+            wev->ready = 0;//标记暂时不能发送数据了，必须重新epoll_add写事件
 			
             return in;
         }
@@ -425,7 +435,7 @@ chain_t * sysio_sendfile_chain(conn_t *c, chain_t *in,
 		if (in->buf->memory == DFS_TRUE) 
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
-                "%s, memory data break", __func__); 
+                "%s, memory data break", __func__);
 			
 			break;
 		}
@@ -503,6 +513,10 @@ chain_t * sysio_sendfile_chain(conn_t *c, chain_t *in,
     return in;
 }
 
+// 把in链中的buf拷贝到vec->iovs[n++]中，注意只会拷贝内存中的数据到iovec中，不会拷贝文件中的
+// 似乎有点问题？
+// https://github.com/y123456yz/reading-code-of-nginx-1.9.2/blob/d4211403a022a275dd8ed68530353a5df7a12a5c/nginx-1.9.2/src/os/unix/ngx_writev_chain.c
+// ngx_output_chain_to_iovec
 static int sysio_pack_chain_to_iovs(sysio_vec *iovs, int iovs_count, 
 	                                         chain_t *in, size_t *last_size,
 	                                         size_t limit)
@@ -531,24 +545,24 @@ static int sysio_pack_chain_to_iovs(sysio_vec *iovs, int iovs_count,
             continue;
         }
 		
-        if (*last_size + bsize > limit) 
+        if (*last_size + bsize > limit) //超过最大发送大小。截断，这次只发送这么多
 		{
             bsize = limit - *last_size;
         }
 		
-        if (last_pos != in->buf->pos) 
+        if (last_pos != in->buf->pos) //要新增一个节点
 		{
-            iovs[i].iov_base = in->buf->pos;
-            iovs[i].iov_len = bsize;
+            iovs[i].iov_base = in->buf->pos; //从这里开始
+            iovs[i].iov_len = bsize;//有这么多我要发送
             i++;
         }
-		else 
+		else //如果还是等于刚才的位置，那就复用 //
 		{
             iovs[i - 1].iov_len += bsize;
         }
 		
         *last_size += bsize;
-        last_pos = in->buf->pos;
+        last_pos = in->buf->pos + bsize; // add bsize
         in = in->next;
     }
 

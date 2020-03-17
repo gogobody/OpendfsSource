@@ -13,7 +13,7 @@ struct event_timer_s
     rbtree_t          timer_rbtree;
     rbtree_node_t     timer_sentinel;
     rbtree_insert_pt  timer_insert_ptr;
-    curtime_ptr       time_handler;
+    curtime_ptr       time_handler; // 当前时间
     log_t            *log;
 };
 

@@ -38,26 +38,23 @@ static int wait_to_work(int second);
 static int block_report(int sockfd);
 static int delete_blks(char *p, int len);
 
-// 从datanode 发起socket连接 DN_REGISTER 并保存返回值
+// 连接上 namenode 注册datanode
+// 获取 namespaceid
 int dn_register(dfs_thread_t *thread)
 {
-	// 创建 datanode 里面连接 namenode 的socket
     int sockfd = ns_srv_init(thread->ns_info.ip, thread->ns_info.port);
 	if (sockfd < 0) 
 	{
 	    return DFS_ERROR;
 	}
-	// 创建一个 task DN_REGISTER
+
 	task_t out_t;
 	bzero(&out_t, sizeof(task_t));
 	out_t.cmd = DN_REGISTER;
-	
-	strcpy(out_t.key, dfs_cycle->listening_ip);
+	strcpy(out_t.key, dfs_cycle->listening_ip); // bind for cli ip
 
 	char sBuf[BUF_SZ] = "";
 	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
-	// 向name node 发送一个 DN_REGISTER task
-	
 	int ws = write(sockfd, sBuf, sLen);
 	if (ws != sLen) 
 	{
@@ -70,7 +67,7 @@ int dn_register(dfs_thread_t *thread)
 	}
 
 	int pLen = 0;
-	int rLen = recv(sockfd, &pLen, sizeof(int), MSG_PEEK); 
+	int rLen = recv(sockfd, &pLen, sizeof(int), MSG_PEEK);
 	if (rLen < 0) 
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
@@ -92,7 +89,7 @@ int dn_register(dfs_thread_t *thread)
         return DFS_ERROR;
 	}
 
-	rLen = read(sockfd, pNext, pLen); 
+	rLen = read(sockfd, pNext, pLen);
 	if (rLen < 0) 
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
@@ -105,7 +102,7 @@ int dn_register(dfs_thread_t *thread)
 		
         return DFS_ERROR;
 	}
-	// 接收到socket 返回后，将返回值解码为task
+	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
@@ -124,7 +121,6 @@ int dn_register(dfs_thread_t *thread)
 	}
 	else if (NULL != in_t.data && in_t.data_len > 0) 
 	{
-		// 设置 namespace id
 	    thread->ns_info.namespaceID = *(int64_t *)in_t.data;
 	}
 
@@ -136,6 +132,7 @@ int dn_register(dfs_thread_t *thread)
     return DFS_OK;
 }
 
+// socket 链接 namenode 返回 sockfd
 static int ns_srv_init(char* ip, int port)
 {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -168,62 +165,61 @@ static int ns_srv_init(char* ip, int port)
 	return sockfd;
 }
 
-// from thread_ns_service_cycle
+// namenode 上报 receivedblock_report、 block_report
 int offer_service(dfs_thread_t *thread)
 {
     conf_server_t *sconf = (conf_server_t *)dfs_cycle->sconf;
-    int heartbeat_interval = sconf->heartbeat_interval;
-	int block_report_interval = sconf->block_report_interval;
+    int heartbeat_interval = sconf->heartbeat_interval; // 心跳间隔
+	int block_report_interval = sconf->block_report_interval; // default is 3
 
     struct timeval now;
 	gettimeofday(&now, NULL);
 	unsigned long now_time = now.tv_sec + now.tv_usec / (1000 * 1000);
-	unsigned long diff = 0; // nowtime - last heart beat time
+	unsigned long diff = 0; // 当前时间 - 上一次heartbeat的时间
 		
     while (thread->running) 
 	{
 	    if (diff >= heartbeat_interval) 
 		{
 		    g_last_heartbeat = now_time;
-
-			// 向 namenode 发送心跳
-		    if (send_heartbeat(thread->ns_info.sockfd) != DFS_OK) 
+			
+		    if (send_heartbeat(thread->ns_info.sockfd) != DFS_OK)
 			{
 			    goto out;
 			}
 		}
 
-        if (g_recv_blk_report.num > 0)
+		// 提示name node 收到 blk
+		// 从 cli 接收完成之后上报
+        if (g_recv_blk_report.num > 0) // 接收的？send receivedblock_report
 		{
-			// datanode 收到 blk 后向namenode 汇报
             if (receivedblock_report(thread->ns_info.sockfd) != DFS_OK) 
 		    {
                 goto out;
 		    }
 		}
 
-		if (g_blk_report.num > 0) 
+        // 从scanner 那里扫描到，不在hashtable里的上报
+		if (g_blk_report.num > 0)  // 上报的？
 		{
-			// 和上面的 receivedblock_report 有啥区别
-			// 这个在 blk scanner 后会变动
             if (block_report(thread->ns_info.sockfd) != DFS_OK) 
 		    {
                 goto out;
 		    }
 		}
 		
-        int ptime = heartbeat_interval - diff;
-		int wtime = ptime > 0 ? ptime : heartbeat_interval;
-		
+        int ptime = heartbeat_interval - (int)diff;
+		int wtime = ptime > 0 ? ptime : heartbeat_interval; // wait time
+		// wait wtime
 		if (wtime > 0 && g_recv_blk_report.num == 0 && g_blk_report.num == 0) 
 		{
 		    g_last_heartbeat = now_time;
-			
+			// 阻塞并等待
 	        wait_to_work(wtime);
 		}
 
 		gettimeofday(&now, NULL);
-		now_time = (now.tv_sec + now.tv_usec / (1000 * 1000));
+		now_time = (now.tv_sec + now.tv_usec / (1000 * 1000)); // seconds
 	    diff = now_time - g_last_heartbeat;
 	}
 
@@ -235,14 +231,12 @@ out:
     return DFS_ERROR;
 }
 
-// 发送心跳
-// task.cmd = DN_HEARTBEAT
 static int send_heartbeat(int sockfd)
 {
     task_t out_t;
 	bzero(&out_t, sizeof(task_t));
 	out_t.cmd = DN_HEARTBEAT;
-	strcpy(out_t.key, dfs_cycle->listening_ip);
+	strcpy(out_t.key, dfs_cycle->listening_ip); // 上报自己的ip
 
 	char sBuf[BUF_SZ] = "";
 	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
@@ -300,13 +294,12 @@ static int send_heartbeat(int sockfd)
 		
         return DFS_ERROR;
 	} 
-	// 发送心跳之后如果收到一个 task delete_blks 
 	else if (NULL != in_t.data && in_t.data_len > 0) 
 	{
 	    delete_blks((char *)in_t.data, in_t.data_len);
 	}
 
-	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
+	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0,
 		"send_heartbeat ok, ret: %d", in_t.ret);
 
 	free(pNext);
@@ -315,8 +308,7 @@ static int send_heartbeat(int sockfd)
     return DFS_OK;
 }
 
-// datanode 收到 blk 后向namenode 汇报
-// DN_RECV_BLK_REPORT datanode receive 到了report后向上面打报告？
+//
 static int receivedblock_report(int sockfd)
 {
     queue_t           *cur = NULL;
@@ -335,7 +327,7 @@ static int receivedblock_report(int sockfd)
     task_t out_t;
 	bzero(&out_t, sizeof(task_t));
 	out_t.cmd = DN_RECV_BLK_REPORT;
-	strcpy(out_t.key, dfs_cycle->listening_ip); // cli 的 ip
+	strcpy(out_t.key, dfs_cycle->listening_ip);
 
 	memset(&rbi, 0x00, sizeof(report_blk_info_t));
 	rbi.blk_id = blk->id;
@@ -343,7 +335,7 @@ static int receivedblock_report(int sockfd)
 	strcpy(rbi.dn_ip, dfs_cycle->listening_ip);
 
 	out_t.data_len = sizeof(report_blk_info_t);
-	out_t.data = &rbi;// 把cli 和传递的blk 信息发送给namenode
+	out_t.data = &rbi;
 
 	char sBuf[BUF_SZ] = "";
 	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
@@ -409,6 +401,7 @@ static int wait_to_work(int second)
     return DFS_OK;
 }
 
+// 初始化 blk report queue
 int blk_report_queue_init()
 {
     queue_init(&g_recv_blk_report.que);
@@ -439,6 +432,7 @@ int blk_report_queue_release()
     return DFS_OK;
 }
 
+// 提示name node 收到 blk
 int notify_nn_receivedblock(block_info_t *blk)
 {
     pthread_mutex_lock(&g_recv_blk_report.lock);
@@ -520,6 +514,7 @@ static int block_report(int sockfd)
     return DFS_OK;
 }
 
+// blk info插入 g_blk_report
 int notify_blk_report(block_info_t *blk)
 {
     pthread_mutex_lock(&g_blk_report.lock);
@@ -532,8 +527,7 @@ int notify_blk_report(block_info_t *blk)
     return DFS_OK;
 }
 
-// 根据 blk id 删除 blk
-static int delete_blks(char *p, int len)  // param data and len
+static int delete_blks(char *p, int len)
 {
     uint64_t blk_id = 0;
 	int      pLen = sizeof(uint64_t);

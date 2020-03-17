@@ -148,6 +148,7 @@ static void signal_handler(int sig, siginfo_t *info, void *context)
         return;
 		
     case SIGCHLD:
+
         dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 
             0, "signal_handler: recv SIGCHLD");
 		

@@ -4,7 +4,7 @@
 #ifndef GOOGLE_PROTOBUF_INCLUDED_phxeditlog_2eproto
 #define GOOGLE_PROTOBUF_INCLUDED_phxeditlog_2eproto
 
-#include <limits>N
+#include <limits>
 #include <string>
 
 #include <google/protobuf/port_def.inc>

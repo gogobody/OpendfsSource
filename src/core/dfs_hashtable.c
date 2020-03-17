@@ -201,7 +201,6 @@ int dfs_hashtable_join(dfs_hashtable_t *ht, dfs_hashtable_link_t *hl)
  *  'ht'.  Returns a pointer to the hash bucket on success; otherwise
  *  returns NULL.
  */
- // key like blk id
 void * dfs_hashtable_lookup(dfs_hashtable_t *ht, const void *key, 
                                     size_t len)
 {

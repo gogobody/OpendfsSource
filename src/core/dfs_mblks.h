@@ -38,20 +38,21 @@ struct mem_data
 
 typedef struct mem_mblks_param_s 
 {
-    void *(*mem_alloc) (void *priv, size_t size);
-    void (*mem_free) (void *priv,void *mem_addr);
-    void *priv;
+    void *(*mem_alloc) (void *priv, size_t size); //allocator_malloc
+    void (*mem_free) (void *priv,void *mem_addr); //allocator_free
+    void *priv; // allocator
 } mem_mblks_param_t;
 
+// allocator 的 freeblks
 struct mem_mblks 
 {
     int                hot_count;
-    int                cold_count;
-    size_t             padded_sizeof_type;
-    size_t             real_sizeof_type;
+    int                cold_count; // 冷的可用的 mblks
+    size_t             padded_sizeof_type; //SIZEOF_PER_MEM_BLOCK
+    size_t             real_sizeof_type; // eg: sizeof(blk_info)
     void              *start_mblks;
     void              *end_mblks;
-    mem_mblks_param_t  param;
+    mem_mblks_param_t  param; //mem_mblks_param_t
     dfs_atomic_lock_t  lock;
     struct mem_data   *free_blks;
 };

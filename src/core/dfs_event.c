@@ -19,7 +19,7 @@ void event_process_posted(volatile queue_t *posted, log_t *log)
             (size_t)eq->prev, (size_t)eq->next, i);
 		
         queue_remove(eq);
-		
+		//
         ev = queue_data(eq, event_t, post_queue);
         if (!ev) 
 		{
@@ -41,9 +41,9 @@ void event_process_posted(volatile queue_t *posted, log_t *log)
                 "%s: fd:%d conn:%p, timer key:%M write:%d, handle %p", __func__,
                 c->fd, c, ev->timer.key, ev->write, ev->handler);
 
-            ev->handler(ev);
+            ev->handler(ev); //listen_rev_handler in dn_conn_event.c
 
-        } 
+        }
 		else 
 		{
             dfs_log_debug(log, DFS_LOG_DEBUG, 0,
@@ -56,9 +56,10 @@ void event_process_posted(volatile queue_t *posted, log_t *log)
 
 int event_handle_read(event_base_t *base, event_t *rev, uint32_t flags)
 {
+    // 第一次 rev->active ready =0
     if (!rev->active && !rev->ready) 
 	{
-        if (event_add(base, rev, EVENT_READ_EVENT,
+        if (epoll_add_event(base, rev, EVENT_READ_EVENT,
             EVENT_CLEAR_EVENT) == DFS_ERROR)
         {
             return DFS_ERROR;
@@ -79,7 +80,7 @@ int event_handle_write(event_base_t *base, event_t *wev, size_t lowat)
 {
     if (!wev->active && !wev->ready) 
 	{
-        if (event_add(base, wev, EVENT_WRITE_EVENT,
+        if (epoll_add_event(base, wev, EVENT_WRITE_EVENT,
             EVENT_CLEAR_EVENT) == DFS_ERROR) 
         {
             return DFS_ERROR;

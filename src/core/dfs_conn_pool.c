@@ -10,6 +10,7 @@ dfs_atomic_lock_t comm_conn_lock;
 static void put_comm_conn(conn_t *c);
 static conn_t* get_comm_conn(uint32_t n, int *num);
 
+// 初始化线程连接池
 int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 {
     conn_t   *conn = NULL;
@@ -23,12 +24,12 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
     }
 
     pool->connection_n = connection_n;
-    pool->connections = (conn_t *)memory_calloc(sizeof(conn_t) * pool->connection_n);
+    pool->connections = (conn_t *)memory_calloc(sizeof(conn_t) * pool->connection_n);// 为connections分配内存
     if (!pool->connections) 
 	{
         return DFS_ERROR;
     }
-
+    // 为read_events分配内存
     pool->read_events = (event_t *)memory_calloc(sizeof(event_t) * pool->connection_n);
     if (!pool->read_events) 
 	{
@@ -36,7 +37,7 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 		
         return DFS_ERROR;
     }
-
+    // 为write_events分配内存
     pool->write_events = (event_t *)memory_calloc(sizeof(event_t) * pool->connection_n);
     if (!pool->write_events) 
 	{
@@ -61,7 +62,7 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 		{
             conn[i].next = &conn[i + 1];
         }
-
+        // 每个connection，对应一个read_events, 一个write_events
         conn[i].fd = DFS_INVALID_FILE;
         conn[i].read = &revs[i];
         conn[i].read->timer_event = DFS_FALSE;
@@ -105,42 +106,40 @@ void conn_pool_free(conn_pool_t *pool)
     pool->free_connection_n = 0;
 }
 
-conn_t * conn_pool_get_connection(conn_pool_t *pool)
-{
-    conn_t   *c    = NULL;
-    int       num  = 0;
-	uint32_t  n    = 0;
+conn_t * conn_pool_get_connection(conn_pool_t *pool) {
+    conn_t *c = NULL;
+    int num = 0;
+    uint32_t n = 0;
 
     c = pool->free_connections;
-    if (!c) 
-	{
-        if (pool->change_n >= 0) 
-		{
+    // 当free_connection中没有可以用的connection时，扫描连接池，找到一个可以用的
+    if (c == NULL) {
+        if (!c) {
+            if (pool->change_n >= 0) {
+                return NULL;
+            }
+
+            n = -pool->change_n;
+            c = get_comm_conn(n, &num);
+            if (c) {
+                pool->free_connections = c;
+                pool->free_connection_n += num;
+                pool->change_n += num;
+
+                goto out_conn;
+            }
+
             return NULL;
         }
-		
-		n = -pool->change_n;
-        c = get_comm_conn(n, &num);
-        if (c) 
-		{
-            pool->free_connections = c;
-            pool->free_connection_n += num;
-			pool->change_n += num;
-			
-            goto out_conn;
-        }
 
-        return NULL;
+        out_conn:
+        pool->free_connections = (conn_t *) c->next; // 指向下一个connections
+        pool->free_connection_n--;    // 空闲connection数-1
+        pool->used_n++;
+
+        return c;
     }
-
-out_conn:
-    pool->free_connections = (conn_t *)c->next;
-    pool->free_connection_n--;
-	pool->used_n++;
-	
-    return c;
 }
-
 void conn_pool_free_connection(conn_pool_t *pool, conn_t *c)
 {   
     if (pool->change_n > 0) 
@@ -168,8 +167,7 @@ int conn_pool_common_init()
 	
     return DFS_OK;
 }
-int conn_pool_common_release()
-{
+int conn_pool_common_release(){
     comm_conn_lock.lock = DFS_LOCK_OFF;
     comm_conn_lock.allocator = NULL;
 	

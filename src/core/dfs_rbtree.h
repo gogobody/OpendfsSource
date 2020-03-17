@@ -10,12 +10,12 @@ typedef struct rbtree_node_s rbtree_node_t;
 
 struct rbtree_node_s 
 {
-    rbtree_key     key;
-    rbtree_node_t *left;
-    rbtree_node_t *right;
-    rbtree_node_t *parent;
-    uchar_t        color;
-    uchar_t        data;
+    rbtree_key     key; //节点值
+    rbtree_node_t *left; //左子节点
+    rbtree_node_t *right; //右子节点
+    rbtree_node_t *parent; //父节点
+    uchar_t        color; //颜色
+    uchar_t        data; //
 };
 
 typedef void (*rbtree_insert_pt) (rbtree_node_t *root,
@@ -24,7 +24,7 @@ typedef void (*rbtree_insert_pt) (rbtree_node_t *root,
 typedef struct rbtree_s 
 {
     rbtree_node_t    *root;
-    rbtree_node_t    *sentinel;
+    rbtree_node_t    *sentinel; // 哨兵节点
     rbtree_insert_pt  insert;
 } rbtree_t;
 

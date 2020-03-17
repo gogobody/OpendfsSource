@@ -2,6 +2,7 @@
 #include "dfs_conn.h"
 #include "dfs_memory.h"
 
+//复制信息，在发送
 int channel_write(int socket, channel_t *ch, 
                        size_t size, log_t *log)
 {
@@ -35,6 +36,7 @@ int channel_write(int socket, channel_t *ch,
          * dereferencing type-punned pointer will break strict-aliasing rules
          */
         //*(int *) CMSG_DATA(&cmsg.cm) = ch->fd;
+        //赋值信息到 cmsg.cm
         memory_memcpy(CMSG_DATA(&cmsg.cm), &ch->fd, sizeof(int));
     }
 
@@ -47,6 +49,7 @@ int channel_write(int socket, channel_t *ch,
     msg.msg_namelen = 0;
     msg.msg_iov = iov;
     msg.msg_iovlen = 1;
+
 
     n = sendmsg(socket, &msg, 0);
 
@@ -63,6 +66,7 @@ int channel_write(int socket, channel_t *ch,
     return DFS_OK;
 }
 
+// 接受到信息
 int channel_read(int socket, channel_t *ch, size_t size, log_t *log)
 {
     ssize_t       n = 0;
@@ -86,6 +90,7 @@ int channel_read(int socket, channel_t *ch, size_t size, log_t *log)
     msg.msg_control = (caddr_t) &cmsg;
     msg.msg_controllen = sizeof(cmsg);
 
+    //接收消息
     n = recvmsg(socket, &msg, 0);
 
     if (n == DFS_ERROR) 
@@ -121,6 +126,7 @@ int channel_read(int socket, channel_t *ch, size_t size, log_t *log)
         }
 
         //ch->fd = *(int *) CMSG_DATA(&cmsg.cm);
+        //复制 fd
         memory_memcpy(&ch->fd, CMSG_DATA(&cmsg.cm), sizeof(int));
     }
 

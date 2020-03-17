@@ -293,6 +293,7 @@ void chain_read_update(chain_t *chain, size_t size)
     }
 }
 
+// 发送之后更新 buf的pos
 chain_t * chain_write_update(chain_t *chain, size_t size)
 {
     size_t bsize = 0;
@@ -300,11 +301,11 @@ chain_t * chain_write_update(chain_t *chain, size_t size)
     while (chain && size > 0) 
 	{
         bsize = buffer_size(chain->buf);
-        if (size < bsize) 
+        if (size < bsize)
 		{
-			if (chain->buf->memory == DFS_TRUE) 
+			if (chain->buf->memory == DFS_TRUE) //说明发送出去的最后一字节数据的下一字节数据在in->buf->pos+send位置，下次从这个位置开始发送
 			{
-	            chain->buf->pos += size;
+	            chain->buf->pos += size;//这块内存没有完全发送完毕，悲剧，下回得从这里开始。
 			} 
 			else 
 			{
@@ -313,10 +314,12 @@ chain_t * chain_write_update(chain_t *chain, size_t size)
 			
             return chain;
         }
-		
-        size -= bsize;
-		
-		if (chain->buf->memory == DFS_TRUE) 
+
+        //说明该in->buf数据已经全部发送出去
+        size -= bsize; //标记后面还有多少数据是我发送过的
+
+
+        if (chain->buf->memory == DFS_TRUE) //说明该in->buf数据已经全部发送出去
 		{
             chain->buf->pos = chain->buf->last;
 		} 

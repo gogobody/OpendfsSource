@@ -6,10 +6,10 @@
 
 typedef struct channel_s 
 {
-     uint32_t command;
-     pid_t    pid;
-     int      slot;
-     int      fd;
+     uint32_t command;// 传递的 TCP 消息中的命令
+     pid_t    pid;// 进程 ID，一般是发送命令方的进程 ID
+     int      slot;// 表示发送命令方在 ngx_processes 进程数组间的序号
+     int      fd;// 通信的套接字句柄
 } channel_t;
 
 enum 

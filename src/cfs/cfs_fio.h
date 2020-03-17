@@ -31,7 +31,7 @@
 #define AIO_MGR_OPEN   1
 #define AIO_MGR_CLOSED 0
 
-#define MAX_TASK_IDLE  32 // 最大限制的 task
+#define MAX_TASK_IDLE  32
 
 enum 
 {
@@ -60,10 +60,10 @@ typedef struct file_io_s
 	uint32_t	             need; // 需要读取数据的字节数
     int	                     fd;  
     buffer_t                *b;    // buffer
-    void                    *data;
-    file_io_handler_pt       h;
+    void                    *data; // 指向request
+    file_io_handler_pt       h;  //block_write_complete
     int64_t                  ret;
-	int	                     event:2;
+	int	                     event:2; // eg:AIO_READ_EV
 	int	                     index:2;
 	int	                     result:2;
 	int                      able:2;
@@ -71,26 +71,26 @@ typedef struct file_io_s
     int                      error;
     queue_t                  q;
     queue_t                  used;
-    void                    *io_event;
-    faio_notifier_manager_t *faio_noty;
-    faio_data_task_t         faio_task;
+    void                    *io_event; // thread->io_events
+    faio_notifier_manager_t *faio_noty; // thread -> faio_noty
+    faio_data_task_t         faio_task; // task
     int                      faio_ret;
     void                    *sf_chain_task;
 } file_io_t;
 
 typedef struct fio_manager_s 
 {
-    queue_t         freeq;
+    queue_t         freeq; // free fio queue
     uint32_t        idle;
     uint32_t        batch;
-    uint64_t        free;
+    uint64_t        free; // free fio num
     uint64_t        busy;
-    uint64_t        nelts;
+    uint64_t        nelts; // fio num
     uint64_t        max;
     uint32_t        threads;
     uint32_t        size;
     pthread_mutex_t lock;
-    queue_t         task_used;
+    queue_t         task_used; // 分配给 task 已经使用的fio
     uint64_t        refill_level;
 } fio_manager_t;
 

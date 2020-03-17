@@ -98,7 +98,7 @@ quit:
     return ret;
 }
 
-static int faio_worker_init_properties(faio_worker_manager_t *worker_mgr, 
+static int faio_worker_init_properties(faio_worker_manager_t *worker_mgr,
     faio_worker_properties_t *properties, faio_errno_t *err)
 {
     int  ret = FAIO_OK;
@@ -183,8 +183,6 @@ static int faio_worker_create_thread(faio_worker_t *tid,
     return retval;
 }
 
-// 初始化 worker 的各个变量
-// 
 int faio_worker_manager_init(faio_manager_t *faio_mgr, 
     faio_worker_properties_t *properties, faio_errno_t *err)
 {
@@ -205,23 +203,21 @@ int faio_worker_manager_init(faio_manager_t *faio_mgr,
     manager->handler_mgr = &(faio_mgr->handler_manager);
     manager->init_flag = FAIO_FALSE;
 
-	// 初始化 worker property
     retval = faio_worker_init_properties(manager, properties, err);
     if (retval != FAIO_OK) 
 	{
         goto quit;
     }
     
-    faio_mutex_init(manager->work_lock); // 初始化互斥锁
-    faio_cond_init(&manager->worker_wait); // 初始化worker条件变量
-    faio_cond_init(&manager->quit_wait); // 初始化quit条件变量
-	faio_queue_init(&manager->worker_queue); // 初始化 worker queue
+    faio_mutex_init(manager->work_lock);
+    faio_cond_init(&manager->worker_wait);
+    faio_cond_init(&manager->quit_wait);
+	faio_queue_init(&manager->worker_queue);
     manager->started = 0;
     manager->idle = 0;
     manager->want_quit = FAIO_WORKER_NO_QUIT;
     manager->init_flag = FAIO_TRUE;
-
-	// 根据 pre_start 开启线程
+    // 开启了两个 faio 线程
     for (i = 0; i < manager->worker_properties.pre_start; i++) 
 	{
         retval = faio_worker_start_thread(manager, err);
@@ -253,8 +249,9 @@ static void faio_worker_name_set(void)
     return;
 }
 
-// worker thread 的处理函数
-// worker_arg 是 worker thread
+// faio thread func
+// 处理 队列 faio_data_task_t 消息
+// worker_arg is worker thread
 static void *faio_worker_fun(void *worker_arg)
 {
     faio_data_task_t               *req;
@@ -274,20 +271,18 @@ static void *faio_worker_fun(void *worker_arg)
     data_mgr = worker_mgr->data_mgr;
     hanle_mgr = worker_mgr->handler_mgr;
     
-	// 将状态改为unjoinable状态，确保资源的释放
+    // 将状态改为unjoinable状态，确保资源的释放
     pthread_detach(pthread_self());
-	// 线程命名 /faio
-    faio_worker_name_set();
+    faio_worker_name_set();// 设置线程名
 
     ts.tv_nsec = 0UL;
     ts.tv_sec = 0;
-
-	// 双重遍历
+    
     for (;;) 
 	{
         for (;;) 
 		{
-			// 遍历 faio_data_task
+            // pop faio_data_task_t
             req = faio_data_pop_req(data_mgr);
             if (!req) 
 			{
@@ -298,7 +293,6 @@ static void *faio_worker_fun(void *worker_arg)
             if (req->cancel_flag == FAIO_FALSE) 
 			{
                 req->state = FAIO_STATE_DOING;
-				// 处理 task
                 faio_handler_exec(hanle_mgr, req);
                 req->state = FAIO_STATE_DONE;
             } 
@@ -307,14 +301,12 @@ static void *faio_worker_fun(void *worker_arg)
                 req->state = FAIO_STATE_CANCEL;
             }
                 
-            notifier = req->notifier; // 通知者
-			
-            req->io_callback(req);
-			// 没有找到 faio_notifier_manager_s
-            faio_notifier_send(notifier, &err);
-            faio_notifier_count_dec(notifier, &err);
+            notifier = req->notifier;
+            req->io_callback(req);// 回调 cfs_faio_read_callback
+            faio_notifier_send(notifier, &err); //向对应的 notifier 发送一个1 //faio_notify.nfd // dio_event_handler启动
+            faio_notifier_count_dec(notifier, &err); // notifier 的count - 1
         }
-
+        //
         faio_lock(worker_mgr->work_lock);
 		
         if (worker_mgr->want_quit == FAIO_WORKER_TO_QUIT) 
@@ -334,12 +326,14 @@ static void *faio_worker_fun(void *worker_arg)
             goto quit;
         }
 
+        // 空闲的 faio thread +1
         ++worker_mgr->idle;
-        if (faio_data_manager_get_size(data_mgr) == 0) // task size
+        if (faio_data_manager_get_size(data_mgr) == 0) 
 		{
             if (worker_mgr->idle <= worker_ctl->max_idle) 
 			{
-                faio_cond_wait(&worker_mgr->worker_wait,  // 线程阻塞等待
+                // 有空闲的就等待 in faio_worker_maybe_start_thread
+                faio_cond_wait(&worker_mgr->worker_wait, 
                     &worker_mgr->work_lock);
             } 
 			else 
@@ -379,6 +373,7 @@ static int faio_worker_start_thread(faio_worker_manager_t *worker_mgr,
     }
     
     wrk->worker_mgr = worker_mgr;
+    // worker fun handle req task
     ret = faio_worker_create_thread(&wrk->tid, 
 		faio_worker_fun, (void *)wrk, err);
     if (ret == FAIO_ERROR) 
@@ -387,7 +382,6 @@ static int faio_worker_start_thread(faio_worker_manager_t *worker_mgr,
     }
 	
     faio_lock(worker_mgr->work_lock);
-	// queue
     faio_queue_insert_tail(&(worker_mgr->worker_queue), &(wrk->q));
     ++worker_mgr->started;
     faio_unlock(worker_mgr->work_lock);
@@ -409,6 +403,7 @@ int faio_worker_maybe_start_thread(faio_worker_manager_t *worker_mgr,
 {   
     int ret = FAIO_OK;
 
+    // 没有task的时候直接返回
     if (faio_data_manager_get_size(worker_mgr->data_mgr) == 0) 
 	{
         return ret;
@@ -423,11 +418,12 @@ int faio_worker_maybe_start_thread(faio_worker_manager_t *worker_mgr,
         return ret;
     }
 	
-    if (worker_mgr->idle) 
+    if (worker_mgr->idle) // 有空闲的就唤醒线程
 	{
         faio_cond_signal(&worker_mgr->worker_wait, worker_mgr->started);
     }
-	
+
+	// 开始的faio worker 超过了最大限制，直接返回
     if (worker_mgr->started >= worker_mgr->worker_properties.max_thread) 
 	{
         faio_unlock(worker_mgr->work_lock);
@@ -443,6 +439,7 @@ int faio_worker_maybe_start_thread(faio_worker_manager_t *worker_mgr,
 	
     faio_unlock(worker_mgr->work_lock);
 
+	// 没有超过最大限制并且线程数不够的情况下就新开一个线程
     ret = faio_worker_start_thread(worker_mgr, err);
 
     return ret;

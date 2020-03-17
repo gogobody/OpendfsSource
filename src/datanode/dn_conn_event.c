@@ -22,17 +22,17 @@
 
 static void listen_rev_handler(event_t *ev);
 
-// 初始化 listening_for_cli， 绑定cli的处理函数： listen_rev_handler 
-// open listening_for_cli
+// 初始化listening 并 open_listening
+// listen_rev_handler 处理 listening 事件
 int conn_listening_init(cycle_t *cycle)
 {
-    listening_t   *ls = NULL; // ls is listening socket
+    listening_t   *ls = NULL;
     conf_server_t *sconf = NULL;
     uint32_t       i = 0;
-    server_bind_t *bind_for_cli = NULL; // addr and port
+    server_bind_t *bind_for_cli = NULL;
     
     sconf = (conf_server_t *)dfs_cycle->sconf;
-	bind_for_cli = (server_bind_t *)sconf->bind_for_cli.elts;
+	bind_for_cli = (server_bind_t *)sconf->bind_for_cli.elts; //cli server_bind_t addr prot
 
 	cycle->listening_for_cli.elts = pool_calloc(cycle->pool, 
 		sizeof(listening_t) * sconf->bind_for_cli.nelts);
@@ -51,8 +51,8 @@ int conn_listening_init(cycle_t *cycle)
 
 	for (i = 0; i < sconf->bind_for_cli.nelts; i++) 
 	{
-		// bind for cli
-		// inet_addr 将字符串形式的IP地址 -> 网络字节顺序  的整型值
+	    // add listening to array
+	    // init listening
         ls = conn_listening_add(&cycle->listening_for_cli, cycle->pool,
             cycle->error_log, inet_addr((char *)bind_for_cli[i].addr.data), 
             bind_for_cli[i].port, listen_rev_handler, 
@@ -67,7 +67,8 @@ int conn_listening_init(cycle_t *cycle)
 		strcpy(cycle->listening_ip, (const char *)bind_for_cli[i].addr.data);
     }
 
-	// 打开 监听 socket
+	// open listening
+	// listening fd = sockfd
 	if (conn_listening_open(&cycle->listening_for_cli, cycle->error_log) 
 		!= DFS_OK) 
     {
@@ -77,8 +78,8 @@ int conn_listening_init(cycle_t *cycle)
     return DFS_OK;
 }
 
-
-// 绑定的处理函数 // 最后调用 dn_request.c 的dn_conn_init
+// 处理函数
+// accept handler
 static void listen_rev_handler(event_t *ev)
 {
     int           s = DFS_INVALID_FILE;
@@ -92,7 +93,8 @@ static void listen_rev_handler(event_t *ev)
     listening_t  *ls = NULL;
     int           i = 0;
     conn_pool_t  *conn_pool = NULL;
-    
+
+    // 第一次处理为1？监听过后事件失效
     ev->ready = 0;
     lc = (conn_t *)ev->data;
     ls = lc->listening;
@@ -101,10 +103,11 @@ static void listen_rev_handler(event_t *ev)
     socklen = DFS_SOCKLEN;
     conn_pool = thread_get_conn_pool();
     
-    for (i = 0;
+    for (i = 0; // 无限制的 accept
         ev->available == CONF_SERVER_UNLIMITED_ACCEPT_N || i < ev->available;
         i++) 
     {
+        /*accept一个新的连接, accept 的时候 lc->fd = ls->fd*/
         s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
 
         if (s == DFS_INVALID_FILE) 
@@ -130,7 +133,7 @@ static void listen_rev_handler(event_t *ev)
 			
             return;
         }
-      
+        /*从connections数组中获取一个connecttion slot来维护新的连接*/
         nc = conn_pool_get_connection(conn_pool);
         if (!nc) 
 		{
@@ -141,7 +144,7 @@ static void listen_rev_handler(event_t *ev)
 			
             return;
         }
-		
+		// set conn fd = s
         conn_set_default(nc, s);
        
         if (!nc->pool)
@@ -157,7 +160,7 @@ static void listen_rev_handler(event_t *ev)
             }
         }
 		
-        nc->sockaddr = (sockaddr *)pool_alloc(nc->pool, socklen);
+        nc->sockaddr = (struct sockaddr *)pool_alloc(nc->pool, socklen);
         if (!nc->sockaddr) 
 		{
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0,
@@ -177,7 +180,8 @@ static void listen_rev_handler(event_t *ev)
         }
 		
         log = dfs_cycle->error_log;
-        nc->recv = dfs_recv;
+        /*初始化新连接*/
+        nc->recv = dfs_recv; // in dfs_sys_io.c
         nc->send = dfs_send;
         nc->recv_chain = dfs_recv_chain;
         nc->send_chain = dfs_send_chain;
@@ -221,6 +225,7 @@ static void listen_rev_handler(event_t *ev)
             &ls->addr_text);
 		
         nc->accept_time = *time_timeofday();
+        //
         dn_conn_init(nc);
     }
 		

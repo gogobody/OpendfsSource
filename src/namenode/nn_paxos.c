@@ -82,12 +82,14 @@ static int parse_ipport_list(const char * pcStr,
     return DFS_OK;
 }
 
-// paxos worker
+// paxos worker init
+// 配置当前运行节点的IP/PORT参数
+// 初始化FSEditlog 对象
 int nn_paxos_worker_init(cycle_t *cycle)
 {
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;
 
-    NodeInfo oMyNode;
+    NodeInfo oMyNode; //当前运行节点的IP/PORT参数
     if (parse_ipport((const char *)sconf->my_paxos.data, oMyNode) != DFS_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
@@ -96,7 +98,8 @@ int nn_paxos_worker_init(cycle_t *cycle)
         return DFS_ERROR;
     }
 
-    NodeInfoList vecNodeList;
+    NodeInfoList vecNodeList; // Paxos由多个节点构成，这个列表设置这些节点的IP/PORT信息。
+    // 当开启了PhxPaxos的成员管理功能后，这个信息仅仅会被接受一次作为集群的初始化，后面将会无视这个参数的存在。
     if (parse_ipport_list((const char *)sconf->ot_paxos.data, vecNodeList) 
 		!= DFS_OK)
     {
@@ -390,7 +393,7 @@ do_paxos:
 
 		lopr.mutable_mkr()->set_key(sKey);
 	    lopr.SerializeToString(&sPaxosValue);
-
+        // 写入？
 	    g_editlog->Propose(sKey, sPaxosValue, oEditlogSMCtx);
 	}
 

@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     }
     
 	dfs_module_setup();
-// nn_error_log_init
+    // just nn_error_log_init
 	if ((ret = dfs_module_master_init(cycle)) != DFS_OK) 
 	{
 		fprintf(stderr, "master init fail\n");
@@ -243,14 +243,14 @@ int main(int argc, char **argv)
 		
         goto failed;
     }
-    
-    if (sconf->daemon == DFS_TRUE && nn_daemon() == DFS_ERROR) 
-	{
-        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
-			"dfs_daemon failed");
-		
-        goto failed;
-    }
+    // 守护进程
+//    if (sconf->daemon == DFS_TRUE && nn_daemon() == DFS_ERROR)
+//	{
+//        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
+//			"dfs_daemon failed");
+//
+//        goto failed;
+//    }
 
     process_pid = getpid();
 	
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 		
         goto failed;
     }
-// namespaceid
+    // namespaceid is dfs_current_msec
 	if (get_ns_version(cycle) != DFS_OK) 
 	{
 	    dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
     dfs_argv = argv;
 
 	
-//
+    //
     process_master_cycle(cycle, dfs_argc, dfs_argv);
 
     process_del_pid_file();
@@ -485,6 +485,7 @@ static int format(cycle_t *cycle)
             return DFS_ERROR;
 		}
 
+		// namespace id is dfs_current_msec
 		if (save_ns_version(cycle) != DFS_OK) 
 		{
             return DFS_ERROR;

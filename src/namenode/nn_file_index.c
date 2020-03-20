@@ -64,11 +64,14 @@ static int update_fi_get_additional_blk(fi_inode_t *fin,
 static int update_fi_close(fi_inode_t *fin);
 static int update_fi_rm(fi_inode_t *fin);
 
-//
+// 初始化fi_cache_mgmt_t fcm
+// init timer
+// init g_checkpoint_q
 int nn_file_index_worker_init(cycle_t *cycle)
 {
     conf_server_t *conf = (conf_server_t *)cycle->sconf;
 
+    // 初始化fi_cache_mgmt_t fcm
 	g_fcm = fi_cache_mgmt_new_init(conf);
     if (!g_fcm) 
 	{
@@ -111,6 +114,8 @@ static fi_cache_mgmt_t *fi_cache_mgmt_new_init(conf_server_t *conf)
     return fcm;
 }
 
+// 预先分配index_num个 fi_store_t
+// create hash table
 static fi_cache_mgmt_t *fi_cache_mgmt_create(size_t index_num)
 {
     fi_cache_mgmt_t *fcm = (fi_cache_mgmt_t *)memory_alloc(sizeof(*fcm));
@@ -118,7 +123,7 @@ static fi_cache_mgmt_t *fi_cache_mgmt_create(size_t index_num)
 	{
         goto err_out;
     }
-    
+    // 预先分配index_num个 fi_store_t
     if (fi_mem_mgmt_create(&fcm->mem_mgmt, index_num) != DFS_OK) 
 	{
         goto err_mem_mgmt;
@@ -144,6 +149,7 @@ err_out:
     return NULL;
 }
 
+// 预先分配index_num个 fi_store_t
 static int fi_mem_mgmt_create(fi_cache_mem_t *mem_mgmt, 
 	size_t index_num)
 {
@@ -170,6 +176,7 @@ static int fi_mem_mgmt_create(fi_cache_mem_t *mem_mgmt,
         goto err_allocator;
     }
 
+    // 预先分配index_num个 fi_store_t
     mem_mgmt->free_mblks = fi_mblks_create(mem_mgmt, index_num);
     if (!mem_mgmt->free_mblks) 
 	{
@@ -198,7 +205,7 @@ static struct mem_mblks *fi_mblks_create(fi_cache_mem_t *mem_mgmt,
     mblk_param.mem_free = allocator_free;
     mblk_param.priv = mem_mgmt->allocator;
 
-    return mem_mblks_new(fi_store_t, count, &mblk_param);
+    return mem_mblks_new_fn(sizeof(fi_store_t), count, &mblk_param);
 }
 
 static void *allocator_malloc(void *priv, size_t mem_size)
@@ -1156,6 +1163,7 @@ static int delete_dir(const char *dir)
     return DFS_OK;
 }
 
+//
 int load_image()
 {
     dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
@@ -1179,12 +1187,13 @@ int load_image()
 
     fi_inode_t fin;
 	bzero(&fin, sizeof(fi_inode_t));
-	
+	//?
 	while (read(fd, &fin, sizeof(fi_inode_t)) > 0) 
 	{
 	    update_fi_mkdir(&fin);
 	}
 
+	// read ckpid: last check point id
     read_checkpoinID();
 	// geditlog
     set_checkpoint_instanceID(lastCheckpointInstanceID);
@@ -1290,6 +1299,7 @@ static int save_checkpoinID()
     return DFS_OK;
 }
 
+// 检查点
 static int read_checkpoinID()
 {
     conf_server_t *conf = (conf_server_t *)dfs_cycle->sconf;

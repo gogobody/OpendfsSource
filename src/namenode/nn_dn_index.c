@@ -37,11 +37,16 @@ static dn_store_t *get_dn_store_obj(uchar_t *key);
 static dn_timer_t *dn_timer_create(dn_store_t *dns);
 static void dn_timeout_handler(event_t *ev);
 static void dn_timer_update(dn_store_t *dns);
-	
+
+// 初始化 dcm data cache management
+// 创建index num 个dn_store_t
+// 初始化一些timer
 int nn_dn_index_worker_init(cycle_t *cycle)
 {
     conf_server_t *conf = (conf_server_t *)cycle->sconf;
 
+    // 初始化 dcm data cache management
+    // 创建index num 个dn_store_t
 	g_dcm = dn_cache_mgmt_new_init(conf);
     if (!g_dcm) 
 	{
@@ -68,10 +73,13 @@ int nn_dn_index_worker_release(cycle_t *cycle)
     return DFS_OK;
 }
 
+// 初始化 dcm data cache management
+// 创建index num 个dn_store_t
 static dn_cache_mgmt_t *dn_cache_mgmt_new_init(conf_server_t *conf)
 {
     size_t index_num = dfs_math_find_prime(DN_NUM_IN_CLUSTER);
 
+    // 创建index num 个dn_store_t
     dn_cache_mgmt_t *dcm = dn_cache_mgmt_create(index_num);
     if (!dcm) 
 	{

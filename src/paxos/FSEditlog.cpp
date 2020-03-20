@@ -25,6 +25,7 @@ FSEditlog::~FSEditlog()
     }
 }
 
+// llInstanceId 这里是 checkpoint id
 void FSEditlog::setCheckpointInstanceID(const uint64_t llInstanceID)
 {
     m_oEditlogSM.SyncCheckpointInstanceID(llInstanceID);
@@ -49,15 +50,16 @@ int FSEditlog::RunPaxos()
     {
         GroupSMInfo oSMInfo;
         oSMInfo.iGroupIdx = iGroupIdx;
+        //one paxos group can have multi state machine.
         oSMInfo.vecSMList.push_back(&m_oEditlogSM);
-        oSMInfo.bIsUseMaster = true;
+        oSMInfo.bIsUseMaster = true; //开启我们内置的一个Master状态机
 
-        oOptions.vecGroupSMInfoList.push_back(oSMInfo); //描述了多个PhxPaxos实例对应的状态机列表
+        oOptions.vecGroupSMInfoList.push_back(oSMInfo); //vecGroupSMInfoList 描述了多个PhxPaxos实例对应的状态机列表
     }
 
     oOptions.pLogFunc = nn_log_paxos;
 
-    ret = Node::RunNode(oOptions, m_poPaxosNode);
+    ret = Node::RunNode(oOptions, m_poPaxosNode); //通过Node::RunNode即可获得PhxPaxos的实例指针
     if (ret != DFS_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 

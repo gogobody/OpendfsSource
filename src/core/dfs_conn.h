@@ -42,7 +42,7 @@ struct conn_s
 {
     int                    fd; //
     void                  *next;
-    void                  *conn_data; // thread dn_request_t
+    void                  *conn_data; // thread dn_request_t // in nn node nn_conn_s
     event_t               *read;  // 连接对应的读事件
     event_t               *write;
     sysio_recv_pt          recv;   //直接接收网络字符流的方法

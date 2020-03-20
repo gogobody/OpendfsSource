@@ -38,6 +38,8 @@ static int uint64_cmp(const void *s1, const void *s2, size_t sz);
 static size_t req_hash(const void *data, size_t data_size, 
 	size_t hashtable_size);
 
+// 初始化 g_nn_bcm
+// 创建 blk_store_t
 int nn_blk_index_worker_init(cycle_t *cycle)
 {
 	g_nn_bcm = blk_cache_mgmt_new_init();
@@ -59,7 +61,8 @@ int nn_blk_index_worker_release(cycle_t *cycle)
     return DFS_OK;
 }
 
-// 初始化cache mgmt
+// 初始化bcm  cache mgmt
+
 static blk_cache_mgmt_t *blk_cache_mgmt_new_init()
 {
     size_t index_num = dfs_math_find_prime(BLK_NUM_IN_DN); // 2的x次方的一个数

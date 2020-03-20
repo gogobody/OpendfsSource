@@ -36,8 +36,8 @@ private:
     string m_sPaxosLogPath;
     int m_iGroupCount;
 
-    Node * m_poPaxosNode;
-    PhxEditlogSM m_oEditlogSM;
+    Node * m_poPaxosNode; //本次我们需要运行的PhxPaxos实例指针
+    PhxEditlogSM m_oEditlogSM; //刚刚编写的状态机类
 };
 
 #endif

@@ -181,7 +181,8 @@ void worker_processer(cycle_t *cycle, void *data)
 
     process_type = PROCESS_WORKER;
     main_thread->event_base.nevents = 512;
-    
+
+    // epoll init
     if (thread_event_init(main_thread) != DFS_OK) 
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -189,7 +190,7 @@ void worker_processer(cycle_t *cycle, void *data)
 		
         exit(PROCESS_FATAL_EXIT);
     }
-// worker init 
+    // worker init
     if (dfs_module_woker_init(cycle) != DFS_OK) 
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 

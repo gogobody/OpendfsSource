@@ -54,7 +54,7 @@ struct mem_mblks
     void              *end_mblks;
     mem_mblks_param_t  param; //mem_mblks_param_t
     dfs_atomic_lock_t  lock;
-    struct mem_data   *free_blks;
+    struct mem_data   *free_blks; //fi_store_t
 };
 
 struct mem_mblks *mem_mblks_new_fn(size_t, int64_t, mem_mblks_param_t *);

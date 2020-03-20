@@ -36,7 +36,7 @@ dfs_module_t dfs_modules[] =
         NULL,
         NULL,
         NULL,
-        nn_paxos_worker_init,
+        nn_paxos_worker_init, // paxos worker init // 配置当前运行节点的IP/PORT参数 // 初始化FSEditlog 对象
         nn_paxos_worker_release,
         NULL,
         NULL
@@ -49,7 +49,7 @@ dfs_module_t dfs_modules[] =
         NULL,
         NULL,
         NULL,
-        nn_rpc_worker_init,
+        nn_rpc_worker_init, // empty
         nn_rpc_worker_release,
         NULL,
         NULL
@@ -62,7 +62,7 @@ dfs_module_t dfs_modules[] =
         NULL,
         NULL,
         NULL,
-        nn_file_index_worker_init,
+        nn_file_index_worker_init, //初始化fi_cache_mgmt_t fcm 预先分配index_num个 fi_store_t // init timer // init g_checkpoint_q
         nn_file_index_worker_release,
         NULL,
         NULL
@@ -75,7 +75,7 @@ dfs_module_t dfs_modules[] =
         NULL,
         NULL,
         NULL,
-        nn_dn_index_worker_init,
+        nn_dn_index_worker_init, // // 初始化 dcm data cache management // 创建index num 个dn_store_t // 初始化一些timer
         nn_dn_index_worker_release,
         NULL,
         NULL
@@ -88,7 +88,7 @@ dfs_module_t dfs_modules[] =
         NULL,
         NULL,
         NULL,
-        nn_blk_index_worker_init,
+        nn_blk_index_worker_init, // 初始化 g_nn_bcm // 创建 blk_store_t
         nn_blk_index_worker_release,
         NULL,
         NULL

@@ -18,19 +18,19 @@ enum
 
 struct nn_conn_s 
 {
-    conn_t              *connection;
+    conn_t              *connection; // 这种连接是指 客户端发起的，服务器被动接受的连接
     buffer_t            *in; // in buffer
     buffer_t            *out;
     queue_t              out_task;
-    nn_event_handler_pt  read_event_handler;
+    nn_event_handler_pt  read_event_handler; //nn_conn_read_handler
     nn_event_handler_pt  write_event_handler;
     int32_t              count;
     int32_t              slow;
-    queue_t              free_task;
-    pool_t              *mempool;
+    queue_t              free_task; //  wb_node_t
+    pool_t              *mempool; // pool
     event_t              ev_timer;
     int32_t              max_task;
-    int32_t              state;
+    int32_t              state; // CONNECTED
     char                 ipaddr[32];
     log_t               *log;
 };

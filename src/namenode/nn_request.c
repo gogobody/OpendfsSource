@@ -52,6 +52,7 @@ static void  nn_conn_timer_handler(event_t *ev)
     nn_conn_read_handler(mc);
 }
 
+// from listen_rev_handler
 void nn_conn_init(conn_t *c)
 {
     event_t      *rev = NULL;
@@ -91,7 +92,7 @@ void nn_conn_init(conn_t *c)
         goto error;
     }
 	
-    mc->mempool = pool;;
+    mc->mempool = pool;
     mc->log = dfs_cycle->error_log;
     mc->in  = buffer_create(mc->mempool, 
    			 ((conf_server_t*)dfs_cycle->sconf)->recv_buff_len * 2);
@@ -120,7 +121,8 @@ void nn_conn_init(conn_t *c)
 	{
         goto error;
     }
-	
+
+    // 初始化分配 max task个 task_node
     for (i = 0; i < mc->max_task; i++) 
 	{
         node = buff + i;
@@ -141,7 +143,7 @@ void nn_conn_init(conn_t *c)
     }
 	
     memset(&mc->ev_timer, 0, sizeof(event_t));
-    mc->ev_timer.data = mc;
+    mc->ev_timer.data = mc; //
     mc->ev_timer.handler = nn_conn_timer_handler;
     rev->handler = nn_event_process_handler;
     wev->handler = nn_event_process_handler;

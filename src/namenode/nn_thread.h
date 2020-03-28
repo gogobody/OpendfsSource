@@ -22,9 +22,9 @@ struct dfs_thread_s
     event_timer_t  event_timer;
     conn_pool_t    conn_pool;
     task_queue_t   tq; // task queue
-    task_queue_t  *bque;
-    int            queue_size;
-    notice_t       tq_notice;
+    task_queue_t  *bque; // write back queue？ 结构体数组
+    int            queue_size; // bqueue size
+    notice_t       tq_notice; // task queue notice
     TREAD_FUNC     run_func;
     uint32_t       state;
     int            running;

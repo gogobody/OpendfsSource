@@ -4,7 +4,7 @@ package phxeditlog;
 
 message LogMkdir
 {
-    string key = 1;
+    string key = 1; //每个元素中的 “=1”，"=2" 表示该字段在二进制编码中使用的唯一 “标识”
     uint32 permission = 2;
     string owner = 3;
     string group = 4;

@@ -316,6 +316,7 @@ void get_store_path(uchar_t *key, uchar_t *path)
     string_base64_decode(&dst, &src);
 }
 
+// 目录按照 “/” 分割
 int get_path_names(uchar_t *path, uchar_t names[][PATH_LEN])
 {
     uchar_t *str = NULL;
@@ -323,7 +324,7 @@ int get_path_names(uchar_t *path, uchar_t names[][PATH_LEN])
     uchar_t *token = NULL;
     int      i = 1;
 
-	strcpy((char *)names[0], "/");
+	strcpy((char *)names[0], "/"); //
 
     for (str = path ; ; str = NULL, token = NULL, i++)
     {
@@ -396,6 +397,7 @@ int get_path_inodes(uchar_t keys[][PATH_LEN], int num,
 	return -1;
 }
 
+//
 int is_FsObjectExceed(int num)
 {
     int isExceed = DFS_FALSE;
@@ -444,17 +446,19 @@ int is_InSafeMode()
     return DFS_FALSE;
 }
 
+//
 int nn_mkdir(task_t *task)
 {
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
 	
-    if (is_InSafeMode()) 
+    if (is_InSafeMode()) // default false
 	{
 	    task->ret = IN_SAFE_MODE;
 
 		return write_back(node);
 	}
 
+    // push => paxos thread->task queue
 	push_task(&paxos_thread->tq, node);
 	
     return notice_wake_up(&paxos_thread->tq_notice);
@@ -704,6 +708,7 @@ int nn_open(task_t *task)
 	return write_back(node);
 }
 
+// paxos 的处理函数
 int update_fi_cache_mgmt(const uint64_t llInstanceID, 
 	const std::string & sPaxosValue, void *data)
 {
@@ -711,7 +716,7 @@ int update_fi_cache_mgmt(const uint64_t llInstanceID,
 	memset(&fin, 0x00, sizeof(fi_inode_t));
 		
     string str;
-    LogOperator lopr;
+    LogOperator lopr; // 反序列化 proto
 	lopr.ParseFromString(sPaxosValue);
 
 	int optype = lopr.optype();
@@ -726,7 +731,7 @@ int update_fi_cache_mgmt(const uint64_t llInstanceID,
 		strcpy(fin.group, lopr.mutable_mkr()->group().c_str());
 		fin.modification_time = lopr.mutable_mkr()->modification_time();
 		fin.is_directory = DFS_TRUE;
-		
+		// 更新目录等信息
 		update_fi_mkdir(&fin);
 		break;
 
@@ -791,19 +796,20 @@ int update_fi_cache_mgmt(const uint64_t llInstanceID,
     return DFS_OK;
 }
 
+// 返回 encode 的上级目录
 static void get_parent_key(uchar_t path[], uchar_t key[])
 {
     uchar_t *pTemp = path;
-	uchar_t *pPath = (uchar_t *)strrchr((const char *)path, '/');
+	uchar_t *pPath = (uchar_t *)strrchr((const char *)path, '/'); //strrchr() 函数用于查找某字符在字符串中最后一次出现的位置
     int pIndex = pPath - pTemp;
 
     uchar_t pName[PATH_LEN] = "";
-    if (0 == pIndex) 
+    if (0 == pIndex)  // 说明 path就是 /
 	{
 	    // /home
 	    memcpy(pName, "/", 1);
 	}
-	else
+	else // 前一级目录
 	{
         memcpy(pName, pTemp, pIndex);
 	}
@@ -811,6 +817,8 @@ static void get_parent_key(uchar_t path[], uchar_t key[])
     key_encode(pName, key);
 }
 
+// 初始化fi_store_t
+// fi node 加入 hash 表
 static int update_fi_mkdir(fi_inode_t *fin)
 {
     pthread_rwlock_wrlock(&g_fcm->cache_rwlock);
@@ -830,26 +838,29 @@ static int update_fi_mkdir(fi_inode_t *fin)
 	dfs_hashtable_join(g_fcm->fi_htable, &fis->ln);
 
 	uchar_t path[PATH_LEN] = "";
-	get_store_path((uchar_t *)fin->key, path);
+	get_store_path((uchar_t *)fin->key, path); // decode
 
+	// 如果不是根目录
 	if (0 != string_strncmp("/", path, string_strlen(path)))
 	{
 		uchar_t pKey[PATH_LEN] = "";
-		get_parent_key(path, pKey);
+		get_parent_key(path, pKey); // 上一级目录并且encode
 
 		fi_store_t *fparent = (fi_store_t *)dfs_hashtable_lookup(g_fcm->fi_htable, 
 			(void *)pKey, string_strlen(pKey));
 
 		fparent->fin.modification_time = fin->modification_time;
-	
+	    // 将该目录插入父目录
 	    queue_insert_tail(&fparent->children, &fis->me);
 		fparent->children_num++;
 	}
 
+	// 插入检查点
 	queue_insert_tail(&g_checkpoint_q, &fis->ckp);
 
 	pthread_rwlock_unlock(&g_fcm->cache_rwlock);
 
+	// global ++
 	inc_FsObjectNum(1);
 	
     return DFS_OK;
@@ -1195,7 +1206,7 @@ int load_image()
 
 	// read ckpid: last check point id
     read_checkpoinID();
-	// geditlog
+	// geditlog set check point
     set_checkpoint_instanceID(lastCheckpointInstanceID);
 	
     return DFS_OK;

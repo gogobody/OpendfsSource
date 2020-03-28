@@ -146,7 +146,9 @@ void set_checkpoint_instanceID(const uint64_t llInstanceID)
     g_editlog->setCheckpointInstanceID(llInstanceID);
 }
 
-void do_paxos_task_handler(void *q)
+// paxos event call back
+// pop task from task queue and do_paxos_task()
+void do_paxos_task_handler(void *q) // param task queue
 {
     task_queue_node_t *tnode = NULL;
 	task_t            *t = NULL;
@@ -176,6 +178,7 @@ void do_paxos_task_handler(void *q)
 	}
 }
 
+//paxos thread
 static int do_paxos_task(task_t *task)
 {
     int optype = task->cmd;
@@ -271,7 +274,7 @@ static int log_mkdir(task_t *task)
 	
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
 
-	if (!g_editlog->IsIMMaster(task->key)) 
+	if (!g_editlog->IsIMMaster(task->key)) // 不是master 节点 就重定向到master节点
 	{
         task->ret = MASTER_REDIRECT;
 		task->master_nodeid = g_editlog->GetMaster(task->key).GetNodeID();
@@ -279,6 +282,7 @@ static int log_mkdir(task_t *task)
 		return write_back(node);
 	}
 
+	// 如果是master节点
 	fi_store_t *fi = get_store_obj((uchar_t *)task->key);
 	if (fi) 
 	{
@@ -287,20 +291,22 @@ static int log_mkdir(task_t *task)
 		return write_back(node);
 	}
 
+	// 不存在就创建
 	uchar_t path[PATH_LEN] = "";
 	get_store_path((uchar_t *)task->key, path);
 
 	uchar_t names[PATH_LEN][PATH_LEN];
-    int names_sz = get_path_names(path, names);
+    int names_sz = get_path_names(path, names); // 按照 "/" 分割
 
 	uchar_t keys[PATH_LEN][PATH_LEN];
-    get_path_keys(names, names_sz, keys);
+    get_path_keys(names, names_sz, keys); // encode 分成每一层/a/b/c /a /a/b /a/b/c
 
 	if (0 == string_strncmp("/", path, string_strlen(path)))
 	{
 	    goto do_paxos;
 	}
 
+	// 找到哪一级目录不存在
 	parent_index = get_path_inodes(keys, names_sz, finodes);
 
 	if (parent_index > 0 && finodes[parent_index]->is_directory == DFS_FALSE) 
@@ -312,10 +318,10 @@ static int log_mkdir(task_t *task)
 
 		return write_back(node);
 	}
-	
+	// authentic
     if (!is_super(task->user, &dfs_cycle->admin))
     {
-        if (parent_index < 0) 
+        if (parent_index < 0) // 第一级目录还不存在
 		{
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 				"mkdir %s err, user: %s, group: %s", 
@@ -344,6 +350,7 @@ static int log_mkdir(task_t *task)
 
 	expect_mkdir_num = names_sz - parent_index - 1;
 
+    // 是否超过了最大目录数
 	if (is_FsObjectExceed(expect_mkdir_num))
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
@@ -359,9 +366,9 @@ do_paxos:
 	string sPaxosValue;
 	PhxEditlogSMCtx oEditlogSMCtx;
 	string sKey;
-	LogOperator lopr;
+	LogOperator lopr; // protobuf
 	lopr.set_optype(task->cmd);
-	lopr.mutable_mkr()->set_permission(task->permission);
+	lopr.mutable_mkr()->set_permission(task->permission); // mutable 若该对象存在，则直接返回该对象，若不存在则新new 一个
 	lopr.mutable_mkr()->set_owner(task->user);
 	lopr.mutable_mkr()->set_group(task->group);
 	lopr.mutable_mkr()->set_modification_time(dfs_current_msec);
@@ -373,7 +380,7 @@ do_paxos:
 			// create "/" dir only
 			sKey = string((const char *)task->key);
 		}
-		else if (parent_index < 0) 
+		else if (parent_index < 0)  // 整个目录都不在
 		{
             // create "/home/..." dir at one time
             sKey = string((const char *)keys[i]);
@@ -393,7 +400,7 @@ do_paxos:
 
 		lopr.mutable_mkr()->set_key(sKey);
 	    lopr.SerializeToString(&sPaxosValue);
-        // 写入？
+        // 写入
 	    g_editlog->Propose(sKey, sPaxosValue, oEditlogSMCtx);
 	}
 

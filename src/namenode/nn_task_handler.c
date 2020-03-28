@@ -7,12 +7,14 @@
 #include "nn_thread.h"
 #include "nn_rpc_server.h"
 
+// nn_rpc_service_run
 static void do_task(task_t *task)
 {
     assert(task);
 	nn_rpc_service_run(task);
 }
 
+// do task
 void do_task_handler(void *q)
 {
 	task_queue_node_t *tnode = NULL;

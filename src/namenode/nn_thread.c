@@ -92,6 +92,7 @@ int thread_event_init(dfs_thread_t *thread)
     return DFS_OK;
 }
 
+//
 void thread_event_process(dfs_thread_t *thread)
 {
     uint32_t      flags = 0;

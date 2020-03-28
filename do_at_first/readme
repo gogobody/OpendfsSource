@@ -1,3 +1,5 @@
+protobuf说明：
+
 protoc -I=./ --cpp_out=./ ./phxeditlog.proto
 mv phxeditlog.pb.cc phxeditlog.pb.cpp
 mv phxeditlog.pb.h phxeditlog.pb.cpp ../src/paxos/

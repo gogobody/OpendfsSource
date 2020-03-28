@@ -19,7 +19,7 @@ typedef struct task_s
 	cmd_t     cmd; // 命令
 	int       ret;
 	uint32_t  seq;
-	void     *opq;
+	void     *opq; //nn_wb_t
 	int       master_nodeid;
 	char      key[KEY_LEN];
 	char      user[OWNER_LEN];

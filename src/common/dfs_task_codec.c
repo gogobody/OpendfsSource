@@ -20,6 +20,8 @@ int task_decode(buffer_t *buff, task_t *task)
     return DFS_OK;
 }
 
+// encode task to buff
+// buffer 装满或者装不下之后 返回 AGAIN
 int task_encode(task_t *task, buffer_t *buff)
 {
 	int ret = 0;

@@ -5,10 +5,11 @@
 
 static void write_back_pack_task(task_queue_node_t *node, int send);
 
+//
 int write_back(task_queue_node_t *node)
 {
     task_t       *task = NULL;
-    nn_wb_t      *wbt = NULL;
+    nn_wb_t      *wbt = NULL; // write back
     pthread_t     id = -1;
     dfs_thread_t *th = NULL;
 
@@ -23,16 +24,17 @@ int write_back(task_queue_node_t *node)
 	*/
 	
     queue_init(&node->qe);
-	
+
+	// 重新push到不同的队列里 // dn 和 cli push 到bque队列，nn 线程push到 tq队列里
     if (THREAD_DN == wbt->thread->type || THREAD_CLI == wbt->thread->type)
 	{
         th = get_local_thread();
         id = th->thread_id;
-        id %= wbt->thread->queue_size;
-		
-        push_task(&wbt->thread->bque[id], node);
-    } 
-	else 
+        id %= wbt->thread->queue_size; // 做个简单的 hash
+
+        push_task(&wbt->thread->bque[id], node); // 写回到当前线程的bque
+    }
+	else // 如果是 namenode 线程
 	{
         push_task(&wbt->thread->tq, node);
     }
@@ -40,6 +42,7 @@ int write_back(task_queue_node_t *node)
     return notice_wake_up(&wbt->thread->tq_notice);
 }
 
+// n->call_back
 void net_response_handler(void *data)
 {
     queue_t       q;
@@ -94,7 +97,7 @@ static void write_back_pack_task(task_queue_node_t *node, int send)
     nn_conn_outtask(wbt->mc, task);
 }
 
-// write tasks which in queue q back , send is status code
+// write tasks back which in q, send is status code
 void write_back_pack_queue(queue_t *q, int send)
 {
     queue_t           *qn = NULL;

@@ -350,6 +350,7 @@ error:
     nn_conn_finalize(mc);
 }
 
+// mc connect write event
 static void nn_conn_write_handler(nn_conn_t *mc)
 {
     conn_t *c = NULL;
@@ -359,7 +360,7 @@ static void nn_conn_write_handler(nn_conn_t *mc)
         return;
     }
 	
-    c = mc->connection;
+    c = mc->connection; //获取到被动连接的connection
     
     if (c->write->timedout) 
 	{
@@ -375,7 +376,7 @@ static void nn_conn_write_handler(nn_conn_t *mc)
 	{
         event_timer_del(c->ev_timer, c->write);
     }
-   
+    //
 	nn_conn_output(mc);  
 }
 
@@ -427,6 +428,7 @@ static int nn_conn_out_buffer(conn_t *c, buffer_t *b)
     return DFS_OK;
 }
 
+// 插入 task -> mc conn -> out task
 int nn_conn_outtask(nn_conn_t *mc, task_t *t)
 {   
     task_queue_node_t *node =NULL;
@@ -444,6 +446,7 @@ int nn_conn_outtask(nn_conn_t *mc, task_t *t)
 	return nn_conn_output(mc);
 }
 
+// mc->write_event_handler = nn_conn_write_handler;
 int nn_conn_output(nn_conn_t *mc)
 {
     conn_t            *c = NULL;
@@ -470,7 +473,8 @@ repack:
     	qe = queue_head(&mc->out_task);
 		node = queue_data(qe, task_queue_node_t, qe);
 		t =&node->tk;
-		
+
+		// encode task to out buffer
 		rc = task_encode(t, mc->out);
 		if (rc == DFS_OK) 
 		{
@@ -549,6 +553,7 @@ void * nn_conn_get_task(nn_conn_t *mc)
 	
     return node;  
 }
+
 
 void nn_conn_free_task(nn_conn_t *mc, queue_t *q)
 {

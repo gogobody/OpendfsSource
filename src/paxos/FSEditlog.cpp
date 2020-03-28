@@ -90,11 +90,11 @@ const bool FSEditlog::IsIMMaster(const string & sKey)
 int FSEditlog::Propose(const string & sKey, const string & sPaxosValue, 
     PhxEditlogSMCtx & oEditlogSMCtx)
 {
-    int iGroupIdx = GetGroupIdx(sKey);
+    int iGroupIdx = GetGroupIdx(sKey); //sKey 是目录 hash算法得到groupindex
 
     SMCtx oCtx;
     //smid must same to PhxEditlogSM.SMID().
-    oCtx.m_iSMID = 1;
+    oCtx.m_iSMID = 1; //设置oCtx.m_iSMID为1，与我们刚刚编写的状态机的SMID()相对应，标识我们需要将这个请求送往SMID为1的状态机的Execute函数。
     oCtx.m_pCtx = (void *)&oEditlogSMCtx;
 
     uint64_t llInstanceID = 0;

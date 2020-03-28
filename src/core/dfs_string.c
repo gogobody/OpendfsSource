@@ -193,6 +193,7 @@ uchar_t * _xcdecl string_xxsnprintf(uchar_t *buf, size_t max,
     return p;
 }
 
+// vsnprintf
 uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max, 
 	                              const char *fmt, va_list args)
 {

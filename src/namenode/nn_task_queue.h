@@ -16,7 +16,7 @@ typedef void (*opq_free)(void*);
 
 typedef struct
 { 
-	queue_t            qh; // task queue
+	queue_t            qh; // task queue queue head?
 	pthread_spinlock_t lock;
 } task_queue_t;
 

@@ -215,6 +215,7 @@ void worker_processer(cycle_t *cycle, void *data)
     thread_registration_init();
 
 	// load fsimage
+	// set check point
 	load_image();
 
 	// paxos thread
@@ -225,7 +226,8 @@ void worker_processer(cycle_t *cycle, void *data)
 		
         exit(PROCESS_FATAL_EXIT);
     }
-    
+
+	// 处理 task 并把task 分发到不同的tq
     if (create_task_thread(cycle) != DFS_OK) 
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -277,6 +279,7 @@ void worker_processer(cycle_t *cycle, void *data)
     process_worker_exit(cycle);
 }
 
+// paxos thread
 int create_paxos_thread(cycle_t *cycle)
 {
     paxos_thread = (dfs_thread_t *)pool_calloc(cycle->pool, 
@@ -325,13 +328,16 @@ int create_paxos_thread(cycle_t *cycle)
     return DFS_OK;
 }
 
-//
+// paxos 线程
+// dfs_module_workethread_init
 static void * thread_paxos_cycle(void *arg)
 {
     dfs_thread_t *me = (dfs_thread_t *)arg;
 
     thread_bind_key(me);
 
+    // 这个初始化应该放在外面去, 线程函数的初始化
+    // 目前都是NULL 不用初始化
     if (dfs_module_workethread_init(me) != DFS_OK) 
 	{
         goto exit;
@@ -340,12 +346,17 @@ static void * thread_paxos_cycle(void *arg)
     me->state = THREAD_ST_OK;
 
     register_thread_initialized();
-   
+
+    // 进程间通信
+    // n -> tq_notice
+    // data -> task queue
+    // open channel and 分配 pfd
+    // 添加 event 事件
     notice_init(&me->event_base, &me->tq_notice, do_paxos_task_handler, &me->tq);
 
     while (me->running) 
 	{
-        thread_event_process(me);
+        thread_event_process(me); // nn thread
     }
 
 exit:
@@ -356,6 +367,8 @@ exit:
     return NULL;
 }
 
+
+// thread task cycle
 int create_task_thread(cycle_t *cycle)
 {
     conf_server_t *sconf = NULL;
@@ -420,12 +433,14 @@ int create_task_thread(cycle_t *cycle)
     return DFS_OK;
 }
 
+// do_task_handler
 static void * thread_task_cycle(void *arg)
 {
     dfs_thread_t *me = (dfs_thread_t *)arg;
 
     thread_bind_key(me);
 
+    // none
     if (dfs_module_workethread_init(me) != DFS_OK) 
 	{
         goto exit;
@@ -434,7 +449,8 @@ static void * thread_task_cycle(void *arg)
     me->state = THREAD_ST_OK;
 
     register_thread_initialized();
-   
+
+    // 把一些task 直接push到paxoa 的tq
     notice_init(&me->event_base, &me->tq_notice, do_task_handler, &me->tq);
 
     while (me->running) 
@@ -450,6 +466,7 @@ exit:
     return NULL;
 }
 
+// datannode thread
 static int create_dn_thread(cycle_t *cycle)
 {
     int i = 0; 
@@ -468,23 +485,25 @@ static int create_dn_thread(cycle_t *cycle)
 		
         return DFS_ERROR;
     }
-	
+
+    //
     task_queue_init(&dn_thread->tq);
 	
     dn_thread->queue_size = ((conf_server_t*)cycle->sconf)->worker_n;
-	
+	// write que? queue 数组
     dn_thread->bque = (task_queue_t *)malloc(sizeof(task_queue_t) * dn_thread->queue_size);
     if (!dn_thread->bque)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "queue malloc fail");
     }
-	
+
+    // 初始化 bque 数组的每一个数组
     for (i = 0; i < dn_thread->queue_size; i++ )
 	{
         task_queue_init(&dn_thread->bque[i]);
     }
 	
-    dn_thread->run_func= thread_dn_cycle;
+    dn_thread->run_func= thread_dn_cycle; //
     dn_thread->running = DFS_TRUE;
     dn_thread->state = THREAD_ST_UNSTART;
 	
@@ -507,6 +526,7 @@ static int create_dn_thread(cycle_t *cycle)
     return DFS_OK;
 }
 
+//
 static void * thread_dn_cycle(void * args)
 {
     dfs_thread_t *me = (dfs_thread_t *)args;

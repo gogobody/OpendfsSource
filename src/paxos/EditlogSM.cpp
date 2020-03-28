@@ -16,6 +16,7 @@ PhxEditlogSM::~PhxEditlogSM()
 {
 }
 
+// propose 后执行excute
 bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID, 
 	const string & sPaxosValue, SMCtx * poSMCtx)
 {
@@ -28,7 +29,7 @@ bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID,
         PhxEditlogSMCtx * poPhxEditlogSMCtx = (PhxEditlogSMCtx *)poSMCtx->m_pCtx; // 继承 SMCtx
         poPhxEditlogSMCtx->iExecuteRet = DFS_OK;
         poPhxEditlogSMCtx->llInstanceID = llInstanceID; // 提议的值
-        //
+        // paxos handler
 		update_fi_cache_mgmt(llInstanceID, sPaxosValue, poPhxEditlogSMCtx->data);
     }
 	else 

@@ -12,10 +12,10 @@ typedef void (*wake_up_hander)(void *data);
 
 struct notice_s 
 {
-    pipe_t          channel;
-    wake_up_ptr     wake_up;
-    wake_up_hander  call_back;
-    void           *data;
+    pipe_t          channel; //
+    wake_up_ptr     wake_up; //
+    wake_up_hander  call_back; //
+    void           *data; //
     log_t          *log;
 };
 

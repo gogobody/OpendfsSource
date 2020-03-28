@@ -5,6 +5,11 @@
 
 static void noice_read_event_handler(event_t *ev);
 
+// 进程间通信
+// n -> tq_notice
+// data -> task queue
+// open channel and 分配 pfd
+// 添加 event 事件
 int notice_init(event_base_t *base, notice_t *n, 
 	              wake_up_hander handler, void *data)
 {
@@ -16,24 +21,25 @@ int notice_init(event_base_t *base, notice_t *n,
         return DFS_ERROR;
     }
     
-    c = conn_get_from_mem(n->channel.pfd[0]);
+    c = conn_get_from_mem(n->channel.pfd[0]); // 0是读端
     if (!c) 
 	{
         goto error;
     }
 
+    // 设置非阻塞
     conn_nonblocking(n->channel.pfd[0]);
     conn_nonblocking(n->channel.pfd[1]);
-    n->call_back = handler;
-    n->data = data;
-    n->wake_up = notice_wake_up;
+    n->call_back = handler; //do_paxos_task_handler // net_response_handler
+    n->data = data; // task queue
+    n->wake_up = notice_wake_up; // 向channel 中发送一个 "c"
     
-    c->ev_base = base;
-    c->conn_data = n;
+    c->ev_base = base; //
+    c->conn_data = n; // notice_t
     c->log = base->log;
     
-    rev = c->read;
-    rev->handler = noice_read_event_handler;
+    rev = c->read; //
+    rev->handler = noice_read_event_handler; // 读事件发生后调用 n->call_back(n->data)
     
     if (epoll_add_event(base,rev, EVENT_READ_EVENT, 0) == DFS_ERROR)
 	{
@@ -57,9 +63,10 @@ error:
     return DFS_ERROR;
 }
 
+// 向channel 中发送一个 "c"
 int notice_wake_up(notice_t *n)
 {
-    if (dfs_write_fd(n->channel.pfd[1], "C", 1) == DFS_ERROR) 
+    if (dfs_write_fd(n->channel.pfd[1], "C", 1) == DFS_ERROR) // 1 是写端
 	{
         if (errno != DFS_EAGAIN) 
 		{
@@ -71,6 +78,7 @@ int notice_wake_up(notice_t *n)
     return DFS_OK;
 }
 
+// 读事件发生后调用 n->call_back(n->data)
 static void noice_read_event_handler(event_t *ev)
 {
     conn_t   *c = NULL;

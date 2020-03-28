@@ -22,6 +22,7 @@ int nn_rpc_worker_release(cycle_t *cycle)
     return DFS_OK;
 }
 
+// do task
 int nn_rpc_service_run(task_t *task)
 {
     int optype = task->cmd;

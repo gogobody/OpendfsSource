@@ -25,7 +25,7 @@ static int cur_runing_threads = 0;
 static int cur_exited_threads = 0;
 
 dfs_thread_t *task_threads;
-dfs_thread_t *last_task;
+dfs_thread_t *last_task; //
 int           task_num = 0;
 
 extern dfs_thread_t *main_thread;
@@ -148,6 +148,9 @@ void register_thread_exit(void)
 }
 
 // dispatch task when recv it
+// data is task_queue_node_t
+// push task to last_task->tq
+// notice_wake_up (&last_task->tq_notice
 void dispatch_task(void *data)
 {
     task_queue_node_t *node = NULL;
@@ -157,9 +160,9 @@ void dispatch_task(void *data)
 	node = (task_queue_node_t *)data;
     t = &node->tk;
 		
-    index = hash_task_key(t->key, 16);
-    last_task = &task_threads[index % task_num];
-    push_task(&last_task->tq, (task_queue_node_t *)data);
+    index = hash_task_key(t->key, 16); // index is key address
+    last_task = &task_threads[index % task_num]; // 初始化 last_task = &task_threads[0];
+    push_task(&last_task->tq, (task_queue_node_t *)data); //
     notice_wake_up(&last_task->tq_notice);
 }
 
@@ -182,7 +185,7 @@ void worker_processer(cycle_t *cycle, void *data)
     process_type = PROCESS_WORKER;
     main_thread->event_base.nevents = 512;
 
-    // epoll init
+    // epoll init： fd\ event_list\ timer
     if (thread_event_init(main_thread) != DFS_OK) 
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -236,6 +239,7 @@ void worker_processer(cycle_t *cycle, void *data)
         exit(PROCESS_FATAL_EXIT);
     }
 
+    //
 	if (create_dn_thread(cycle) != DFS_OK) 
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -243,7 +247,8 @@ void worker_processer(cycle_t *cycle, void *data)
 		
         exit(PROCESS_FATAL_EXIT);
     }
-    
+
+	//
     if (create_cli_thread(cycle) != DFS_OK) 
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
@@ -526,7 +531,7 @@ static int create_dn_thread(cycle_t *cycle)
     return DFS_OK;
 }
 
-//
+// datanode thread
 static void * thread_dn_cycle(void * args)
 {
     dfs_thread_t *me = (dfs_thread_t *)args;
@@ -534,9 +539,12 @@ static void * thread_dn_cycle(void * args)
     
     listens = cycle_get_listen_for_dn();
     thread_bind_key(me);
-    
+
+    // 添加读事件
+    // ? 读事件为什么要 write back
     notice_init(&me->event_base, &me->tq_notice, net_response_handler, me);
 
+    // 对所有的datanode 监听的listens 添加listening 的 read event
     if (conn_listening_add_event(&me->event_base, listens) != DFS_OK) 
 	{
         goto exit;
@@ -683,6 +691,7 @@ static int channel_add_event(int fd, int event,
     return DFS_OK;
 }
 
+// handle channel event
 static void channel_handler(event_t *ev)
 {
     int            n = 0;

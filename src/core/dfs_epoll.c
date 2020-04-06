@@ -354,7 +354,7 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
             events |= EPOLLIN|EPOLLOUT;
         }
 
-        // write in
+        // read event
         if ((events & EPOLLIN) && rev->active) 
 		{
             // 设置 event ready
@@ -380,7 +380,7 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
 				// 添加事件到 queue
                 queue_insert_tail((queue_t*)queue, &rev->post_queue);
             } 
-			else  // handle events
+			else  // nn thread handle events
 			{
                 dfs_log_debug(ep_base->log, DFS_LOG_DEBUG, 0,
                     "epoll_process_events: read event fd:%d", c->fd);

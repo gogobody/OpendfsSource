@@ -39,6 +39,7 @@ typedef struct blk_cache_mem_s
     struct mem_mblks    *free_mblks;
 } blk_cache_mem_t;
 
+//g_nn_bcm
 typedef struct blk_cache_mgmt_s 
 {
     dfs_hashtable_t  *blk_htable;

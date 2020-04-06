@@ -594,8 +594,8 @@ int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 		return DFS_ERROR;
 	}
 
-	cur = queue_head(&g_dn_q);
-	dns = queue_data(cur, dn_store_t, me);
+	cur = queue_head(&g_dn_q); //
+	dns = queue_data(cur, dn_store_t, me); //
 	
 	resp_info->dn_num = 1;
 	strcpy(resp_info->dn_ips[0], dns->dni.id);

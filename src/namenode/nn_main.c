@@ -196,6 +196,7 @@ int main(int argc, char **argv)
         goto out;
     }
     // format the file system
+    // init namespace id
 	if (g_format) 
 	{
 	    format(cycle);

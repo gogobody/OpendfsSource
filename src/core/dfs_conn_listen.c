@@ -204,7 +204,7 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
     sin->sin_addr.s_addr = addr;
     sin->sin_port = htons(port);
     address = (uchar_t *)inet_ntoa(sin->sin_addr);
-    
+    // 分配array
     ls = (listening_t *)array_push(listening);
     if (!ls) 
 	{

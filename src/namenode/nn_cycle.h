@@ -11,7 +11,7 @@ typedef struct cycle_s cycle_t;
 
 struct cycle_s 
 {
-    void      *sconf;
+    void      *sconf; // server conf
     pool_t    *pool;
     log_t     *error_log;
     array_t    listening_for_cli;

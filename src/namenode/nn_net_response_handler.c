@@ -43,6 +43,8 @@ int write_back(task_queue_node_t *node)
 }
 
 // n->call_back
+// 对数组的bque 和 tq全部执行 write back 操作
+// send task
 void net_response_handler(void *data)
 {
     queue_t       q;
@@ -50,7 +52,7 @@ void net_response_handler(void *data)
     dfs_thread_t *th = NULL;
     int           i = 0;   
     
-    th = (dfs_thread_t *)data;
+    th = (dfs_thread_t *)data; // 区别cli thread和 dn thread
 	
     if (THREAD_DN == th->type || THREAD_CLI == th->type) 
 	{
@@ -65,7 +67,7 @@ void net_response_handler(void *data)
     } 
 	else 
 	{
-        tq = &th->tq; //task queue
+        tq = &th->tq; //task queue // write back时会写入 tq
 		
         queue_init(&q);
         pop_all(tq, &q);
@@ -85,7 +87,10 @@ void write_back_notice_call(void *data)
     write_back_pack_queue(&q, DFS_TRUE);
 }
 
-// 
+// 插入 task -> mc conn -> out task
+// mc->write_event_handler = nn_conn_write_handler;
+// send out buffer
+// add event
 static void write_back_pack_task(task_queue_node_t *node, int send)
 {
     task_t  *task = NULL;
@@ -98,6 +103,10 @@ static void write_back_pack_task(task_queue_node_t *node, int send)
 }
 
 // write tasks back which in q, send is status code
+// 插入 task -> mc conn -> out task
+// mc->write_event_handler = nn_conn_write_handler;
+// send out buffer
+// add event
 void write_back_pack_queue(queue_t *q, int send)
 {
     queue_t           *qn = NULL;

@@ -157,7 +157,7 @@ void do_paxos_task_handler(void *q) // param task queue
 	task_queue_t      *tq = NULL;
     dfs_thread_t      *thread = NULL;
 
-	tq = (task_queue_t *)q;
+	tq = (task_queue_t *)q; // task que
     thread = get_local_thread();
 	
     queue_init(&qhead);
@@ -518,7 +518,8 @@ static int log_create(task_t *task)
 	
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
 
-	if (!g_editlog->IsIMMaster(task->key)) 
+    // 不是主master
+	if (!g_editlog->IsIMMaster(task->key))  // key 是dst 目录
 	{
         task->ret = MASTER_REDIRECT;
 		task->master_nodeid = g_editlog->GetMaster(task->key).GetNodeID();
@@ -526,8 +527,9 @@ static int log_create(task_t *task)
 		return write_back(node);
 	}
 
-	fi_store_t *fi = get_store_obj((uchar_t *)task->key);
-	if (fi) 
+	// master 节点
+	fi_store_t *fi = get_store_obj((uchar_t *)task->key); // key 是dst 目录
+	if (fi) // 元数据存在
 	{
 	    if (fi->state == KEY_STATE_OK) 
 		{
@@ -540,15 +542,15 @@ static int log_create(task_t *task)
 		
 		return write_back(node);
 	}
-
+    // 元数据不存在
 	uchar_t path[PATH_LEN] = "";
-	get_store_path((uchar_t *)task->key, path);
+	get_store_path((uchar_t *)task->key, path); // decode path
 
 	uchar_t names[PATH_LEN][PATH_LEN];
-    int names_sz = get_path_names(path, names);
+    int names_sz = get_path_names(path, names); //
 
 	uchar_t keys[PATH_LEN][PATH_LEN];
-    get_path_keys(names, names_sz, keys);
+    get_path_keys(names, names_sz, keys); // 把每一级目录都 encode方便查找是否已经创建过
 
 	parent_index = get_path_inodes(keys, names_sz, finodes);
 
@@ -603,6 +605,7 @@ static int log_create(task_t *task)
 		return write_back(node);
 	}
 
+	// 从 g_dn_q 中选择一个存储节点 datanode
 	if (generate_dns(blk_info.blk_rep, &resp_info) != DFS_OK)
 	{
         task->ret = NOT_DATANODE;
@@ -610,6 +613,7 @@ static int log_create(task_t *task)
 		return write_back(node);
 	}
 
+	//
 	resp_info.blk_id = generate_uid();
 	resp_info.namespace_id = dfs_cycle->namespace_id;
 	

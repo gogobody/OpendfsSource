@@ -24,8 +24,8 @@ struct nn_conn_s
     queue_t              out_task;
     nn_event_handler_pt  read_event_handler; //nn_conn_read_handler
     nn_event_handler_pt  write_event_handler;
-    int32_t              count;
-    int32_t              slow;
+    int32_t              count; // used freetask que count
+    int32_t              slow; //
     queue_t              free_task; //  wb_node_t
     pool_t              *mempool; // pool
     event_t              ev_timer;

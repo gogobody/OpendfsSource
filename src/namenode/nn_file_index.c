@@ -64,7 +64,7 @@ static int update_fi_get_additional_blk(fi_inode_t *fin,
 static int update_fi_close(fi_inode_t *fin);
 static int update_fi_rm(fi_inode_t *fin);
 
-// 初始化fi_cache_mgmt_t fcm
+// 初始化fi_cache_mgmt_t fcm index_num个 fi_store_t
 // init timer
 // init g_checkpoint_q
 int nn_file_index_worker_init(cycle_t *cycle)
@@ -317,6 +317,8 @@ void get_store_path(uchar_t *key, uchar_t *path)
 }
 
 // 目录按照 “/” 分割
+// eg：/test/a
+// 会分割得到 /  test   a   3个
 int get_path_names(uchar_t *path, uchar_t names[][PATH_LEN])
 {
     uchar_t *str = NULL;
@@ -511,7 +513,7 @@ int nn_ls(task_t *task)
 	    }
     }
 
-	if (!finode.is_directory) 
+	if (!finode.is_directory)  // 不是目录
 	{
         task->data_len = sizeof(fi_inode_t);
 		task->data = malloc(task->data_len);
@@ -522,7 +524,7 @@ int nn_ls(task_t *task)
 
 		memcpy(task->data, &finode, sizeof(fi_inode_t));
 	}
-	else 
+	else  // 是目录
 	{
         pthread_rwlock_rdlock(&g_fcm->cache_rwlock);
 	
@@ -568,7 +570,7 @@ int nn_get_file_info(task_t *task)
     return DFS_OK;
 }
 
-//
+// task thread
 int nn_create(task_t *task)
 {
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);

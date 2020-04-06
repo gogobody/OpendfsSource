@@ -89,9 +89,9 @@ ssize_t sysio_readv_chain(conn_t *c, chain_t *chain)
     ssize_t       size = 0;
     struct iovec  iovs[DFS_IOVS_REV];
 
-    while (chain && i < DFS_IOVS_REV) 
+    while (chain && i < DFS_IOVS_REV) //遍历chain缓冲链表，不断的申请struct iovec结构为待会的readv做准备，碰到临近2块内存如果正好接在一起，就公用之。
 	{
-        if (prev == chain->buf->last) 
+        if (prev == chain->buf->last) //说明前面一个chain的end后和面一个chain的last刚好相等，也就是这两个chain内存是连续的 临近2块内存如果正好接在一起，就公用之
 		{
             iovs[i - 1].iov_len += chain->buf->end - chain->buf->last;
 			
@@ -109,7 +109,7 @@ ssize_t sysio_readv_chain(conn_t *c, chain_t *chain)
             i++;
         }
 		
-        size += chain->buf->end - chain->buf->last;
+        size += chain->buf->end - chain->buf->last;//该chain->buf中可以使用的内存有这么多
         prev = chain->buf->end;
         chain = chain->next;
     }

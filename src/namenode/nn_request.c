@@ -82,7 +82,7 @@ void nn_conn_init(conn_t *c)
 	{
         c->conn_data = pool_calloc(pool, sizeof(nn_conn_t));
     }
-	
+	// mc => nn_conn
     mc = (nn_conn_t *)c->conn_data;
     if (!mc) 
 	{
@@ -122,10 +122,10 @@ void nn_conn_init(conn_t *c)
         goto error;
     }
 
-    // 初始化分配 max task个 task_node
+    // 初始化分配 max task个 wb_node *
     for (i = 0; i < mc->max_task; i++) 
 	{
-        node = buff + i;
+        node = buff + i; // 每个node都是一个单独的 queue
         node->qnode.tk.opq = &node->wbt;
 		node->qnode.tk.data = NULL;
         (node->wbt).mc = mc;
@@ -145,15 +145,18 @@ void nn_conn_init(conn_t *c)
     memset(&mc->ev_timer, 0, sizeof(event_t));
     mc->ev_timer.data = mc; //
     mc->ev_timer.handler = nn_conn_timer_handler;
+
     rev->handler = nn_event_process_handler;
     wev->handler = nn_event_process_handler;
 	
     queue_init(&mc->out_task);
-	
-    mc->read_event_handler = nn_conn_read_handler;
+    // recv buf to mc->in
+    // decode task from mc->in
+    // dispatch task to task_threads[]
+    mc->read_event_handler = nn_conn_read_handler; //
 	
     nn_conn_update_state(mc, ST_CONNCECTED);
-	
+	// add read event
     if (event_handle_read(c->ev_base, rev, 0) == DFS_ERROR) 
 	{
         dfs_log_error(mc->log, DFS_LOG_ALERT, 0, "add read event failed");
@@ -173,6 +176,8 @@ error:
     conn_pool_free_connection(&thread->conn_pool, c);
 }
 
+// read \ write event handler
+// 执行对应mc 的 write event handler 或者 read event handler
 static void nn_event_process_handler(event_t *ev)
 {
     conn_t    *c = NULL;
@@ -203,7 +208,7 @@ static void nn_event_process_handler(event_t *ev)
             return;
         }
 		
-        mc->read_event_handler(mc);
+        mc->read_event_handler(mc); //nn_conn_read_handler
     }
 }
 
@@ -211,6 +216,8 @@ static void nn_event_process_handler(event_t *ev)
 //{   
 //}
 
+
+// recv buf to mc->in
 static int nn_conn_recv(nn_conn_t *mc)
 {
     int     n = 0;
@@ -256,6 +263,8 @@ static int nn_conn_recv(nn_conn_t *mc)
 	return DFS_OK;
 }
 
+// decode task from mc->in
+// dispatch task to task_threads[]
 static int nn_conn_decode(nn_conn_t *mc)
 {
     int                rc = 0;
@@ -263,6 +272,7 @@ static int nn_conn_decode(nn_conn_t *mc)
 	
 	while (1) 
 	{
+        // pop free task from free_task queue
         node = (task_queue_node_t *)nn_conn_get_task(mc);
 		if (!node) 
 		{
@@ -275,10 +285,15 @@ static int nn_conn_decode(nn_conn_t *mc)
 			
             return DFS_BUSY;
     	}	
-			
+
+		// decode in buffer to task
         rc = task_decode(mc->in, &node->tk);
         if (rc == DFS_OK) 
 		{
+            // dispatch task when recv it
+            // data is task_queue_node_t
+            // push task to last_task->tq
+            // notice_wake_up (&last_task->tq_notice
             dispatch_task(node);
 
             node = NULL;
@@ -306,6 +321,9 @@ static int nn_conn_decode(nn_conn_t *mc)
 	return DFS_OK;
 }
 
+// recv buf to mc->in
+// decode task from mc->in
+// dispatch task to task_threads[]
 static void nn_conn_read_handler(nn_conn_t *mc)
 {
 	int   rc = 0;
@@ -315,7 +333,8 @@ static void nn_conn_read_handler(nn_conn_t *mc)
 	{
         return;
     }
-	
+
+    // recv buf to mc->in
     rc = nn_conn_recv(mc);
     switch (rc) 
 	{
@@ -333,7 +352,8 @@ static void nn_conn_read_handler(nn_conn_t *mc)
     case DFS_BUFFER_FULL:
         break;
     }
-	
+    // decode task from mc->in
+    // dispatch task to task_threads[]
     rc = nn_conn_decode(mc);
     if (rc == DFS_ERROR) 
 	{
@@ -376,7 +396,9 @@ static void nn_conn_write_handler(nn_conn_t *mc)
 	{
         event_timer_del(c->ev_timer, c->write);
     }
-    //
+    // mc->write_event_handler = nn_conn_write_handler;
+    // send buffer
+    // add event
 	nn_conn_output(mc);  
 }
 
@@ -399,6 +421,7 @@ int nn_conn_is_connected(nn_conn_t *mc)
     return mc->state == ST_CONNCECTED;
 }
 
+// send buffer
 static int nn_conn_out_buffer(conn_t *c, buffer_t *b)
 {
     size_t size = 0;
@@ -429,6 +452,9 @@ static int nn_conn_out_buffer(conn_t *c, buffer_t *b)
 }
 
 // 插入 task -> mc conn -> out task
+// mc->write_event_handler = nn_conn_write_handler;
+// send out buffer
+// add event
 int nn_conn_outtask(nn_conn_t *mc, task_t *t)
 {   
     task_queue_node_t *node =NULL;
@@ -447,6 +473,8 @@ int nn_conn_outtask(nn_conn_t *mc, task_t *t)
 }
 
 // mc->write_event_handler = nn_conn_write_handler;
+// send out buffer
+// add event
 int nn_conn_output(nn_conn_t *mc)
 {
     conn_t            *c = NULL;
@@ -476,7 +504,7 @@ repack:
 
 		// encode task to out buffer
 		rc = task_encode(t, mc->out);
-		if (rc == DFS_OK) 
+		if (rc == DFS_OK)  // 这个task push完成就释放空间
 		{
 			queue_remove(qe);
 			nn_conn_free_task(mc, qe);
@@ -484,7 +512,7 @@ repack:
 			continue;
 		}
 
-		if (rc == DFS_AGAIN) 
+		if (rc == DFS_AGAIN)  // 塞满一个buffer 就发
 		{
 			goto send;
 		}
@@ -497,11 +525,12 @@ repack:
 	}
 
 send:
-    if(!buffer_size(mc->out)) 
+    if(!buffer_size(mc->out))  // buffer size 0
 	{
         return DFS_OK;
     }
-    
+
+    // send buffer
 	rc = nn_conn_out_buffer(c, mc->out);
     if (rc == DFS_ERROR) 
 	{
@@ -533,6 +562,7 @@ close:
 	return DFS_ERROR;
 }
 
+// pop free task from free_task queue
 void * nn_conn_get_task(nn_conn_t *mc)
 {
     queue_t           *queue = NULL; 
@@ -546,10 +576,10 @@ void * nn_conn_get_task(nn_conn_t *mc)
 		return NULL;
 	}
 	
-    queue = queue_head(&mc->free_task);
-    node = queue_data(queue, task_queue_node_t, qe);
+    queue = queue_head(&mc->free_task); //
+    node = queue_data(queue, task_queue_node_t, qe); //
     queue_remove(queue);
-    mc->count++;
+    mc->count++; //
 	
     return node;  
 }

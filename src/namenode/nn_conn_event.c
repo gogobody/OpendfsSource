@@ -109,6 +109,7 @@ int conn_listening_init(cycle_t *cycle)
     return DFS_OK;
 }
 
+// handle rev event
 static void listen_rev_handler(event_t *ev)
 {
     int           s = DFS_INVALID_FILE;
@@ -160,7 +161,8 @@ static void listen_rev_handler(event_t *ev)
 			
             return;
         }
-      
+
+        // accept 成功 就重新分配一个connection
         nc = conn_pool_get_connection(conn_pool);
         if (!nc) 
 		{
@@ -171,7 +173,7 @@ static void listen_rev_handler(event_t *ev)
 			
             return;
         }
-		
+		// conn fd ->s
         conn_set_default(nc, s);
        
         if (!nc->pool)
@@ -251,7 +253,7 @@ static void listen_rev_handler(event_t *ev)
             &ls->addr_text);
 		
         nc->accept_time = *time_timeofday();
-        nn_conn_init(nc);
+        nn_conn_init(nc);//
     }
 		
 error:

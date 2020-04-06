@@ -21,7 +21,7 @@ struct conf_server_s
     uint32_t recv_buff_len;
     uint32_t send_buff_len;
     uint32_t max_tqueue_len;
-    string_t my_paxos;
+    string_t my_paxos; //当前运行节点的IP/PORT参数
     string_t ot_paxos;
     string_t editlog_dir;
     string_t fsimage_dir;

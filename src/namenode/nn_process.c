@@ -481,8 +481,9 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
         processes[i].pid = DFS_INVALID_PID;
     }
 
-	// cli 相关
+	// cli datanode
 	// listen cli and datanode
+	// listen_rev_handler
     if (conn_listening_init(cycle) != DFS_OK) 
 	{
         return;

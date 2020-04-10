@@ -85,7 +85,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 
 	sconf = (conf_server_t *)dfs_cycle->sconf;
 	nn_addr = (server_bind_t *)sconf->namenode_addr.elts;
-	
+	// conn to name node
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{

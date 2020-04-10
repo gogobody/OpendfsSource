@@ -196,6 +196,7 @@ static int do_paxos_task(task_t *task)
 	case NN_GET_FILE_INFO:
 		break;
 
+	// cli put file
 	case NN_CREATE:
 		log_create(task);
 		break;
@@ -499,6 +500,7 @@ static void * checkpoint_start(void *arg)
     return NULL;
 }
 
+// cli put file
 static int log_create(task_t *task)
 {
 	int                parent_index = 0;

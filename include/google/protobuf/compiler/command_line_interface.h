@@ -406,7 +406,7 @@ class PROTOC_EXPORT CommandLineInterface {
   // generator to use for each.
   struct OutputDirective {
     std::string name;          // E.g. "--foo_out"
-    CodeGenerator* generator;  // NULL for plugins
+    CodeGenerator* generator;  // nullptr for plugins
     std::string parameter;
     std::string output_location;
   };

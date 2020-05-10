@@ -126,7 +126,7 @@ struct ArenaOptions {
   // here.
   size_t max_block_size;
 
-  // An initial block of memory for the arena to use, or NULL for none. If
+  // An initial block of memory for the arena to use, or nullptr for none. If
   // provided, the block must live at least as long as the arena itself. The
   // creator of the Arena retains ownership of the block after the Arena is
   // destroyed.
@@ -149,14 +149,14 @@ struct ArenaOptions {
   ArenaOptions()
       : start_block_size(kDefaultStartBlockSize),
         max_block_size(kDefaultMaxBlockSize),
-        initial_block(NULL),
+        initial_block(nullptr),
         initial_block_size(0),
         block_alloc(&::operator new),
         block_dealloc(&internal::arena_free),
-        on_arena_init(NULL),
-        on_arena_reset(NULL),
-        on_arena_destruction(NULL),
-        on_arena_allocation(NULL) {}
+        on_arena_init(nullptr),
+        on_arena_reset(nullptr),
+        on_arena_destruction(nullptr),
+        on_arena_allocation(nullptr) {}
 
  private:
   // Hooks for adding external functionality such as user-specific metrics
@@ -165,7 +165,7 @@ struct ArenaOptions {
   // return a pointer to a cookie to be stored in the arena. Reset and
   // destruction hooks will then be called with the same cookie pointer. This
   // allows us to save an external object per arena instance and use it on the
-  // other hooks (Note: If init hook returns NULL, the other hooks will NOT be
+  // other hooks (Note: If init hook returns nullptr, the other hooks will NOT be
   // called on this arena instance).
   // on_arena_reset and on_arena_destruction also receive the space used in the
   // arena just before the reset.
@@ -196,7 +196,7 @@ struct ArenaOptions {
 #if PROTOBUF_RTTI
 #define RTTI_TYPE_ID(type) (&typeid(type))
 #else
-#define RTTI_TYPE_ID(type) (NULL)
+#define RTTI_TYPE_ID(type) (nullptr)
 #endif
 
 // Arena allocator. Arena allocation replaces ordinary (heap-based) allocation
@@ -225,7 +225,7 @@ struct ArenaOptions {
 // - The type T must have (at least) two constructors: a constructor with no
 //   arguments, called when a T is allocated on the heap; and a constructor with
 //   a Arena* argument, called when a T is allocated on an arena. If the
-//   second constructor is called with a NULL arena pointer, it must be
+//   second constructor is called with a nullptr arena pointer, it must be
 //   equivalent to invoking the first (no-argument) constructor.
 //
 // - The type T must have a particular type trait: a nested type
@@ -235,7 +235,7 @@ struct ArenaOptions {
 //
 // - The type T *may* have the type trait |DestructorSkippable_|. If this type
 //   trait is present in the type, then its destructor will not be called if and
-//   only if it was passed a non-NULL arena pointer. If this type trait is not
+//   only if it was passed a non-nullptr arena pointer. If this type trait is not
 //   present on the type, then its destructor is always called when the
 //   containing arena is destroyed.
 //
@@ -280,15 +280,15 @@ class PROTOBUF_EXPORT alignas(8) Arena final {
     on_arena_reset_ = options.on_arena_reset;
     on_arena_destruction_ = options.on_arena_destruction;
     // Call the initialization hook
-    if (options.on_arena_init != NULL) {
+    if (options.on_arena_init != nullptr) {
       hooks_cookie_ = options.on_arena_init(this);
     } else {
-      hooks_cookie_ = NULL;
+      hooks_cookie_ = nullptr;
     }
   }
 
   // API to create proto2 message objects on the arena. If the arena passed in
-  // is NULL, then a heap allocated object is returned. Type T must be a message
+  // is nullptr, then a heap allocated object is returned. Type T must be a message
   // defined in a .proto file with cc_enable_arenas set to true, otherwise a
   // compilation error will occur.
   //
@@ -344,7 +344,7 @@ class PROTOBUF_EXPORT alignas(8) Arena final {
                   "CreateArray requires a trivially destructible type");
     GOOGLE_CHECK_LE(num_elements, std::numeric_limits<size_t>::max() / sizeof(T))
         << "Requested size is too large to fit into size_t.";
-    if (arena == NULL) {
+    if (arena == nullptr) {
       return static_cast<T*>(::operator new[](num_elements * sizeof(T)));
     } else {
       return arena->CreateInternalRawArray<T>(num_elements);

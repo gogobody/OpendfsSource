@@ -75,7 +75,7 @@ bool PROTOBUF_EXPORT SerializeDelimitedToOstream(const MessageLite& message,
 // is a varint encoding the message size followed by a message of exactly
 // that size.
 //
-// If |clean_eof| is not NULL, then it will be set to indicate whether the
+// If |clean_eof| is not nullptr, then it will be set to indicate whether the
 // stream ended cleanly. That is, if the stream ends without this method
 // having read any data at all from it, then *clean_eof will be set true,
 // otherwise it will be set false. Note that these methods return false

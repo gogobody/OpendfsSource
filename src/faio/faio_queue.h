@@ -73,7 +73,7 @@ do { \
 #define faio_queue_remove(x) \
     (x)->next->prev = (x)->prev; \
     (x)->prev->next = (x)->next; \
-    (x)->prev = (x)->next = NULL
+    (x)->prev = (x)->next = nullptr
 
 #define faio_queue_split(h, q, n) \
     (n)->prev = (h)->prev; \

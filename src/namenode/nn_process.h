@@ -63,7 +63,7 @@ enum
 
 void process_set_title(string_t *title);
 int  process_change_workdir(string_t *dir);
-void process_master_cycle(cycle_t *cycle, int argc, char **argv);
+void ngx_master_process_cycle(cycle_t *cycle, int argc, char **argv);
 int  process_write_pid_file(pid_t pid);
 void process_del_pid_file(void);
 int  process_get_pid(cycle_t *cycle);

@@ -16,6 +16,7 @@ enum
     ST_DISCONNCECTED = 1   
 };
 
+// 客户端主动？
 struct nn_conn_s 
 {
     conn_t              *connection; // 这种连接是指 客户端发起的，服务器被动接受的连接
@@ -26,7 +27,7 @@ struct nn_conn_s
     nn_event_handler_pt  write_event_handler;
     int32_t              count; // used freetask que count
     int32_t              slow; //
-    queue_t              free_task; //  wb_node_t
+    queue_t              free_task;
     pool_t              *mempool; // pool
     event_t              ev_timer;
     int32_t              max_task;

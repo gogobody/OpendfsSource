@@ -61,14 +61,14 @@ namespace internal {
 template <class T, class Derived>
 class InternalMetadataWithArenaBase {
  public:
-  InternalMetadataWithArenaBase() : ptr_(NULL) {}
+  InternalMetadataWithArenaBase() : ptr_(nullptr) {}
   explicit InternalMetadataWithArenaBase(Arena* arena) : ptr_(arena) {}
 
   ~InternalMetadataWithArenaBase() {
-    if (have_unknown_fields() && arena() == NULL) {
+    if (have_unknown_fields() && arena() == nullptr) {
       delete PtrValue<Container>();
     }
-    ptr_ = NULL;
+    ptr_ = nullptr;
   }
 
   PROTOBUF_ALWAYS_INLINE const T& unknown_fields() const {

@@ -51,8 +51,8 @@ typedef struct dfs_hashtable_s
     int                    count;       // total element that inserted to hashtable
 } dfs_hashtable_t;
 
-#define dfs_hashtable_link_make(str) {(void*)(str), sizeof((str)) - 1, NULL,NULL}
-#define dfs_hashtable_link_null      {NULL, 0, NULL,NULL}
+#define dfs_hashtable_link_make(str) {(void*)(str), sizeof((str)) - 1, nullptr,nullptr}
+#define dfs_hashtable_link_null      {nullptr, 0, nullptr,nullptr}
 
 DFS_HASHTABLE_HASH dfs_hashtable_hash_hash4;
 DFS_HASHTABLE_HASH dfs_hashtable_hash_key8;

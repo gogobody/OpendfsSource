@@ -41,7 +41,7 @@ typedef struct block_info_s
 
 typedef struct blk_cache_mem_s 
 {
-    void                *mem;  // mem addr
+    uchar_t                *mem;  // mem addr
     size_t               mem_size; // BLK_POOL_SIZE
     dfs_mem_allocator_t *allocator;
     struct mem_mblks    *free_mblks;

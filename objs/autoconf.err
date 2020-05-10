@@ -245,7 +245,7 @@ compilation terminated.
 #include <dldfsn.h>
 
 int main() {
-    dlopen(NULL, 0);
+    dlopen(nullptr, 0);
     return 0;
 }
 
@@ -267,7 +267,7 @@ compilation terminated.
 #include <dldfsn.h>
 
 int main() {
-    dlopen(NULL, 0);
+    dlopen(nullptr, 0);
     return 0;
 }
 
@@ -284,7 +284,7 @@ checking for SO_SETFIB
 
 objs/autotest.c: In function 'main':
 objs/autotest.c:7:31: error: 'SO_SETFIB' undeclared (first use in this function); did you mean 'FD_SETSIZE'?
-     setsockopt(0, SOL_SOCKET, SO_SETFIB, NULL, 4);
+     setsockopt(0, SOL_SOCKET, SO_SETFIB, nullptr, 4);
                                ^~~~~~~~~
                                FD_SETSIZE
 objs/autotest.c:7:31: note: each undeclared identifier is reported only once for each function it appears in
@@ -295,7 +295,7 @@ objs/autotest.c:7:31: note: each undeclared identifier is reported only once for
 #include <sys/socket.h>
 
 int main() {
-    setsockopt(0, SOL_SOCKET, SO_SETFIB, NULL, 4);
+    setsockopt(0, SOL_SOCKET, SO_SETFIB, nullptr, 4);
     return 0;
 }
 
@@ -308,7 +308,7 @@ checking for SO_ACCEPTFILTER
 
 objs/autotest.c: In function 'main':
 objs/autotest.c:7:31: error: 'SO_ACCEPTFILTER' undeclared (first use in this function); did you mean 'SO_LOCK_FILTER'?
-     setsockopt(0, SOL_SOCKET, SO_ACCEPTFILTER, NULL, 0);
+     setsockopt(0, SOL_SOCKET, SO_ACCEPTFILTER, nullptr, 0);
                                ^~~~~~~~~~~~~~~
                                SO_LOCK_FILTER
 objs/autotest.c:7:31: note: each undeclared identifier is reported only once for each function it appears in
@@ -319,7 +319,7 @@ objs/autotest.c:7:31: note: each undeclared identifier is reported only once for
 #include <sys/socket.h>
 
 int main() {
-    setsockopt(0, SOL_SOCKET, SO_ACCEPTFILTER, NULL, 0);
+    setsockopt(0, SOL_SOCKET, SO_ACCEPTFILTER, nullptr, 0);
     return 0;
 }
 
@@ -477,7 +477,7 @@ compilation terminated.
 int main() {
     void *p; int  fd;
                   fd = open("/dev/zero", O_RDWR);
-                  p = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+                  p = mmap(nullptr, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
                   if (p == MAP_FAILED) return 1;;
     return 0;
 }

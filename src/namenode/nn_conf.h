@@ -10,7 +10,7 @@ typedef struct conf_server_s conf_server_t;
 struct conf_server_s 
 {
     int      daemon;
-    int      worker_n;
+    int      worker_n; // task thread, dn thread , cli thread num
     array_t  bind_for_cli;
     array_t  bind_for_dn;
     uint32_t connection_n;

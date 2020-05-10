@@ -54,13 +54,14 @@ typedef struct dn_info_s
 	int      active_conn;
 } dn_info_t;
 
+// datanode
 typedef struct dn_store_s 
 {
 	dfs_hashtable_link_t ln;
-	queue_t 	         me;
-	queue_t              blk;
+	queue_t 	         me; // g_dn_q
+	queue_t              blk; // blk queue
 	queue_t              del_blk;
-	uint64_t             del_blk_num;
+	uint64_t             del_blk_num; //
 	dn_info_t            dni;
 } dn_store_t;
 

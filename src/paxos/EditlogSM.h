@@ -20,7 +20,7 @@ public:
     {
         iExecuteRet = -1;//iExecuteRet可以获得Execute的执行情况
 		llInstanceID = 0;
-		data = NULL;
+		data = nullptr;
     }
 };
 

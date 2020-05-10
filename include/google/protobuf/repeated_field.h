@@ -157,7 +157,7 @@ class RepeatedField final {
   void RemoveLast();
 
   // Extract elements with indices in "[start .. start+num-1]".
-  // Copy them into "elements[0 .. num-1]" if "elements" is not NULL.
+  // Copy them into "elements[0 .. num-1]" if "elements" is not nullptr.
   // Caution: implementation also moves elements with indices [start+num ..].
   // Calling this routine inside a loop can cause quadratic behavior.
   void ExtractSubrange(int start, int num, Element* elements);
@@ -337,13 +337,13 @@ class RepeatedField final {
   // If Element has a trivial destructor (for example, if it's a fundamental
   // type, like int32), the loop will be removed by the optimizer.
   void InternalDeallocate(Rep* rep, int size) {
-    if (rep != NULL) {
+    if (rep != nullptr) {
       Element* e = &rep->elements[0];
       Element* limit = &rep->elements[size];
       for (; e < limit; e++) {
         e->~Element();
       }
-      if (rep->arena == NULL) {
+      if (rep->arena == nullptr) {
 #if defined(__GXX_DELETE_WITH_SIZE__) || defined(__cpp_sized_deallocation)
         const size_t bytes = size * sizeof(*e) + kRepHeaderSize;
         ::operator delete(static_cast<void*>(rep), bytes);

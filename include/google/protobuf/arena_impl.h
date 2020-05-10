@@ -85,12 +85,12 @@ class PROTOBUF_EXPORT ArenaImpl {
 
   template <typename O>
   explicit ArenaImpl(const O& options) : options_(options) {
-    if (options_.initial_block != NULL && options_.initial_block_size > 0) {
+    if (options_.initial_block != nullptr && options_.initial_block_size > 0) {
       GOOGLE_CHECK_GE(options_.initial_block_size, sizeof(Block))
           << ": Initial block size too small for header.";
       initial_block_ = reinterpret_cast<Block*>(options_.initial_block);
     } else {
-      initial_block_ = NULL;
+      initial_block_ = nullptr;
     }
 
     Init();
@@ -276,7 +276,7 @@ class PROTOBUF_EXPORT ArenaImpl {
     // If we are using the ThreadLocalStorage class to store the ThreadCache,
     // then the ThreadCache's default constructor has to be responsible for
     // initializing it.
-    ThreadCache() : last_lifecycle_id_seen(-1), last_serial_arena(NULL) {}
+    ThreadCache() : last_lifecycle_id_seen(-1), last_serial_arena(nullptr) {}
 #endif
 
     // The ThreadCache is considered valid as long as this matches the
@@ -322,7 +322,7 @@ class PROTOBUF_EXPORT ArenaImpl {
   std::atomic<SerialArena*> hint_;  // Fast thread-local block access
   std::atomic<size_t> space_allocated_;  // Total size of all allocated blocks.
 
-  Block* initial_block_;  // If non-NULL, points to the block that came from
+  Block* initial_block_;  // If non-nullptr, points to the block that came from
                           // user data.
 
   Block* NewBlock(Block* last_block, size_t min_bytes);
@@ -335,7 +335,7 @@ class PROTOBUF_EXPORT ArenaImpl {
     // fast path optimizes the case where a single thread uses multiple arenas.
     ThreadCache* tc = &thread_cache();
     SerialArena* serial = hint_.load(std::memory_order_acquire);
-    if (PROTOBUF_PREDICT_TRUE(serial != NULL && serial->owner() == tc)) {
+    if (PROTOBUF_PREDICT_TRUE(serial != nullptr && serial->owner() == tc)) {
       *arena = serial;
       return true;
     }

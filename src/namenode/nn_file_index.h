@@ -70,7 +70,7 @@ typedef struct fi_store_s
 {
 	dfs_hashtable_link_t  ln; //
 	queue_t               ckp; // check point
-	queue_t 	          me; //
+	queue_t 	          me; // child queue point
 	queue_t               children; // 子目录
 	uint64_t              children_num;
 	fi_inode_t            fin; // file node

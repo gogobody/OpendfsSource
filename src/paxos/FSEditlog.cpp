@@ -19,7 +19,7 @@ FSEditlog::FSEditlog(const NodeInfo & oMyNode, const NodeInfoList & vecNodeList,
 
 FSEditlog::~FSEditlog()
 {
-    if (NULL != m_poPaxosNode)
+    if (nullptr != m_poPaxosNode)
     {
         delete m_poPaxosNode;
     }
@@ -90,7 +90,7 @@ const bool FSEditlog::IsIMMaster(const string & sKey)
 int FSEditlog::Propose(const string & sKey, const string & sPaxosValue, 
     PhxEditlogSMCtx & oEditlogSMCtx)
 {
-    int iGroupIdx = GetGroupIdx(sKey); //sKey 是目录 hash算法得到groupindex
+    int iGroupIdx = GetGroupIdx(sKey); //sKey 是目录, hash算法得到groupindex
 
     SMCtx oCtx;
     //smid must same to PhxEditlogSM.SMID().

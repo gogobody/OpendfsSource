@@ -10,14 +10,14 @@
 
 typedef struct mpool_mgmt_param_s 
 {
-    void   *mem_addr;
+    uchar_t   *mem_addr;
     size_t  mem_size;
 } mpool_mgmt_param_t;
 
 typedef struct mpool_mgmt_s
 {
-    void   *start;
-    void   *free;
+    uchar_t   *start;
+    uchar_t   *free;
     size_t  mem_size;
 } mpool_mgmt_t;
 

@@ -83,7 +83,7 @@ message Value {
 //  The JSON representation for `NullValue` is JSON `null`.
 enum NullValue {
   // Null value.
-  NULL_VALUE = 0;
+  nullptr_VALUE = 0;
 }
 
 // `ListValue` is a wrapper around a repeated field of values.

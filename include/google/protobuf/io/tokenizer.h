@@ -157,7 +157,7 @@ class PROTOBUF_EXPORT Tokenizer {
   // in *prev_tailing_comments.  Comments which appear to be attached to the
   // next token are stored in *next_leading_comments.  Comments appearing in
   // between which do not appear to be attached to either will be added to
-  // detached_comments.  Any of these parameters can be NULL to simply discard
+  // detached_comments.  Any of these parameters can be nullptr to simply discard
   // the comments.
   //
   // A series of line comments appearing on consecutive lines, with no other

@@ -10,7 +10,7 @@
 #define TIME_ISO_SIZE           sizeof("Tue Dec 10 23:50:13 2002") - 1
 #define TIME_MIN_SIZE           sizeof("10-Dec-02 23:50:13") - 1
 
-#define time_gettimeofday(tp)   gettimeofday(tp, NULL);
+#define time_gettimeofday(tp)   gettimeofday(tp, nullptr);
 #define time_msleep(ms)         usleep(ms * 1000)
 #define time_sleep(s)           sleep(s)
 #define time_mktime(s)          mktime(s)

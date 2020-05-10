@@ -132,7 +132,7 @@ class PROTOBUF_EXPORT ZeroCopyInputStream {
   // Obtains a chunk of data from the stream.
   //
   // Preconditions:
-  // * "size" and "data" are not NULL.
+  // * "size" and "data" are not nullptr.
   //
   // Postconditions:
   // * If the returned value is false, there is no more data to return or
@@ -191,7 +191,7 @@ class PROTOBUF_EXPORT ZeroCopyOutputStream {
   // be written to the output.
   //
   // Preconditions:
-  // * "size" and "data" are not NULL.
+  // * "size" and "data" are not nullptr.
   //
   // Postconditions:
   // * If the returned value is false, an error occurred.  All errors are

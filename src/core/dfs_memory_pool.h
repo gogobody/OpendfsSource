@@ -10,7 +10,7 @@
 #define DFS_MAX_ALLOC_FROM_POOL ((size_t)(DEFAULT_PAGESIZE - 1))
 //内存地址对齐内存对齐操作，是一个内存地址取整宏，毕竟这里只是对指针进行偏移，last指针的位置需要自己动手将其调整。因为内存不对齐的话，会导致CPU I/O的次数增加，效率降低
 
-#define dfs_align_ptr(p, a)       \   
+#define dfs_align_ptr(p, a)\
     (uchar_t *) (((uintptr_t)(p) + ((uintptr_t)(a) - 1)) & ~((uintptr_t)(a) - 1))
 
 typedef struct pool_large_s  pool_large_t;
@@ -44,8 +44,8 @@ struct pool_s
 //这个函数是内存池的创建函数。 第一个参数是内存池的大小（一次最大可申请的小块空间大小），其实实际的小块空间单次最大可申请大小还需要用size减去sizeof（ngx_pool_t）（内存池头部结构体的大小）
 pool_t *pool_create(size_t size, size_t max_size, log_t *log);
 void    pool_destroy(pool_t *pool);
-void   *pool_alloc(pool_t *pool, size_t size);
-void   *pool_calloc(pool_t *pool, size_t size); //初始化为0
+void   *pool_alloc(pool_t *pool, size_t size); //考虑内存对齐的内存池内存申请
+void   *pool_calloc(pool_t *pool, size_t size); //内存对其并初始化
 void   *pool_memalign(pool_t *pool, size_t size, size_t alignment);//分配内存，返回内存地址按alignment对齐，内存未作任何初始化
 void    pool_reset(pool_t *pool);
 size_t  dfs_align(size_t d, uint32_t a);

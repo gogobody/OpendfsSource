@@ -59,13 +59,13 @@ option objc_class_prefix = "GPB";
 // Example 1: Compute Timestamp from POSIX `time()`.
 //
 //     Timestamp timestamp;
-//     timestamp.set_seconds(time(NULL));
+//     timestamp.set_seconds(time(nullptr));
 //     timestamp.set_nanos(0);
 //
 // Example 2: Compute Timestamp from POSIX `gettimeofday()`.
 //
 //     struct timeval tv;
-//     gettimeofday(&tv, NULL);
+//     gettimeofday(&tv, nullptr);
 //
 //     Timestamp timestamp;
 //     timestamp.set_seconds(tv.tv_sec);

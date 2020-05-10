@@ -3,8 +3,9 @@
 
 #include "nn_cycle.h"
 #include "nn_thread.h"
+static void listen_rev_handler(event_t *ev);
 
-int conn_listening_init(cycle_t *cycle);
+int nn_conn_listening_init(cycle_t *cycle);
 
 #endif
 

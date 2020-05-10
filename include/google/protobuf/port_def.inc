@@ -79,8 +79,8 @@
 #ifdef PROTOBUF_FUNC_ALIGN
 #error PROTOBUF_FUNC_ALIGN was previously defined
 #endif
-#ifdef PROTOBUF_RETURNS_NONNULL
-#error PROTOBUF_RETURNS_NONNULL was previously defined
+#ifdef PROTOBUF_RETURNS_NONnullptr
+#error PROTOBUF_RETURNS_NONnullptr was previously defined
 #endif
 #ifdef PROTOBUF_ATTRIBUTE_REINITIALIZES
 #error PROTOBUF_ATTRIBUTE_REINITIALIZES was previously defined
@@ -232,13 +232,13 @@
 #endif
 #endif
 
-#ifdef GOOGLE_PROTOBUF_ATTRIBUTE_RETURNS_NONNULL
-#define PROTOBUF_RETURNS_NONNULL GOOGLE_PROTOBUF_ATTRIBUTE_RETURNS_NONNULL
+#ifdef GOOGLE_PROTOBUF_ATTRIBUTE_RETURNS_NONnullptr
+#define PROTOBUF_RETURNS_NONnullptr GOOGLE_PROTOBUF_ATTRIBUTE_RETURNS_NONnullptr
 #else
 #ifdef __GNUC__
-#define PROTOBUF_RETURNS_NONNULL __attribute__((returns_nonnull))
+#define PROTOBUF_RETURNS_NONnullptr __attribute__((returns_nonnull))
 #else
-#define PROTOBUF_RETURNS_NONNULL
+#define PROTOBUF_RETURNS_NONnullptr
 #endif
 #endif
 
@@ -331,7 +331,7 @@
   _Pragma("clang diagnostic pop")
 #else
 // Note that we calculate relative to the pointer value 16 here since if we
-// just use zero, GCC complains about dereferencing a NULL pointer.  We
+// just use zero, GCC complains about dereferencing a nullptr pointer.  We
 // choose 16 rather than some other number just in case the compiler would
 // be confused by an unaligned pointer.
 #define PROTOBUF_FIELD_OFFSET(TYPE, FIELD)                                \

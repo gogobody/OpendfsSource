@@ -302,7 +302,7 @@ class PROTOBUF_EXPORT CodedInputStream {
   // of the expected size. For best performance, use a compile-time constant as
   // the expected tag parameter.
   //
-  // Returns a pointer beyond the expected tag if it was found, or NULL if it
+  // Returns a pointer beyond the expected tag if it was found, or nullptr if it
   // was not.
   PROTOBUF_ALWAYS_INLINE
   static const uint8* ExpectTagFromArray(const uint8* buffer, uint32 expected);
@@ -489,7 +489,7 @@ class PROTOBUF_EXPORT CodedInputStream {
   //
   // You must also provide a MessageFactory.  This factory will be used to
   // construct Message objects representing extensions.  The factory's
-  // GetPrototype() MUST return non-NULL for any Descriptor which can be found
+  // GetPrototype() MUST return non-nullptr for any Descriptor which can be found
   // through the provided pool.
   //
   // If the provided factory might return instances of protocol-compiler-
@@ -517,18 +517,18 @@ class PROTOBUF_EXPORT CodedInputStream {
   // SetDelegateToGeneratedFactory(true) should be sufficient to satisfy the
   // above requirement.
   //
-  // If either pool or factory is NULL, both must be NULL.
+  // If either pool or factory is nullptr, both must be nullptr.
   //
   // Note that this feature is ignored when parsing "lite" messages as they do
   // not have descriptors.
   void SetExtensionRegistry(const DescriptorPool* pool,
                             MessageFactory* factory);
 
-  // Get the DescriptorPool set via SetExtensionRegistry(), or NULL if no pool
+  // Get the DescriptorPool set via SetExtensionRegistry(), or nullptr if no pool
   // has been provided.
   const DescriptorPool* GetExtensionPool();
 
-  // Get the MessageFactory set via SetExtensionRegistry(), or NULL if no
+  // Get the MessageFactory set via SetExtensionRegistry(), or nullptr if no
   // factory has been provided.
   MessageFactory* GetExtensionFactory();
 
@@ -1094,7 +1094,7 @@ class PROTOBUF_EXPORT CodedOutputStream {
   // returns a pointer directly into the buffer and advances over these bytes.
   // The caller may then write directly into this buffer (e.g. using the
   // *ToArray static methods) rather than go through CodedOutputStream.  If
-  // there are not enough bytes available, returns NULL.  The return pointer is
+  // there are not enough bytes available, returns nullptr.  The return pointer is
   // invalidated as soon as any other non-const method of CodedOutputStream
   // is called.
   inline uint8* GetDirectBufferForNBytesAndAdvance(int size) {

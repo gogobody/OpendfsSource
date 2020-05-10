@@ -96,7 +96,7 @@ class MapEntry
     : public MapEntryImpl<Derived, Message, Key, Value, kKeyFieldType,
                           kValueFieldType, default_enum_value> {
  public:
-  MapEntry() : _internal_metadata_(NULL) {}
+  MapEntry() : _internal_metadata_(nullptr) {}
   explicit MapEntry(Arena* arena)
       : MapEntryImpl<Derived, Message, Key, Value, kKeyFieldType,
                      kValueFieldType, default_enum_value>(arena),

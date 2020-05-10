@@ -70,9 +70,9 @@ class MapFieldAccessor;
 class PROTOBUF_EXPORT MapFieldBase {
  public:
   MapFieldBase()
-      : arena_(NULL), repeated_field_(NULL), state_(STATE_MODIFIED_MAP) {}
+      : arena_(nullptr), repeated_field_(nullptr), state_(STATE_MODIFIED_MAP) {}
   explicit MapFieldBase(Arena* arena)
-      : arena_(arena), repeated_field_(NULL), state_(STATE_MODIFIED_MAP) {
+      : arena_(arena), repeated_field_(nullptr), state_(STATE_MODIFIED_MAP) {
     // Mutex's destructor needs to be called explicitly to release resources
     // acquired in its constructor.
     arena->OwnDestructor(&mutex_);
@@ -270,15 +270,15 @@ class MapField : public TypeDefinedMapFieldBase<Key, T> {
   void Swap(MapFieldBase* other) override;
 
   // Used in the implementation of parsing. Caller should take the ownership iff
-  // arena_ is NULL.
+  // arena_ is nullptr.
   EntryType* NewEntry() const { return impl_.NewEntry(); }
   // Used in the implementation of serializing enum value type. Caller should
-  // take the ownership iff arena_ is NULL.
+  // take the ownership iff arena_ is nullptr.
   EntryType* NewEnumEntryWrapper(const Key& key, const T t) const {
     return impl_.NewEnumEntryWrapper(key, t);
   }
   // Used in the implementation of serializing other value types. Caller should
-  // take the ownership iff arena_ is NULL.
+  // take the ownership iff arena_ is nullptr.
   EntryType* NewEntryWrapper(const Key& key, const T& t) const {
     return impl_.NewEntryWrapper(key, t);
   }
@@ -580,7 +580,7 @@ class PROTOBUF_EXPORT MapKey {
 // MapValueRef points to a map value.
 class PROTOBUF_EXPORT MapValueRef {
  public:
-  MapValueRef() : data_(NULL), type_(0) {}
+  MapValueRef() : data_(nullptr), type_(0) {}
 
   void SetInt64Value(int64 value) {
     TYPE_CHECK(FieldDescriptor::CPPTYPE_INT64, "MapValueRef::SetInt64Value");
@@ -684,7 +684,7 @@ class PROTOBUF_EXPORT MapValueRef {
   void SetType(FieldDescriptor::CppType type) { type_ = type; }
 
   FieldDescriptor::CppType type() const {
-    if (type_ == 0 || data_ == NULL) {
+    if (type_ == 0 || data_ == nullptr) {
       GOOGLE_LOG(FATAL) << "Protocol Buffer map usage error:\n"
                  << "MapValueRef::type MapValueRef is not initialized.";
     }

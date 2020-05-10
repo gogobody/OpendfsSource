@@ -25,7 +25,7 @@ typedef struct blk_store_s
 {
     dfs_hashtable_link_t ln;
     queue_t              fi_me;
-	queue_t              dn_me;
+	queue_t              dn_me; // link to dns -> blk queue
     long                 id;
 	uint64_t             size;
 	char                 dn_ip[32];

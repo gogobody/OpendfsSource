@@ -81,7 +81,7 @@ struct queue_s
     do {                             \
         (x)->next->prev = (x)->prev; \
         (x)->prev->next = (x)->next; \
-        (x)->prev = (x)->next = NULL; \
+        (x)->prev = (x)->next = nullptr; \
 	} while (0)
 	
 #define queue_split(h, q, n)   \

@@ -555,13 +555,13 @@ size_t MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::SpaceUsedInMapLong(
 template <typename Type>
 inline void MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::Clear(
     Type** value, Arena* /* arena */) {
-  if (*value != NULL) (*value)->Clear();
+  if (*value != nullptr) (*value)->Clear();
 }
 template <typename Type>
 inline void
 MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::ClearMaybeByDefaultEnum(
     Type** value, Arena* /* arena */, int /* default_enum_value */) {
-  if (*value != NULL) (*value)->Clear();
+  if (*value != nullptr) (*value)->Clear();
 }
 template <typename Type>
 inline void MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::Merge(
@@ -584,20 +584,20 @@ inline void MapTypeHandler<WireFormatLite::TYPE_MESSAGE,
 template <typename Type>
 inline void MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::Initialize(
     Type** x, Arena* /* arena */) {
-  *x = NULL;
+  *x = nullptr;
 }
 
 template <typename Type>
 inline void MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::
     InitializeMaybeByDefaultEnum(Type** x, int /* default_enum_value */,
                                  Arena* /* arena */) {
-  *x = NULL;
+  *x = nullptr;
 }
 
 template <typename Type>
 inline Type* MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::EnsureMutable(
     Type** value, Arena* arena) {
-  if (*value == NULL) {
+  if (*value == nullptr) {
     *value = MapArenaMessageCreator<
         Type,
         Arena::is_arena_constructable<Type>::type::value>::CreateMessage(arena);
@@ -609,7 +609,7 @@ template <typename Type>
 inline const Type&
 MapTypeHandler<WireFormatLite::TYPE_MESSAGE, Type>::DefaultIfNotInitialized(
     const Type* value, const Type* default_value) {
-  return value != NULL ? *value : *default_value;
+  return value != nullptr ? *value : *default_value;
 }
 
 template <typename Type>

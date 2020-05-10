@@ -131,7 +131,7 @@ inline bool IsOk(bool status) { return status; }
 #undef GOOGLE_CHECK_LE
 #undef GOOGLE_CHECK_GT
 #undef GOOGLE_CHECK_GE
-#undef GOOGLE_CHECK_NOTNULL
+#undef GOOGLE_CHECK_NOTnullptr
 
 #undef GOOGLE_DLOG
 #undef GOOGLE_DCHECK
@@ -170,7 +170,7 @@ T* CheckNotNull(const char* /* file */, int /* line */,
   return val;
 }
 }  // namespace internal
-#define GOOGLE_CHECK_NOTNULL(A)               \
+#define GOOGLE_CHECK_NOTnullptr(A)               \
   ::google::protobuf::internal::CheckNotNull( \
       __FILE__, __LINE__, "'" #A "' must not be nullptr", (A))
 

@@ -179,7 +179,7 @@ inline std::string* InlinedStringField::MutableNoArena(const std::string*) {
 
 inline void InlinedStringField::SetAllocatedNoArena(
     const std::string* default_value, std::string* value) {
-  if (value == NULL) {
+  if (value == nullptr) {
     value_.assign(*default_value);
   } else {
     value_.assign(std::move(*value));
@@ -244,7 +244,7 @@ inline std::string* InlinedStringField::UnsafeArenaRelease(
 
 inline void InlinedStringField::UnsafeArenaSetAllocated(
     const std::string* default_value, std::string* value, Arena* /*arena*/) {
-  if (value == NULL) {
+  if (value == nullptr) {
     value_.assign(*default_value);
   } else {
     value_.assign(*value);

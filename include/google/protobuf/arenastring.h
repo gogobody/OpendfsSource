@@ -99,13 +99,13 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   }
 
   // Release returns a ::std::string* instance that is heap-allocated and is not
-  // Own()'d by any arena. If the field was not set, it returns NULL. The caller
-  // retains ownership. Clears this field back to NULL state. Used to implement
+  // Own()'d by any arena. If the field was not set, it returns nullptr. The caller
+  // retains ownership. Clears this field back to nullptr state. Used to implement
   // release_<field>() methods on generated classes.
   inline ::std::string* Release(const ::std::string* default_value,
                                 Arena* arena) {
     if (ptr_ == default_value) {
-      return NULL;
+      return nullptr;
     }
     return ReleaseNonDefault(default_value, arena);
   }
@@ -114,8 +114,8 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   inline ::std::string* ReleaseNonDefault(const ::std::string* default_value,
                                           Arena* arena) {
     GOOGLE_DCHECK(!IsDefault(default_value));
-    ::std::string* released = NULL;
-    if (arena != NULL) {
+    ::std::string* released = nullptr;
+    if (arena != nullptr) {
       // ptr_ is owned by the arena.
       released = new ::std::string;
       released->swap(*ptr_);
@@ -127,14 +127,14 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   }
 
   // UnsafeArenaRelease returns a ::std::string*, but it may be arena-owned
-  // (i.e.  have its destructor already registered) if arena != NULL. If the
-  // field was not set, this returns NULL. This method clears this field back to
-  // NULL state. Used to implement unsafe_arena_release_<field>() methods on
+  // (i.e.  have its destructor already registered) if arena != nullptr. If the
+  // field was not set, this returns nullptr. This method clears this field back to
+  // nullptr state. Used to implement unsafe_arena_release_<field>() methods on
   // generated classes.
   inline ::std::string* UnsafeArenaRelease(const ::std::string* default_value,
                                            Arena* /* arena */) {
     if (ptr_ == default_value) {
-      return NULL;
+      return nullptr;
     }
     ::std::string* released = ptr_;
     ptr_ = const_cast< ::std::string*>(default_value);
@@ -146,12 +146,12 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   // set_allocated_<field> in generated classes.
   inline void SetAllocated(const ::std::string* default_value,
                            ::std::string* value, Arena* arena) {
-    if (arena == NULL && ptr_ != default_value) {
+    if (arena == nullptr && ptr_ != default_value) {
       Destroy(default_value, arena);
     }
-    if (value != NULL) {
+    if (value != nullptr) {
       ptr_ = value;
-      if (arena != NULL) {
+      if (arena != nullptr) {
         arena->Own(value);
       }
     } else {
@@ -166,7 +166,7 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   inline void UnsafeArenaSetAllocated(const ::std::string* default_value,
                                       ::std::string* value,
                                       Arena* /* arena */) {
-    if (value != NULL) {
+    if (value != nullptr) {
       ptr_ = value;
     } else {
       ptr_ = const_cast< ::std::string*>(default_value);
@@ -208,12 +208,12 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
 
   // Frees storage (if not on an arena).
   inline void Destroy(const ::std::string* default_value, Arena* arena) {
-    if (arena == NULL && ptr_ != default_value) {
+    if (arena == nullptr && ptr_ != default_value) {
       delete ptr_;
     }
   }
 
-  // Clears content, but keeps allocated string if arena != NULL, to avoid the
+  // Clears content, but keeps allocated string if arena != nullptr, to avoid the
   // overhead of heap operations. After this returns, the content (as seen by
   // the user) will always be the empty string. Assumes that |default_value|
   // is an empty string.
@@ -231,7 +231,7 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   inline void ClearNonDefaultToEmpty() { ptr_->clear(); }
   inline void ClearNonDefaultToEmptyNoArena() { ptr_->clear(); }
 
-  // Clears content, but keeps allocated string if arena != NULL, to avoid the
+  // Clears content, but keeps allocated string if arena != nullptr, to avoid the
   // overhead of heap operations. After this returns, the content (as seen by
   // the user) will always be equal to |default_value|.
   inline void ClearToDefault(const ::std::string* default_value,
@@ -257,7 +257,7 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
     ptr_ = const_cast< ::std::string*>(default_value);
   }
 
-  // The 'NoArena' variants of methods below assume arena == NULL and are
+  // The 'NoArena' variants of methods below assume arena == nullptr and are
   // optimized to provide very little overhead relative to a raw string pointer
   // (while still being in-memory compatible with other code that assumes
   // ArenaStringPtr). Note the invariant that a class instance that has only
@@ -295,7 +295,7 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
 
   inline ::std::string* ReleaseNoArena(const ::std::string* default_value) {
     if (ptr_ == default_value) {
-      return NULL;
+      return nullptr;
     } else {
       return ReleaseNonDefaultNoArena(default_value);
     }
@@ -314,7 +314,7 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
     if (ptr_ != default_value) {
       delete ptr_;
     }
-    if (value != NULL) {
+    if (value != nullptr) {
       ptr_ = value;
     } else {
       ptr_ = const_cast< ::std::string*>(default_value);
@@ -368,13 +368,13 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
 
   PROTOBUF_NOINLINE
   void CreateInstance(Arena* arena, const ::std::string* initial_value) {
-    GOOGLE_DCHECK(initial_value != NULL);
+    GOOGLE_DCHECK(initial_value != nullptr);
     // uses "new ::std::string" when arena is nullptr
     ptr_ = Arena::Create< ::std::string>(arena, *initial_value);
   }
   PROTOBUF_NOINLINE
   void CreateInstanceNoArena(const ::std::string* initial_value) {
-    GOOGLE_DCHECK(initial_value != NULL);
+    GOOGLE_DCHECK(initial_value != nullptr);
     ptr_ = new ::std::string(*initial_value);
   }
 };

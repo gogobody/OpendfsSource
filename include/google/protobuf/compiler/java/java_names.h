@@ -53,54 +53,54 @@ namespace compiler {
 namespace java {
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified Java class name.
 std::string ClassName(const Descriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified Java class name.
 std::string ClassName(const EnumDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified Java class name.
 std::string ClassName(const FileDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified Java class name.
 std::string ClassName(const ServiceDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   Java package name.
 std::string FileJavaPackage(const FileDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 // Returns:
 //   Capitalized camel case name field name.
 std::string CapitalizedFieldName(const FieldDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 // Returns:
 //   Primitive Java type name for the field.
 const char* PrimitiveTypeName(const FieldDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 // Returns:
 //   Boes primitive Java type name for the field.
 const char* BoxedPrimitiveTypeName(const FieldDescriptor* descriptor);

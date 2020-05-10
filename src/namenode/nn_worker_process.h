@@ -3,7 +3,7 @@
 
 #include "nn_cycle.h"
 
-void worker_processer(cycle_t *cycle, void *data);
+void ngx_worker_process_cycle(cycle_t *cycle, void *data);
 void register_thread_initialized(void);
 void dispatch_task(void *);
 void register_thread_exit(void);

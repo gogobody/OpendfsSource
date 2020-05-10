@@ -138,7 +138,7 @@ template <typename Key, typename T>
 void TypeDefinedMapFieldBase<Key, T>::InitializeIterator(
     MapIterator* map_iter) const {
   map_iter->iter_ = new typename Map<Key, T>::const_iterator;
-  GOOGLE_CHECK(map_iter->iter_ != NULL);
+  GOOGLE_CHECK(map_iter->iter_ != nullptr);
 }
 
 template <typename Key, typename T>
@@ -277,8 +277,8 @@ template <typename Derived, typename Key, typename T,
           WireFormatLite::FieldType kValueFieldType, int default_enum_value>
 void MapField<Derived, Key, T, kKeyFieldType, kValueFieldType,
               default_enum_value>::SyncRepeatedFieldWithMapNoLock() const {
-  if (this->MapFieldBase::repeated_field_ == NULL) {
-    if (this->MapFieldBase::arena_ == NULL) {
+  if (this->MapFieldBase::repeated_field_ == nullptr) {
+    if (this->MapFieldBase::arena_ == nullptr) {
       this->MapFieldBase::repeated_field_ = new RepeatedPtrField<Message>();
     } else {
       this->MapFieldBase::repeated_field_ =
@@ -318,7 +318,7 @@ void MapField<Derived, Key, T, kKeyFieldType, kValueFieldType,
   RepeatedPtrField<EntryType>* repeated_field =
       reinterpret_cast<RepeatedPtrField<EntryType>*>(
           this->MapFieldBase::repeated_field_);
-  GOOGLE_CHECK(this->MapFieldBase::repeated_field_ != NULL);
+  GOOGLE_CHECK(this->MapFieldBase::repeated_field_ != nullptr);
   map->clear();
   for (typename RepeatedPtrField<EntryType>::iterator it =
            repeated_field->begin();
@@ -338,7 +338,7 @@ template <typename Derived, typename Key, typename T,
 size_t MapField<Derived, Key, T, kKeyFieldType, kValueFieldType,
                 default_enum_value>::SpaceUsedExcludingSelfNoLock() const {
   size_t size = 0;
-  if (this->MapFieldBase::repeated_field_ != NULL) {
+  if (this->MapFieldBase::repeated_field_ != nullptr) {
     size += this->MapFieldBase::repeated_field_->SpaceUsedExcludingSelfLong();
   }
   Map<Key, T>* map = const_cast<MapField*>(this)->impl_.MutableMap();

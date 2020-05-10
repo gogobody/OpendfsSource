@@ -196,7 +196,7 @@ class PROTOBUF_EXPORT MessageLite {
   virtual MessageLite* New() const = 0;
 
   // Construct a new instance on the arena. Ownership is passed to the caller
-  // if arena is a NULL. Default implementation for backwards compatibility.
+  // if arena is a nullptr. Default implementation for backwards compatibility.
   virtual MessageLite* New(Arena* arena) const;
 
   // Get the arena, if any, associated with this message. Virtual method
@@ -204,7 +204,7 @@ class PROTOBUF_EXPORT MessageLite {
   // use the GetArenaNoVirtual() generated-code method. Default implementation
   // to reduce code size by avoiding the need for per-type implementations
   // when types do not implement arena support.
-  virtual Arena* GetArena() const { return NULL; }
+  virtual Arena* GetArena() const { return nullptr; }
 
   // Get a pointer that may be equal to this message's arena, or may not be.
   // If the value returned by this method is equal to some arena pointer, then
@@ -466,7 +466,7 @@ class PROTOBUF_EXPORT MessageLite {
 
  private:
   // TODO(gerbens) make this a pure abstract function
-  virtual const void* InternalGetTable() const { return NULL; }
+  virtual const void* InternalGetTable() const { return nullptr; }
 
   friend class internal::WireFormatLite;
   friend class Message;

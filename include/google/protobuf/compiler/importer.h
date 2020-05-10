@@ -81,7 +81,7 @@ class PROTOBUF_EXPORT SourceTreeDescriptorDatabase : public DescriptorDatabase {
  public:
   SourceTreeDescriptorDatabase(SourceTree* source_tree);
 
-  // If non-NULL, fallback_database will be checked if a file doesn't exist in
+  // If non-nullptr, fallback_database will be checked if a file doesn't exist in
   // the specified source_tree.
   SourceTreeDescriptorDatabase(SourceTree* source_tree,
                                DescriptorDatabase* fallback_database);
@@ -163,10 +163,10 @@ class PROTOBUF_EXPORT Importer {
   // the file is already in the DescriptorPool, the existing FileDescriptor
   // will be returned.  The FileDescriptor is property of the DescriptorPool,
   // and will remain valid until it is destroyed.  If any errors occur, they
-  // will be reported using the error collector and Import() will return NULL.
+  // will be reported using the error collector and Import() will return nullptr.
   //
   // A particular Importer object will only report errors for a particular
-  // file once.  All future attempts to import the same file will return NULL
+  // file once.  All future attempts to import the same file will return nullptr
   // without reporting any errors.  The idea is that you might want to import
   // a lot of files without seeing the same errors over and over again.  If
   // you want to see errors for the same files repeatedly, you can use a
@@ -217,13 +217,13 @@ class PROTOBUF_EXPORT SourceTree {
   inline SourceTree() {}
   virtual ~SourceTree();
 
-  // Open the given file and return a stream that reads it, or NULL if not
+  // Open the given file and return a stream that reads it, or nullptr if not
   // found.  The caller takes ownership of the returned object.  The filename
   // must be a path relative to the root of the source tree and must not
   // contain "." or ".." components.
   virtual io::ZeroCopyInputStream* Open(const std::string& filename) = 0;
 
-  // If Open() returns NULL, calling this method immediately will return an
+  // If Open() returns nullptr, calling this method immediately will return an
   // description of the error.
   // Subclasses should implement this method and return a meaningful value for
   // better error reporting.
@@ -316,7 +316,7 @@ class PROTOBUF_EXPORT DiskSourceTree : public SourceTree {
   std::string last_error_message_;
 
   // Like Open(), but returns the on-disk path in disk_file if disk_file is
-  // non-NULL and the file could be successfully opened.
+  // non-nullptr and the file could be successfully opened.
   io::ZeroCopyInputStream* OpenVirtualFile(const std::string& virtual_file,
                                            std::string* disk_file);
 

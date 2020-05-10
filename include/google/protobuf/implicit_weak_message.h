@@ -56,7 +56,7 @@ namespace internal {
 // message type does not get linked into the binary.
 class PROTOBUF_EXPORT ImplicitWeakMessage : public MessageLite {
  public:
-  ImplicitWeakMessage() : arena_(NULL) {}
+  ImplicitWeakMessage() : arena_(nullptr) {}
   explicit ImplicitWeakMessage(Arena* arena) : arena_(arena) {}
 
   static const ImplicitWeakMessage* default_instance();
@@ -106,12 +106,12 @@ class ImplicitWeakTypeHandler {
   static const bool Moveable = false;
 
   static inline MessageLite* NewFromPrototype(const MessageLite* prototype,
-                                              Arena* arena = NULL) {
+                                              Arena* arena = nullptr) {
     return prototype->New(arena);
   }
 
   static inline void Delete(MessageLite* value, Arena* arena) {
-    if (arena == NULL) {
+    if (arena == nullptr) {
       delete value;
     }
   }

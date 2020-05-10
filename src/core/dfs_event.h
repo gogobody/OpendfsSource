@@ -31,7 +31,7 @@ struct event_s
     uint32_t         delayed:1;
     event_handler_pt handler;
     rbtree_node_t    timer;
-    queue_t          post_queue;
+    queue_t          post_queue; // que ele
     int              available; 
 };
 

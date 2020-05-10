@@ -48,7 +48,7 @@
 #define DFS_PTR_SIZE            4
 
 #define MB_SIZE                   1024 * 1024
-#define GB_SIZE                   1024 * 1024 * 1024
+#define GB_SIZE                   1024 * 1024 * 1024UL
 
 #if (DFS_PTR_SIZE == 4)
 #define DFS_INT_T_LEN DFS_INT32_LEN
@@ -132,8 +132,9 @@
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-
+#if HAVE_SYSINFO
 #include <sys/sysctl.h>
+#endif
 #include <sys/prctl.h>
 #include <crypt.h>
 #include <sys/utsname.h>           /* uname() */

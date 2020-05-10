@@ -222,7 +222,7 @@ class PROTOBUF_EXPORT CopyingInputStreamAdaptor : public ZeroCopyInputStream {
   int64_t ByteCount() const override;
 
  private:
-  // Insures that buffer_ is not NULL.
+  // Insures that buffer_ is not nullptr.
   void AllocateBufferIfNeeded();
   // Frees the buffer and resets buffer_used_.
   void FreeBuffer();
@@ -238,7 +238,7 @@ class PROTOBUF_EXPORT CopyingInputStreamAdaptor : public ZeroCopyInputStream {
   // we started reading.
   int64 position_;
 
-  // Data is read into this buffer.  It may be NULL if no buffer is currently
+  // Data is read into this buffer.  It may be nullptr if no buffer is currently
   // in use.  Otherwise, it points to an array of size buffer_size_.
   std::unique_ptr<uint8[]> buffer_;
   const int buffer_size_;
@@ -311,7 +311,7 @@ class PROTOBUF_EXPORT CopyingOutputStreamAdaptor : public ZeroCopyOutputStream {
  private:
   // Write the current buffer, if it is present.
   bool WriteBuffer();
-  // Insures that buffer_ is not NULL.
+  // Insures that buffer_ is not nullptr.
   void AllocateBufferIfNeeded();
   // Frees the buffer.
   void FreeBuffer();
@@ -327,7 +327,7 @@ class PROTOBUF_EXPORT CopyingOutputStreamAdaptor : public ZeroCopyOutputStream {
   // we started writing.
   int64 position_;
 
-  // Data is written from this buffer.  It may be NULL if no buffer is
+  // Data is written from this buffer.  It may be nullptr if no buffer is
   // currently in use.  Otherwise, it points to an array of size buffer_size_.
   std::unique_ptr<uint8[]> buffer_;
   const int buffer_size_;
@@ -370,9 +370,9 @@ class PROTOBUF_EXPORT LimitingInputStream : public ZeroCopyInputStream {
 // mutable_string_data() and as_string_data() are workarounds to improve
 // the performance of writing new data to an existing string.  Unfortunately
 // the methods provided by the string class are suboptimal, and using memcpy()
-// is mildly annoying because it requires its pointer args to be non-NULL even
+// is mildly annoying because it requires its pointer args to be non-nullptr even
 // if we ask it to copy 0 bytes.  Furthermore, string_as_array() has the
-// property that it always returns NULL if its arg is the empty string, exactly
+// property that it always returns nullptr if its arg is the empty string, exactly
 // what we want to avoid if we're using it in conjunction with memcpy()!
 // With C++11, the desired memcpy() boils down to memcpy(..., &(*s)[0], size),
 // where s is a string*.  Without C++11, &(*s)[0] is not guaranteed to be safe,
@@ -384,13 +384,13 @@ class PROTOBUF_EXPORT LimitingInputStream : public ZeroCopyInputStream {
 // trust the caller to treat the return value as an array of length s->size().
 inline char* mutable_string_data(std::string* s) {
   // This should be simpler & faster than string_as_array() because the latter
-  // is guaranteed to return NULL when *s is empty, so it has to check for that.
+  // is guaranteed to return nullptr when *s is empty, so it has to check for that.
   return &(*s)[0];
 }
 
 // as_string_data(s) is equivalent to
-//  ({ char* p = mutable_string_data(s); make_pair(p, p != NULL); })
-// Sometimes it's faster: in some scenarios p cannot be NULL, and then the
+//  ({ char* p = mutable_string_data(s); make_pair(p, p != nullptr); })
+// Sometimes it's faster: in some scenarios p cannot be nullptr, and then the
 // code can avoid that check.
 inline std::pair<char*, bool> as_string_data(std::string* s) {
   char* p = mutable_string_data(s);

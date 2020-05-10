@@ -175,7 +175,7 @@ class PROTOBUF_EXPORT MessageDifferencer {
   // below.
   struct SpecificField {
     // For known fields, "field" is filled in and "unknown_field_number" is -1.
-    // For unknown fields, "field" is NULL, "unknown_field_number" is the field
+    // For unknown fields, "field" is nullptr, "unknown_field_number" is the field
     // number, and "unknown_field_type" is its type.
     const FieldDescriptor* field;
     int unknown_field_number;
@@ -206,12 +206,12 @@ class PROTOBUF_EXPORT MessageDifferencer {
     int unknown_field_index2;
 
     SpecificField()
-        : field(NULL),
+        : field(nullptr),
           unknown_field_number(-1),
           index(-1),
           new_index(-1),
-          unknown_field_set1(NULL),
-          unknown_field_set2(NULL),
+          unknown_field_set1(nullptr),
+          unknown_field_set2(nullptr),
           unknown_field_index1(-1),
           unknown_field_index2(-1) {}
   };
@@ -598,7 +598,7 @@ class PROTOBUF_EXPORT MessageDifferencer {
   // reporter. Note that this method must be called before Compare for
   // the reporter to be used. It is the responsibility of the caller to delete
   // this object.
-  // If the provided pointer equals NULL, the MessageDifferencer stops reporting
+  // If the provided pointer equals nullptr, the MessageDifferencer stops reporting
   // differences to any previously set reporters or output strings.
   void ReportDifferencesTo(Reporter* reporter);
 
@@ -754,7 +754,7 @@ class PROTOBUF_EXPORT MessageDifferencer {
                             const FieldDescriptor* field,
                             std::vector<SpecificField>* parent_fields);
 
-  // Shorthand for CompareFieldValueUsingParentFields with NULL parent_fields.
+  // Shorthand for CompareFieldValueUsingParentFields with nullptr parent_fields.
   bool CompareFieldValue(const Message& message1, const Message& message2,
                          const FieldDescriptor* field, int index1, int index2);
 
@@ -763,9 +763,9 @@ class PROTOBUF_EXPORT MessageDifferencer {
   // this method only compares the value in the specified index. This method
   // uses Compare functions to recurse into submessages.
   // The parent_fields vector is used in calls to a Reporter instance calls.
-  // It can be NULL, in which case the MessageDifferencer will create new
+  // It can be nullptr, in which case the MessageDifferencer will create new
   // list of parent messages if it needs to recursively compare the given field.
-  // To avoid confusing users you should not set it to NULL unless you modified
+  // To avoid confusing users you should not set it to nullptr unless you modified
   // Reporter to handle the change of parent_fields correctly.
   bool CompareFieldValueUsingParentFields(
       const Message& message1, const Message& message2,
@@ -780,7 +780,7 @@ class PROTOBUF_EXPORT MessageDifferencer {
       const FieldContext* field_context);
 
   // Check if the two elements in the repeated field are match to each other.
-  // if the key_comprator is NULL, this function returns true when the two
+  // if the key_comprator is nullptr, this function returns true when the two
   // elements are equal.
   bool IsMatch(const FieldDescriptor* repeated_field,
                const MapKeyComparator* key_comparator, const Message* message1,
@@ -819,7 +819,7 @@ class PROTOBUF_EXPORT MessageDifferencer {
                              const std::vector<SpecificField>& parent_fields);
 
   // Returns MapKeyComparator* when this field has been configured to be treated
-  // as a map or its is_map() return true.  If not, returns NULL.
+  // as a map or its is_map() return true.  If not, returns nullptr.
   const MapKeyComparator* GetMapKeyComparator(
       const FieldDescriptor* field) const;
 

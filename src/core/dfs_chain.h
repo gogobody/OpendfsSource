@@ -10,7 +10,7 @@
 struct chain_s 
 {
     buffer_t *buf; //buf指向当前的ngx_buf_t缓冲区
-    chain_t  *next; //next则用来指向下一个ngx_chain_t，如果这是最后一个ngx_chain_t，则需要把next置为NULL。
+    chain_t  *next; //next则用来指向下一个ngx_chain_t，如果这是最后一个ngx_chain_t，则需要把next置为nullptr。
 };
 
 typedef int (*chain_output_filter_pt)(void *ctx, chain_t *in);

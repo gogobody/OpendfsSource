@@ -82,13 +82,13 @@ class PROTOBUF_EXPORT Parser {
   // Requests that locations of certain definitions be recorded to the given
   // SourceLocationTable while parsing.  This can be used to look up exact line
   // and column numbers for errors reported by DescriptorPool during validation.
-  // Set to NULL (the default) to discard source location information.
+  // Set to nullptr (the default) to discard source location information.
   void RecordSourceLocationsTo(SourceLocationTable* location_table) {
     source_location_table_ = location_table;
   }
 
   // Requests that errors be recorded to the given ErrorCollector while
-  // parsing.  Set to NULL (the default) to discard error messages.
+  // parsing.  Set to nullptr (the default) to discard error messages.
   void RecordErrorsTo(io::ErrorCollector* error_collector) {
     error_collector_ = error_collector;
   }
@@ -112,7 +112,7 @@ class PROTOBUF_EXPORT Parser {
   // if the syntax identifier is something other than "proto2" (since
   // presumably the caller intends to deal with that), but other kinds of
   // errors (e.g. parse errors) will still be reported.  When this is enabled,
-  // you may pass a NULL FileDescriptorProto to Parse().
+  // you may pass a nullptr FileDescriptorProto to Parse().
   void SetStopAfterSyntaxIdentifier(bool value) {
     stop_after_syntax_identifier_ = value;
   }
@@ -199,7 +199,7 @@ class PROTOBUF_EXPORT Parser {
   // -----------------------------------------------------------------
   // Error logging helpers
 
-  // Invokes error_collector_->AddError(), if error_collector_ is not NULL.
+  // Invokes error_collector_->AddError(), if error_collector_ is not nullptr.
   void AddError(int line, int column, const std::string& error);
 
   // Invokes error_collector_->AddError() with the line and column number

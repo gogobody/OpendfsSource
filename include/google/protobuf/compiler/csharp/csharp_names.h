@@ -56,21 +56,21 @@ namespace compiler {
 namespace csharp {
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The namespace to use for given file descriptor.
 string PROTOC_EXPORT GetFileNamespace(const FileDescriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified C# class name.
 string PROTOC_EXPORT GetClassName(const Descriptor* descriptor);
 
 // Requires:
-//   descriptor != NULL
+//   descriptor != nullptr
 //
 // Returns:
 //   The fully-qualified name of the C# class that provides
@@ -85,8 +85,8 @@ string PROTOC_EXPORT GetReflectionClassName(const FileDescriptor* descriptor);
 // the resulting file will be put under directory "Foo" (and not "Bar/Foo").
 //
 // Requires:
-//   descriptor != NULL
-//   error != NULL
+//   descriptor != nullptr
+//   error != nullptr
 //
 //  Returns:
 //    The file name to use as output file for given file descriptor. In case

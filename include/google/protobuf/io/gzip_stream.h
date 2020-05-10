@@ -75,7 +75,7 @@ class PROTOBUF_EXPORT GzipInputStream : public ZeroCopyInputStream {
                            Format format = AUTO, int buffer_size = -1);
   virtual ~GzipInputStream();
 
-  // Return last error message or NULL if no error.
+  // Return last error message or nullptr if no error.
   inline const char* ZlibErrorMessage() const { return zcontext_.msg; }
   inline int ZlibErrorCode() const { return zerror_; }
 
@@ -142,7 +142,7 @@ class PROTOBUF_EXPORT GzipOutputStream : public ZeroCopyOutputStream {
 
   virtual ~GzipOutputStream();
 
-  // Return last error message or NULL if no error.
+  // Return last error message or nullptr if no error.
   inline const char* ZlibErrorMessage() const { return zcontext_.msg; }
   inline int ZlibErrorCode() const { return zerror_; }
 

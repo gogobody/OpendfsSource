@@ -187,10 +187,10 @@ class MapEntryImpl : public Base {
   static const WireFormatLite::FieldType kEntryValueFieldType = kValueFieldType;
   static const int kEntryDefaultEnumValue = default_enum_value;
 
-  MapEntryImpl() : arena_(NULL) {
-    KeyTypeHandler::Initialize(&key_, NULL);
+  MapEntryImpl() : arena_(nullptr) {
+    KeyTypeHandler::Initialize(&key_, nullptr);
     ValueTypeHandler::InitializeMaybeByDefaultEnum(&value_, default_enum_value,
-                                                   NULL);
+                                                   nullptr);
     _has_bits_[0] = 0;
   }
 
@@ -202,7 +202,7 @@ class MapEntryImpl : public Base {
   }
 
   ~MapEntryImpl() {
-    if (GetArenaNoVirtual() != NULL) return;
+    if (GetArenaNoVirtual() != nullptr) return;
     KeyTypeHandler::DeleteNoArena(key_);
     ValueTypeHandler::DeleteNoArena(value_);
   }

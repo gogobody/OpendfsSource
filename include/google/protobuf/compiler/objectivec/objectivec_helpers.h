@@ -165,7 +165,7 @@ enum FlagType {
 template<class TDescriptor>
 string GetOptionalDeprecatedAttribute(
     const TDescriptor* descriptor,
-    const FileDescriptor* file = NULL,
+    const FileDescriptor* file = nullptr,
     bool preSpace = true, bool postNewline = false) {
   bool isDeprecated = descriptor->options().deprecated();
   // The file is only passed when checking Messages & Enums, so those types

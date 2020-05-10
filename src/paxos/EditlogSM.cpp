@@ -34,7 +34,7 @@ bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID,
     }
 	else 
 	{
-        update_fi_cache_mgmt(llInstanceID, sPaxosValue, NULL);
+        update_fi_cache_mgmt(llInstanceID, sPaxosValue, nullptr);
 	}
 
     return DFS_TRUE;

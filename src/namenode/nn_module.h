@@ -27,13 +27,13 @@ struct dfs_module_s
     int       (*worker_thread_release)(dfs_thread_t *thread);
 };
 
-void dfs_module_setup(void);
-int dfs_module_master_init(cycle_t *cycle);
-int dfs_module_master_release(cycle_t *cycle);
-int dfs_module_woker_init(cycle_t *cycle);
-int dfs_module_woker_release(cycle_t *cycle);
-int dfs_module_workethread_init(dfs_thread_t *thread);
-int dfs_module_wokerthread_release(dfs_thread_t *thread);
+void ngx_module_setup(void);
+int ngx_module_master_init(cycle_t *cycle);
+int ngx_module_master_release(cycle_t *cycle);
+int ngx_module_woker_init(cycle_t *cycle);
+int ngx_module_woker_release(cycle_t *cycle);
+int ngx_module_workethread_init(dfs_thread_t *thread);
+int ngx_module_wokerthread_release(dfs_thread_t *thread);
 
 #endif
 

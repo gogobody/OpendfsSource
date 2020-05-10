@@ -208,7 +208,7 @@ class PROTOBUF_EXPORT Printer {
   template <typename SomeDescriptor>
   void Annotate(const char* begin_varname, const char* end_varname,
                 const SomeDescriptor* descriptor) {
-    if (annotation_collector_ == NULL) {
+    if (annotation_collector_ == nullptr) {
       // Annotations aren't turned on for this Printer, so don't pay the cost
       // of building the location path.
       return;
@@ -230,7 +230,7 @@ class PROTOBUF_EXPORT Printer {
   // substituted for end_varname.
   void Annotate(const char* begin_varname, const char* end_varname,
                 const std::string& file_name) {
-    if (annotation_collector_ == NULL) {
+    if (annotation_collector_ == nullptr) {
       // Annotations aren't turned on for this Printer.
       return;
     }

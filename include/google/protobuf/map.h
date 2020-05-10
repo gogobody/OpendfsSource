@@ -140,11 +140,11 @@ class Map {
   typedef size_t size_type;
   typedef hash<Key> hasher;
 
-  Map() : arena_(NULL), default_enum_value_(0) { Init(); }
+  Map() : arena_(nullptr), default_enum_value_(0) { Init(); }
   explicit Map(Arena* arena) : arena_(arena), default_enum_value_(0) { Init(); }
 
   Map(const Map& other)
-      : arena_(NULL), default_enum_value_(other.default_enum_value_) {
+      : arena_(nullptr), default_enum_value_(other.default_enum_value_) {
     Init();
     insert(other.begin(), other.end());
   }
@@ -169,14 +169,14 @@ class Map {
 
   template <class InputIt>
   Map(const InputIt& first, const InputIt& last)
-      : arena_(NULL), default_enum_value_(0) {
+      : arena_(nullptr), default_enum_value_(0) {
     Init();
     insert(first, last);
   }
 
   ~Map() {
     clear();
-    if (arena_ == NULL) {
+    if (arena_ == nullptr) {
       delete elements_;
     }
   }
@@ -201,7 +201,7 @@ class Map {
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
 
-    MapAllocator() : arena_(NULL) {}
+    MapAllocator() : arena_(nullptr) {}
     explicit MapAllocator(Arena* arena) : arena_(arena) {}
     template <typename X>
     MapAllocator(const MapAllocator<X>& allocator)
@@ -210,7 +210,7 @@ class Map {
     pointer allocate(size_type n, const void* /* hint */ = 0) {
       // If arena is not given, malloc needs to be called which doesn't
       // construct element object.
-      if (arena_ == NULL) {
+      if (arena_ == nullptr) {
         return static_cast<pointer>(::operator new(n * sizeof(value_type)));
       } else {
         return reinterpret_cast<pointer>(
@@ -219,7 +219,7 @@ class Map {
     }
 
     void deallocate(pointer p, size_type n) {
-      if (arena_ == NULL) {
+      if (arena_ == nullptr) {
 #if defined(__GXX_DELETE_WITH_SIZE__) || defined(__cpp_sized_deallocation)
         ::operator delete(p, n * sizeof(value_type));
 #else
@@ -317,7 +317,7 @@ class Map {
   // 2. The number of buckets is a power of two.
   // 3. Buckets are converted to trees in pairs: if we convert bucket b then
   //    buckets b and b^1 will share a tree.  Invariant: buckets b and b^1 have
-  //    the same non-NULL value iff they are sharing a tree.  (An alternative
+  //    the same non-nullptr value iff they are sharing a tree.  (An alternative
   //    implementation strategy would be to have a tag bit per bucket.)
   // 4. As is typical for hash_map and such, the Keys and Values are always
   //    stored in linked list nodes.  Pointers to elements are never invalidated
@@ -339,7 +339,7 @@ class Map {
         : hasher(h),
           num_elements_(0),
           seed_(Seed()),
-          table_(NULL),
+          table_(nullptr),
           alloc_(alloc) {
       n = TableSize(n);
       table_ = CreateEmptyTable(n);
@@ -347,7 +347,7 @@ class Map {
     }
 
     ~InnerMap() {
-      if (table_ != NULL) {
+      if (table_ != nullptr) {
         clear();
         Dealloc<void*>(table_, num_buckets_);
       }
@@ -389,11 +389,11 @@ class Map {
       // Invariants:
       // node_ is always correct. This is handy because the most common
       // operations are operator* and operator-> and they only use node_.
-      // When node_ is set to a non-NULL value, all the other non-const fields
+      // When node_ is set to a non-nullptr value, all the other non-const fields
       // are updated to be correct also, but those fields can become stale
       // if the underlying map is modified.  When those fields are needed they
       // are rechecked, and updated if necessary.
-      iterator_base() : node_(NULL), m_(NULL), bucket_index_(0) {}
+      iterator_base() : node_(nullptr), m_(nullptr), bucket_index_(0) {}
 
       explicit iterator_base(const InnerMap* m) : m_(m) {
         SearchFrom(m->index_of_first_non_null_);
@@ -417,11 +417,11 @@ class Map {
       }
 
       // Advance through buckets, looking for the first that isn't empty.
-      // If nothing non-empty is found then leave node_ == NULL.
+      // If nothing non-empty is found then leave node_ == nullptr.
       void SearchFrom(size_type start_bucket) {
         GOOGLE_DCHECK(m_->index_of_first_non_null_ == m_->num_buckets_ ||
-               m_->table_[m_->index_of_first_non_null_] != NULL);
-        node_ = NULL;
+               m_->table_[m_->index_of_first_non_null_] != nullptr);
+        node_ = nullptr;
         for (bucket_index_ = start_bucket; bucket_index_ < m_->num_buckets_;
              bucket_index_++) {
           if (m_->TableEntryIsNonEmptyList(bucket_index_)) {
@@ -447,7 +447,7 @@ class Map {
       }
 
       iterator_base& operator++() {
-        if (node_->next == NULL) {
+        if (node_->next == nullptr) {
           TreeIterator tree_it;
           const bool is_list = revalidate_if_necessary(&tree_it);
           if (is_list) {
@@ -473,12 +473,12 @@ class Map {
         return tmp;
       }
 
-      // Assumes node_ and m_ are correct and non-NULL, but other fields may be
+      // Assumes node_ and m_ are correct and non-nullptr, but other fields may be
       // stale.  Fix them as needed.  Then return true iff node_ points to a
       // Node in a list.  If false is returned then *it is modified to be
       // a valid iterator for node_.
       bool revalidate_if_necessary(TreeIterator* it) {
-        GOOGLE_DCHECK(node_ != NULL && m_ != NULL);
+        GOOGLE_DCHECK(node_ != nullptr && m_ != nullptr);
         // Force bucket_index_ to be in range.
         bucket_index_ &= (m_->num_buckets_ - 1);
         // Common case: the bucket we think is relevant points to node_.
@@ -487,7 +487,7 @@ class Map {
         // but not at the head.
         if (m_->TableEntryIsNonEmptyList(bucket_index_)) {
           Node* l = static_cast<Node*>(m_->table_[bucket_index_]);
-          while ((l = l->next) != NULL) {
+          while ((l = l->next) != nullptr) {
             if (l == node_) {
               return true;
             }
@@ -520,16 +520,16 @@ class Map {
       for (size_type b = 0; b < num_buckets_; b++) {
         if (TableEntryIsNonEmptyList(b)) {
           Node* node = static_cast<Node*>(table_[b]);
-          table_[b] = NULL;
+          table_[b] = nullptr;
           do {
             Node* next = node->next;
             DestroyNode(node);
             node = next;
-          } while (node != NULL);
+          } while (node != nullptr);
         } else if (TableEntryIsTree(b)) {
           Tree* tree = static_cast<Tree*>(table_[b]);
           GOOGLE_DCHECK(table_[b] == table_[b + 1] && (b & 1) == 0);
-          table_[b] = table_[b + 1] = NULL;
+          table_[b] = table_[b + 1] = nullptr;
           typename Tree::iterator tree_it = tree->begin();
           do {
             Node* node = NodePtrFromKeyPtr(*tree_it);
@@ -556,14 +556,14 @@ class Map {
     bool empty() const { return size() == 0; }
 
     iterator find(const Key& k) { return iterator(FindHelper(k).first); }
-    const_iterator find(const Key& k) const { return find(k, NULL); }
+    const_iterator find(const Key& k) const { return find(k, nullptr); }
     bool contains(const Key& k) const { return find(k) != end(); }
 
     // In traditional C++ style, this performs "insert if not present."
     std::pair<iterator, bool> insert(const KeyValuePair& kv) {
       std::pair<const_iterator, size_type> p = FindHelper(kv.key());
       // Case 1: key was already present.
-      if (p.first.node_ != NULL)
+      if (p.first.node_ != nullptr)
         return std::make_pair(iterator(p.first), false);
       // Case 2: insert.
       if (ResizeIfLoadIsOutOfRange(num_elements_ + 1)) {
@@ -582,7 +582,7 @@ class Map {
     std::pair<iterator, bool> insert(const Key& k) {
       std::pair<const_iterator, size_type> p = FindHelper(k);
       // Case 1: key was already present.
-      if (p.first.node_ != NULL)
+      if (p.first.node_ != nullptr)
         return std::make_pair(iterator(p.first), false);
       // Case 2: insert.
       if (ResizeIfLoadIsOutOfRange(num_elements_ + 1)) {
@@ -622,14 +622,14 @@ class Map {
           // only because we want index_of_first_non_null_ to be correct.
           b &= ~static_cast<size_type>(1);
           DestroyTree(tree);
-          table_[b] = table_[b + 1] = NULL;
+          table_[b] = table_[b + 1] = nullptr;
         }
       }
       DestroyNode(item);
       --num_elements_;
       if (PROTOBUF_PREDICT_FALSE(b == index_of_first_non_null_)) {
         while (index_of_first_non_null_ < num_buckets_ &&
-               table_[index_of_first_non_null_] == NULL) {
+               table_[index_of_first_non_null_] == nullptr) {
           ++index_of_first_non_null_;
         }
       }
@@ -640,7 +640,7 @@ class Map {
       return FindHelper(k, it).first;
     }
     std::pair<const_iterator, size_type> FindHelper(const Key& k) const {
-      return FindHelper(k, NULL);
+      return FindHelper(k, nullptr);
     }
     std::pair<const_iterator, size_type> FindHelper(const Key& k,
                                                     TreeIterator* it) const {

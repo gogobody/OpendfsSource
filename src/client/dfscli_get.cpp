@@ -22,7 +22,7 @@ int dfscli_get(char *src, char *dst)
 	{
 	    dfscli_log(DFS_LOG_WARN, "dfscli_get, pool_alloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	strcpy(rw_ctx->src, src);
@@ -30,9 +30,9 @@ int dfscli_get(char *src, char *dst)
 	rw_ctx->blk_sz = sconf->blk_sz;
 	rw_ctx->blk_rep = sconf->blk_rep;
 	
-	if (dfs_open(rw_ctx) != DFS_OK) 
+	if (dfs_open(rw_ctx) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	dfs_read_blk(rw_ctx);
@@ -54,7 +54,7 @@ int dfscli_get(char *src, char *dst)
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //
@@ -71,7 +71,7 @@ static int dfs_open(rw_context_t *rw_ctx)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -99,7 +99,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -110,7 +110,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)pool_alloc(dfs_cycle->pool, pLen);
@@ -120,7 +120,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(sockfd, pNext, pLen);
@@ -130,14 +130,14 @@ static int dfs_open(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 		if (in_t.ret == KEY_NOTEXIST) 
 		{
@@ -165,7 +165,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 
 		close(sockfd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	else if (NULL != in_t.data && in_t.data_len > 0) 
 	{
@@ -180,7 +180,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 		memcpy(rw_ctx->dn_ips, resp_info.dn_ips, sizeof(resp_info.dn_ips));
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfs_read_blk(rw_context_t *rw_ctx)
@@ -194,7 +194,7 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
         dfscli_log(DFS_LOG_WARN, "open %s err, %s", 
 			rw_ctx->dst, strerror(errno));
 			
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int sockfd = dfs_connect(rw_ctx->dn_ips[dn_index], DN_PORT);
@@ -203,7 +203,7 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 		close(datafd);
 		unlink(rw_ctx->dst);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	long fsize = rw_ctx->blk_sz;
@@ -229,13 +229,13 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 
 		unlink(rw_ctx->dst);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
     data_transfer_header_rsp_t rsp;
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
-	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != DFS_OK)) 
+	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != NGX_OK))
 	{
 	    dfscli_log(DFS_LOG_WARN, "recv header rsp from %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
@@ -245,22 +245,22 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 
 		unlink(rw_ctx->dst);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
-	if (do_recvfile_splice(sockfd, datafd, NULL, fsize) == DFS_ERROR) 
+	if (do_recvfile_splice(sockfd, datafd, NULL, fsize) == NGX_ERROR)
 	{
 	    close(datafd);
 		close(sockfd);
 
 		unlink(rw_ctx->dst);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
-	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != DFS_OK)) 
+	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != NGX_OK))
 	{
 	    dfscli_log(DFS_LOG_WARN, "recv read done rsp from %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
@@ -270,7 +270,7 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 
 		unlink(rw_ctx->dst);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	dfscli_log(DFS_LOG_INFO, "get file %s to local %s succesfully.", 
@@ -279,7 +279,7 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 	close(datafd);
 	close(sockfd);
 
-	return DFS_OK;
+	return NGX_OK;
 }
 
 static int do_recvfile_splice(int fromfd, int tofd, 
@@ -299,7 +299,7 @@ static int do_recvfile_splice(int fromfd, int tofd,
 	{
         dfscli_log(DFS_LOG_WARN, "pipe err, %s", strerror(errno));
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     rc = count;
@@ -317,13 +317,13 @@ static int do_recvfile_splice(int fromfd, int tofd,
 			dfscli_log(DFS_LOG_WARN, "splice(socket to pipe) err, %s", 
 				strerror(errno));
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         } 
 		else if (nread == 0)
 		{
 		    dfscli_log(DFS_LOG_WARN, "no data to transfer");
 
-		    return DFS_ERROR;
+		    return NGX_ERROR;
         }
 
         wc = nread;
@@ -336,7 +336,7 @@ static int do_recvfile_splice(int fromfd, int tofd,
 				dfscli_log(DFS_LOG_WARN, "splice(pipe to file) err, %s", 
 					strerror(errno));
 
-				return DFS_ERROR;
+				return NGX_ERROR;
             }
 			
             wc -= nwrite;

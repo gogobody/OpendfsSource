@@ -15,7 +15,7 @@ int cfs_setup(pool_t *pool, cfs_t *cfs, log_t *log)
 	
     if (!cfs->meta || !cfs->sp) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	cfs->cursize = nullptr;
@@ -25,21 +25,21 @@ int cfs_setup(pool_t *pool, cfs_t *cfs, log_t *log)
 
     cfs->meta->parsefunc(cfs->sp, cfs->meta);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int cfs_sendfile(cfs_t *cfs, int fd_out, int fd_in, 
 	off_t* offset, size_t len, log_t *log)
 {
-    int rc = DFS_ERROR;
+    int rc = NGX_ERROR;
 	
     if (!cfs || !offset) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     rc = cfs->sp->io_opt.sendfile(fd_out, fd_in, offset, len, log);
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
         return rc;
     } 
@@ -53,62 +53,62 @@ int cfs_sendfile(cfs_t *cfs, int fd_out, int fd_in,
 
 int cfs_sendfile_chain(cfs_t *cfs, file_io_t *fio, log_t *log)
 {
-    int rc = DFS_ERROR;
+    int rc = NGX_ERROR;
 	
     if (!cfs || !fio) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     rc = cfs->sp->io_opt.sendfilechain(fio, log); //cfs_faio_sendfile
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     } 
 	else 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 }
 
 //
 int cfs_write(cfs_t *cfs, file_io_t *fio, log_t *log)
 {
-    int rc = DFS_ERROR;
+    int rc = NGX_ERROR;
     if (!cfs || !fio) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // push fio data task to data queue
     rc = cfs->sp->io_opt.write(fio, log);//cfs_faio_write
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     } 
 	else 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 }
 
 // 调用 cfs_faio_read
 int cfs_read(cfs_t *cfs, file_io_t *fio, log_t *log)
 {
-    int rc = DFS_ERROR;
+    int rc = NGX_ERROR;
     if (!cfs || !fio) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     rc = cfs->sp->io_opt.read(fio, log); // cfs_faio_read
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     } 
 	else 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 }
 
@@ -122,7 +122,7 @@ int cfs_open(cfs_t *cfs, uchar_t *path, int flags, log_t *log)
 {
     if (!cfs || !path) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     return cfs->sp->io_opt.open(path, flags, log);
@@ -137,7 +137,7 @@ int cfs_size_add(volatile uint64_t *old_size, uint64_t size)
         nsize = *old_size;
     } while (!CAS(old_size, nsize, *old_size + size));
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int cfs_size_sub(volatile uint64_t *old_size, uint64_t size, log_t *log)
@@ -147,13 +147,13 @@ int cfs_size_sub(volatile uint64_t *old_size, uint64_t size, log_t *log)
 	
     if (!old_size) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     new_size = *old_size - size;
     if (new_size < 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     do 
@@ -161,7 +161,7 @@ int cfs_size_sub(volatile uint64_t *old_size, uint64_t size, log_t *log)
         nsize = *old_size;
     } while (!CAS(old_size, nsize, *old_size - size));
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // cfs_faio_ioinit(int thread_num) in faio.c
@@ -177,13 +177,13 @@ int cfs_ioevent_init(io_event_t *io_event)
 {
     if (!io_event) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     queue_init((queue_t*)&io_event->posted_events); // thread->
     queue_init((queue_t*)&io_event->posted_bad_events);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // fio 回调
@@ -244,11 +244,11 @@ int cfs_notifier_init(faio_notifier_manager_t *faio_notify)
 	{
         if (faio_notifier_init(faio_notify, faio_mgr, &error) != FAIO_OK) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //

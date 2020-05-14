@@ -69,25 +69,25 @@ static int thread_setup(dfs_thread_t *thread, int type)
     thread->event_base.nevents = sconf->connection_n;
 
 
-    if (thread_event_init(thread) != DFS_OK) 
+    if (thread_event_init(thread) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     thread->type = type;
     if (THREAD_TASK == thread->type) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 
     thread->event_base.time_update = time_update;
         
-	if (conn_pool_init(&thread->conn_pool, sconf->connection_n) != DFS_OK) 
+	if (conn_pool_init(&thread->conn_pool, sconf->connection_n) != NGX_OK)
 	{
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void thread_task_exit(dfs_thread_t *thread)
@@ -181,7 +181,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
     process_t     *process = nullptr;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);
-    if (ret == DFS_ERROR) 
+    if (ret == NGX_ERROR)
 	{
         exit(PROCESS_FATAL_EXIT);
     }
@@ -190,7 +190,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
     main_thread->event_base.nevents = 512;
 
     // epoll init： fd\ event_list\ timer
-    if (thread_event_init(main_thread) != DFS_OK) 
+    if (thread_event_init(main_thread) != NGX_OK)
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"thread_event_init() failed");
@@ -198,7 +198,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
         exit(PROCESS_FATAL_EXIT);
     }
     // worker init
-    if (ngx_module_woker_init(cycle) != DFS_OK)
+    if (ngx_module_woker_init(cycle) != NGX_OK)
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"ngx_module_woker_init() failed");
@@ -231,7 +231,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
 
 	// THREAD_PAXOS
 	// do_paxos_task
-	if (create_paxos_thread(cycle) != DFS_OK) 
+	if (create_paxos_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
             "create paxos thread failed");
@@ -242,7 +242,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
 	// THREAD_TASK
 	// 创建 task_num/worker_n 个 task_thread
     // 处理 task 并把task 分发到不同的tq
-    if (create_task_thread(cycle) != DFS_OK)
+    if (create_task_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
             "create task thread failed");
@@ -255,7 +255,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
      * */
 
     // THREAD_DN
-	if (create_dn_thread(cycle) != DFS_OK) 
+	if (create_dn_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
             "create dn thread failed");
@@ -265,7 +265,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
 
 	// THREAD_CLI
 	// same like dn thread
-    if (create_cli_thread(cycle) != DFS_OK) 
+    if (create_cli_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
             "create cli thread failed");
@@ -277,7 +277,7 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
     process = get_process(process_get_curslot());
     
     if (channel_add_event(process->channel[1],
-        EVENT_READ_EVENT, channel_handler, nullptr) != DFS_OK)
+        EVENT_READ_EVENT, channel_handler, nullptr) != NGX_OK)
     {
         exit(PROCESS_FATAL_EXIT);
     }
@@ -310,29 +310,29 @@ int create_paxos_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // init task queue
     // set event_base and event_timer
     // init conn_pool
-    if (thread_setup(paxos_thread, THREAD_PAXOS) == DFS_ERROR) 
+    if (thread_setup(paxos_thread, THREAD_PAXOS) == NGX_ERROR)
     {
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "thread_setup err");
 			
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     paxos_thread->run_func = thread_paxos_cycle;
-    paxos_thread->running = DFS_TRUE;
+    paxos_thread->running = NGX_TRUE;
     task_queue_init(&paxos_thread->tq);
     paxos_thread->state = THREAD_ST_UNSTART;
 		
-    if (thread_create(paxos_thread) != DFS_OK) 
+    if (thread_create(paxos_thread) != NGX_OK)
     {
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "thread_create err");
 			
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	threads_total_add(1);
@@ -340,17 +340,17 @@ int create_paxos_thread(cycle_t *cycle)
 	
     if (paxos_thread->state != THREAD_ST_OK) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-	if (nn_paxos_run() != DFS_OK) 
+	if (nn_paxos_run() != NGX_OK)
     {
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "run paxos err");
 			
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // paxos 线程
@@ -364,7 +364,7 @@ static void * thread_paxos_cycle(void *arg) //paxos_thread
 
     // 这个初始化应该放在外面去, 线程函数的初始化
     // 目前都是nullptr 不用初始化
-//    if (ngx_module_workethread_init(me) != DFS_OK)
+//    if (ngx_module_workethread_init(me) != NGX_OK)
 //	{
 //        goto exit;
 //    }
@@ -412,17 +412,17 @@ int create_task_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     for (i = 0; i < task_num; i++) 
 	{
-        if (thread_setup(&task_threads[i], THREAD_TASK) == DFS_ERROR) 
+        if (thread_setup(&task_threads[i], THREAD_TASK) == NGX_ERROR)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 				"thread_setup err");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
     
@@ -431,16 +431,16 @@ int create_task_thread(cycle_t *cycle)
     for (i = 0; i < task_num; i++) 
 	{
         task_threads[i].run_func = thread_task_cycle;
-        task_threads[i].running = DFS_TRUE;
+        task_threads[i].running = NGX_TRUE;
         task_queue_init(&task_threads[i].tq);
         task_threads[i].state = THREAD_ST_UNSTART;
 		
-        if (thread_create(&task_threads[i]) != DFS_OK) 
+        if (thread_create(&task_threads[i]) != NGX_OK)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 				"thread_create err");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         threads_total_add(1);
@@ -455,11 +455,11 @@ int create_task_thread(cycle_t *cycle)
            dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
                    "create_worker thread[%d] err", i);
 		   
-           return DFS_ERROR;
+           return NGX_ERROR;
         }
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // do_task_handler
@@ -470,7 +470,7 @@ static void * thread_task_cycle(void *arg)
     thread_bind_key(me);
 
 //    // none
-//    if (ngx_module_workethread_init(me) != DFS_OK)
+//    if (ngx_module_workethread_init(me) != NGX_OK)
 //	{
 //        goto exit;
 //    }
@@ -506,14 +506,14 @@ static int create_dn_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
-    if (thread_setup(dn_thread, THREAD_DN) != DFS_OK) 
+    if (thread_setup(dn_thread, THREAD_DN) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "thread_setup err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     //
@@ -534,15 +534,15 @@ static int create_dn_thread(cycle_t *cycle)
     }
 	
     dn_thread->run_func= thread_dn_cycle; //
-    dn_thread->running = DFS_TRUE;
+    dn_thread->running = NGX_TRUE;
     dn_thread->state = THREAD_ST_UNSTART;
 	
-    if (thread_create(dn_thread) != DFS_OK) 
+    if (thread_create(dn_thread) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"thread_create error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     threads_total_add(1);
@@ -550,10 +550,10 @@ static int create_dn_thread(cycle_t *cycle)
 	
     if (dn_thread->state != THREAD_ST_OK) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // datanode thread
@@ -572,7 +572,7 @@ static void * thread_dn_cycle(void * args)
     // 对所有的datanode 监听的listens 添加listening 的 read event
     // rev->handler = ls->handler
     // listen_rev_handler
-    if (conn_listening_add_event(&me->event_base, listens) != DFS_OK) 
+    if (conn_listening_add_event(&me->event_base, listens) != NGX_OK)
 	{
         goto exit;
     }
@@ -604,14 +604,14 @@ static int create_cli_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
-    if (thread_setup(cli_thread, THREAD_CLI) != DFS_OK) 
+    if (thread_setup(cli_thread, THREAD_CLI) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "thread_setup err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     task_queue_init(&cli_thread->tq);
@@ -630,15 +630,15 @@ static int create_cli_thread(cycle_t *cycle)
     }
 	
     cli_thread->run_func= thread_cli_cycle;
-    cli_thread->running = DFS_TRUE;
+    cli_thread->running = NGX_TRUE;
     cli_thread->state = THREAD_ST_UNSTART;
 	
-    if (thread_create(cli_thread) != DFS_OK) 
+    if (thread_create(cli_thread) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"thread_create error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     threads_total_add(1);
@@ -646,10 +646,10 @@ static int create_cli_thread(cycle_t *cycle)
 	
     if (cli_thread->state != THREAD_ST_OK) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void * thread_cli_cycle(void * args)
@@ -662,7 +662,7 @@ static void * thread_cli_cycle(void * args)
     
     notice_init(&me->event_base, &me->tq_notice, net_response_handler, me);
 
-    if (conn_listening_add_event(&me->event_base, listens) != DFS_OK) 
+    if (conn_listening_add_event(&me->event_base, listens) != NGX_OK)
 	{
         goto exit;
     }
@@ -696,7 +696,7 @@ static int channel_add_event(int fd, int event,
 
     if (!c) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     base = thread_get_event_base();
@@ -710,12 +710,12 @@ static int channel_add_event(int fd, int event,
     ev = (event == EVENT_READ_EVENT) ? rev : wev;
     ev->handler = handler;
 
-    if (event_add(base, ev, event, 0) == DFS_ERROR) 
+    if (event_add(base, ev, event, 0) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // handle channel event
@@ -746,7 +746,7 @@ static void channel_handler(event_t *ev)
 		
         dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0, "channel: %i", n);
 		
-        if (n == DFS_ERROR) 
+        if (n == NGX_ERROR)
 		{
             if (ev_base->event_flags & EVENT_USE_EPOLL_EVENT) 
 			{
@@ -761,13 +761,13 @@ static void channel_handler(event_t *ev)
 		
         if (ev_base->event_flags & EVENT_USE_EVENTPORT_EVENT) 
 		{
-            if (event_add(ev_base, ev, EVENT_READ_EVENT, 0) == DFS_ERROR) 
+            if (event_add(ev_base, ev, EVENT_READ_EVENT, 0) == NGX_ERROR)
 			{
                 return;
             }
         }
 		
-        if (n == DFS_AGAIN) 
+        if (n == NGX_AGAIN)
 		{
             return;
         }
@@ -804,13 +804,13 @@ static void channel_handler(event_t *ev)
                 ch.slot, ch.pid, process->pid,
                 process->channel[0]);
 			
-            if (close(process->channel[0]) == DFS_ERROR) {
+            if (close(process->channel[0]) == NGX_ERROR) {
                 dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                     "close() channel failed");
             }
 			
-            process->channel[0] = DFS_INVALID_FILE;
-            process->pid = DFS_INVALID_PID;
+            process->channel[0] = NGX_INVALID_FILE;
+            process->pid = NGX_INVALID_PID;
             break;
 			
         case CHANNEL_CMD_BACKUP:
@@ -822,12 +822,12 @@ static void channel_handler(event_t *ev)
 
 static void stop_cli_thread()
 {
-    cli_thread->running = DFS_FALSE;
+    cli_thread->running = NGX_FALSE;
 }
 
 static void stop_dn_thread()
 {
-    dn_thread->running = DFS_FALSE;
+    dn_thread->running = NGX_FALSE;
 }
 
 static void stop_task_thread(cycle_t *cycle)
@@ -840,13 +840,13 @@ static void stop_task_thread(cycle_t *cycle)
 	
     for (i = 0; i < task_num; i++) 
 	{
-        task_threads[i].running = DFS_FALSE;
+        task_threads[i].running = NGX_FALSE;
     }
 }
 
 static void stop_paxos_thread()
 {
-    paxos_thread->running = DFS_FALSE;
+    paxos_thread->running = NGX_FALSE;
 }
 
 static void threads_total_add(int n)

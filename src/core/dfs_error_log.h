@@ -1,5 +1,5 @@
-#ifndef DFS_ERROR_LOG_H
-#define DFS_ERROR_LOG_H
+#ifndef NGX_ERROR_LOG_H
+#define NGX_ERROR_LOG_H
 
 #include "dfs_types.h"
 #include "dfs_string.h"

@@ -17,10 +17,10 @@ int          dfs_argc;
 char       **dfs_argv;
 
 string_t     config_file;
-static int   g_format = DFS_FALSE;
-static int   test_conf = DFS_FALSE;
-static int   g_reconf = DFS_FALSE;
-static int   g_quit = DFS_FALSE;
+static int   g_format = NGX_FALSE;
+static int   test_conf = NGX_FALSE;
+static int   g_reconf = NGX_FALSE;
+static int   g_quit = NGX_FALSE;
 static int   show_version;
 sys_info_t   dfs_sys_info;
 extern pid_t process_pid;
@@ -60,7 +60,7 @@ static int parse_cmdline( int argc, char *const *argv)
 				{
                     dfs_show_help();
 					
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 				
                 if (*optarg == '/') 
@@ -80,7 +80,7 @@ static int parse_cmdline( int argc, char *const *argv)
                 break;
 
 			case 'f':
-				g_format = DFS_TRUE;
+				g_format = NGX_TRUE;
 				break;
 				
             case 'V':
@@ -96,15 +96,15 @@ static int parse_cmdline( int argc, char *const *argv)
                 break;
 				
             case 't':
-                test_conf = DFS_TRUE;
+                test_conf = NGX_TRUE;
                 break;
 				
             case 'r':
-                g_reconf= DFS_TRUE;
+                g_reconf= NGX_TRUE;
                 break;
 				
             case 'q':
-                g_quit = DFS_TRUE;
+                g_quit = NGX_TRUE;
                 break;
 				
             case 'h':
@@ -112,16 +112,16 @@ static int parse_cmdline( int argc, char *const *argv)
             default:
                 dfs_show_help();
 				
-                return DFS_ERROR;
+                return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int main(int argc, char **argv)
 {
-    int            ret = DFS_OK;
+    int            ret = NGX_OK;
     cycle_t       *cycle = nullptr;
     conf_server_t *sconf = nullptr;
     
@@ -129,14 +129,14 @@ int main(int argc, char **argv)
 
     time_init();
 
-    if (parse_cmdline(argc, argv) != DFS_OK) 
+    if (parse_cmdline(argc, argv) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (!show_version && sys_get_info(&dfs_sys_info) != DFS_OK) 
+    if (!show_version && sys_get_info(&dfs_sys_info) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
  
     if (config_file.data == nullptr)
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         config_file.len = strlen(DEFAULT_CONF_FILE);
     }
     
-    if (test_conf == DFS_TRUE) 
+    if (test_conf == NGX_TRUE)
 	{
         ret = conf_syntax_test(cycle);
 		
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     
     if (g_reconf || g_quit) 
 	{
-        if ((ret = cycle_init(cycle))!= DFS_OK) 
+        if ((ret = cycle_init(cycle))!= NGX_OK)
 		{
             fprintf(stderr, "cycle_init fail\n");
 			
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
         if (process_pid < 0)
 		{
             fprintf(stderr, " get server pid fail\n");
-            ret = DFS_ERROR;
+            ret = NGX_ERROR;
 			
             goto out;
         }
@@ -182,14 +182,14 @@ int main(int argc, char **argv)
             printf("service is stoped\n");
         }
 		
-        ret = DFS_OK;
+        ret = NGX_OK;
 		
         goto out;
     }
 
     umask(0022);
     // init conf 
-    if ((ret = cycle_init(cycle)) != DFS_OK) 
+    if ((ret = cycle_init(cycle)) != NGX_OK)
 	{
         fprintf(stderr, "cycle_init fail\n");
 		
@@ -204,14 +204,14 @@ int main(int argc, char **argv)
         goto out;
 	}
 
-    if ((ret = process_check_running(cycle)) == DFS_TRUE) 
+    if ((ret = process_check_running(cycle)) == NGX_TRUE)
 	{
         fprintf(stderr, "namenode is already running\n");
 		
     	goto out;
     }
 
-    if ((ret = sys_limit_init(cycle)) != DFS_OK)
+    if ((ret = sys_limit_init(cycle)) != NGX_OK)
 	{
         fprintf(stderr, "sys_limit_init error\n");
 		
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
     
 	ngx_module_setup();
     // just nn_error_log_init
-	if ((ret = ngx_module_master_init(cycle)) != DFS_OK)
+	if ((ret = ngx_module_master_init(cycle)) != NGX_OK)
 	{
 		fprintf(stderr, "master init fail\n");
 		
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     
     sconf = (conf_server_t *)cycle->sconf;
 
-    if (process_change_workdir(&sconf->coredump_dir) != DFS_OK) 
+    if (process_change_workdir(&sconf->coredump_dir) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"process_change_workdir failed!");
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
         goto failed;
     }
 
-    if (signal_setup() != DFS_OK) 
+    if (signal_setup() != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"setup signal failed!");
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
         goto failed;
     }
     // 守护进程
-//    if (sconf->daemon == DFS_TRUE && nn_daemon() == DFS_ERROR)
+//    if (sconf->daemon == NGX_TRUE && nn_daemon() == NGX_ERROR)
 //	{
 //        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
 //			"dfs_daemon failed");
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 
     process_pid = getpid();
 	
-    if (process_write_pid_file(process_pid) == DFS_ERROR) 
+    if (process_write_pid_file(process_pid) == NGX_ERROR)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"write pid file error");
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
         goto failed;
     }
     // namespaceid is dfs_current_msec
-	if (get_ns_version(cycle) != DFS_OK) 
+	if (get_ns_version(cycle) != NGX_OK)
 	{
 	    dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 			"the DFS filesystem is unformatted");
@@ -300,8 +300,8 @@ out:
 
 int nn_daemon()
 {
-    int fd = DFS_INVALID_FILE;
-    int pid = DFS_ERROR;
+    int fd = NGX_INVALID_FILE;
+    int pid = NGX_ERROR;
 	
     pid = fork();
 
@@ -313,84 +313,84 @@ int nn_daemon()
 	{
         printf("dfs_daemon: fork failed\n");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
-    if (setsid() == DFS_ERROR) 
+    if (setsid() == NGX_ERROR)
 	{
         printf("dfs_daemon: setsid failed\n");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     umask(0022);
 
     fd = open("/dev/null", O_RDWR);
-    if (fd == DFS_INVALID_FILE) 
+    if (fd == NGX_INVALID_FILE)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (dup2(fd, STDIN_FILENO) == DFS_ERROR) 
+    if (dup2(fd, STDIN_FILENO) == NGX_ERROR)
 	{
         printf("dfs_daemon: dup2(STDIN) failed\n");
 		
-        return DFS_INVALID_FILE;
+        return NGX_INVALID_FILE;
     }
 
-    if (dup2(fd, STDOUT_FILENO) == DFS_ERROR) 
+    if (dup2(fd, STDOUT_FILENO) == NGX_ERROR)
 	{
         printf("dfs_daemon: dup2(STDOUT) failed\n");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (dup2(fd, STDERR_FILENO) == DFS_ERROR) 
+    if (dup2(fd, STDERR_FILENO) == NGX_ERROR)
 	{
         printf("dfs_daemon: dup2(STDERR) failed\n");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (fd > STDERR_FILENO) 
 	{
-        if (close(fd) == DFS_ERROR) 
+        if (close(fd) == NGX_ERROR)
 		{
             printf("dfs_daemon: close() failed\n");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_syntax_test(cycle_t *cycle)
 {
     if (config_file.data == nullptr)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (cycle_init(cycle) == DFS_ERROR) 
+    if (cycle_init(cycle) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
 {
-    int            ret = DFS_ERROR;
-    int            need_set = DFS_FALSE;
+    int            ret = NGX_ERROR;
+    int            need_set = NGX_FALSE;
     struct rlimit  rl;
     log_t         *log;
 
     log = dfs_cycle->error_log;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);
-    if (ret == DFS_ERROR) 
+    if (ret == NGX_ERROR)
 	{
         dfs_log_error(log, DFS_LOG_ERROR,
             errno, "sys_set_limit get RLIMIT_NOFILE error");
@@ -401,19 +401,19 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
     if (rl.rlim_max < file_limit) 
 	{
         rl.rlim_max = file_limit;
-        need_set = DFS_TRUE;
+        need_set = NGX_TRUE;
     }
 	
     if (rl.rlim_cur < file_limit) 
 	{
         rl.rlim_cur = file_limit;
-        need_set = DFS_TRUE;
+        need_set = NGX_TRUE;
     }
 	
     if (need_set) 
 	{
         ret = setrlimit(RLIMIT_NOFILE, &rl);
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set RLIMIT_NOFILE error");
@@ -426,12 +426,12 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
     if (mem_size > ((size_t)1 << 32)) 
 	{
         ret = system("sysctl -w vm.overcommit_memory=1 > /dev/zero");
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set vm.overcommit error");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
@@ -441,7 +441,7 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
         dfs_log_error(log, DFS_LOG_ERROR,
             errno, "sys_set_limit set PR_SET_DUMPABLE error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (getrlimit(RLIMIT_CORE, &rl) == 0) 
@@ -449,16 +449,16 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
         rl.rlim_cur = rl.rlim_max;
 		
         ret = setrlimit(RLIMIT_CORE, &rl);
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set RLIMIT_CORE error");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int sys_limit_init(cycle_t *cycle)
@@ -481,15 +481,15 @@ static int format(cycle_t *cycle)
 
 	if (input == 'Y') 
 	{
-		if (clear_current_dir(cycle) != DFS_OK) 
+		if (clear_current_dir(cycle) != NGX_OK)
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
 		}
 
 		// namespace id is dfs_current_msec
-		if (save_ns_version(cycle) != DFS_OK) 
+		if (save_ns_version(cycle) != NGX_OK)
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
 		}
 
 		fprintf(stdout, "Storage directory %s has been successfully formatted.\n", 
@@ -500,7 +500,7 @@ static int format(cycle_t *cycle)
         fprintf(stdout, "Format aborted in %s\n", sconf->fsimage_dir.data);
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 
@@ -512,17 +512,17 @@ static int clear_current_dir(cycle_t *cycle)
     char dir[PATH_LEN] = {0};
 	string_xxsprintf((uchar_t *)dir, "%s/current", sconf->fsimage_dir.data);
 
-	if (access(dir, F_OK) != DFS_OK) 
+	if (access(dir, F_OK) != NGX_OK)
 	{
-	    if (mkdir(dir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+	    if (mkdir(dir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	    {
 	        dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"mkdir %s err", dir);
 		
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 
-		return DFS_OK;
+		return NGX_OK;
 	}
 	
 	DIR *dp = nullptr;
@@ -532,7 +532,7 @@ static int clear_current_dir(cycle_t *cycle)
 	{
         printf("open %s err: %s\n", dir, strerror(errno));
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	while ((entry = readdir(dp)) != nullptr)
@@ -555,7 +555,7 @@ static int clear_current_dir(cycle_t *cycle)
 	
 	closedir(dp);
 		
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int save_ns_version(cycle_t *cycle)
@@ -571,7 +571,7 @@ static int save_ns_version(cycle_t *cycle)
 	{
 		printf("open %s err: %s\n", v_name, strerror(errno));
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int64_t namespaceID = time_curtime();
@@ -583,12 +583,12 @@ static int save_ns_version(cycle_t *cycle)
     {
 		printf("write %s err: %s\n", v_name, strerror(errno));
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 
 	close(fd);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int get_ns_version(cycle_t *cycle)
@@ -605,7 +605,7 @@ static int get_ns_version(cycle_t *cycle)
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 			"open %s err", v_name);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
     char ns_version[256] = {0};
@@ -616,13 +616,13 @@ static int get_ns_version(cycle_t *cycle)
 
 		close(fd);
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 
 	sscanf(ns_version, "%*[^=]=%ld", &cycle->namespace_id);
 
 	close(fd);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

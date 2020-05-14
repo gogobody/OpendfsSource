@@ -40,7 +40,7 @@ int cycle_init(cycle_t *cycle)
     
     if (cycle == nullptr)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
   	// 配置文件相对于安装目录的路径名称
     cycle->conf_file.data = string_xxpdup(cycle->pool , &config_file);
@@ -70,12 +70,12 @@ int cycle_init(cycle_t *cycle)
     conf_objects = get_dn_conf_object();
 
 	// ctx->conf_file = config_file ,ctx->conf_obj=conf_obj
-    if (conf_context_init(ctx, &config_file, log, conf_objects) != DFS_OK) 
+    if (conf_context_init(ctx, &config_file, log, conf_objects) != NGX_OK)
 	{
         goto error;
     }
     // 配置文件解析
-    if (conf_context_parse(ctx) != DFS_OK) 
+    if (conf_context_parse(ctx) != NGX_OK)
 	{
         printf("configure parse failed at line %d\n", ctx->conf_line); 
 		
@@ -90,17 +90,17 @@ int cycle_init(cycle_t *cycle)
         goto error;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
     
 error:
-     return DFS_ERROR;
+     return NGX_ERROR;
 }
 
 int cycle_free(cycle_t *cycle)
 {
     if (!cycle) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
    
     if (cycle->pool) 
@@ -112,6 +112,6 @@ int cycle_free(cycle_t *cycle)
 
     cycle = nullptr;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

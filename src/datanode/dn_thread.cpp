@@ -9,7 +9,7 @@ extern _xvolatile rb_msec_t dfs_current_msec;
 static pthread_key_t dfs_thread_key;
 dfs_atomic_lock_t accept_lock;
 volatile pthread_t accept_lock_held = -1;
-int accecpt_enable = DFS_TRUE;
+int accecpt_enable = NGX_TRUE;
 
 extern uint32_t  process_doing;
 extern process_t processes[];
@@ -79,10 +79,10 @@ int thread_create(void *args)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0,
             "thread_create err: %s\n", strerror(ret));
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void thread_clean(dfs_thread_t *thread)
@@ -95,9 +95,9 @@ int thread_event_init(dfs_thread_t *thread)
     io_event_t *ioevents = NULL; // 读写事件
 
     // 初始化 epoll句柄和 event list 空间分配
-    if (epoll_init(&thread->event_base, dfs_cycle->error_log) == DFS_ERROR) 
+    if (epoll_init(&thread->event_base, dfs_cycle->error_log) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     event_timer_init(&thread->event_timer, time_curtime, dfs_cycle->error_log);
@@ -113,7 +113,7 @@ int thread_event_init(dfs_thread_t *thread)
     ioevents->bad_lock.lock = DFS_LOCK_OFF;
     ioevents->bad_lock.allocator = NULL;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 线程 event 处理
@@ -142,7 +142,7 @@ void thread_event_process(dfs_thread_t *thread)
         (process_doing & PROCESS_DOING_TERMINATE)))
     {
         conn_listening_del_event(ev_base, listens); // 删除listening 事件
-        accecpt_enable = DFS_FALSE;
+        accecpt_enable = NGX_FALSE;
         event_free_accept_lock(thread);
     }
 
@@ -150,7 +150,7 @@ void thread_event_process(dfs_thread_t *thread)
 	// add listening event
 	if (accept_lock_held == thread->thread_id // 添加listening 事件
         //rev->handler = ls->handler; // listen_rev_handler
-        && conn_listening_add_event(ev_base, listens) == DFS_OK)
+        && conn_listening_add_event(ev_base, listens) == NGX_OK)
     {
         flags |= EVENT_POST_EVENTS;
     } 
@@ -230,7 +230,7 @@ static int event_trylock_accept_lock(dfs_thread_t *thread)
         accept_lock_held = thread->thread_id;
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int event_free_accept_lock(dfs_thread_t *thread)
@@ -239,14 +239,14 @@ static int event_free_accept_lock(dfs_thread_t *thread)
     
     if (accept_lock_held == -1U || accept_lock_held != thread->thread_id) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
     
     accept_lock_held = -1U;
 
     dfs_atomic_lock_off(&accept_lock, &flerrno);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 

@@ -9,7 +9,7 @@ int event_timer_init(event_timer_t *timer, curtime_ptr handler, log_t *log)
     timer->time_handler = handler;
     timer->log = log;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void event_timers_expire(event_timer_t *timer)

@@ -115,18 +115,18 @@ int ngx_module_master_init(cycle_t *cycle)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (nn_modules[i].master_init != nullptr &&
-            nn_modules[i].master_init(cycle) == DFS_ERROR) 
+            nn_modules[i].master_init(cycle) == NGX_ERROR)
         {
             printf("process_master_init: module %s init failed\n",
                 nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         nn_modules[i].flag = PROCESS_MOD_FREE;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int ngx_module_master_release(cycle_t *cycle)
@@ -141,18 +141,18 @@ int ngx_module_master_release(cycle_t *cycle)
             continue;
         }
 		
-        if (nn_modules[i].master_release(cycle) == DFS_ERROR) 
+        if (nn_modules[i].master_release(cycle) == NGX_ERROR)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_ERROR, 0,
                 "%s deinit fail \n",nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         nn_modules[i].flag = PROCESS_MOD_INIT;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int ngx_module_woker_init(cycle_t *cycle)
@@ -167,17 +167,17 @@ int ngx_module_woker_init(cycle_t *cycle)
 		//nn_dn_index_worker_init
 		//nn_blk_index_worker_init
         if (nn_modules[i].worker_init != nullptr &&
-            nn_modules[i].worker_init(cycle) == DFS_ERROR) 
+            nn_modules[i].worker_init(cycle) == NGX_ERROR)
         {
             dfs_log_error(cycle->error_log, DFS_LOG_ERROR, 0,
                 "dfs_module_init_woker: module %s init failed\n",
                 nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int ngx_module_woker_release(cycle_t *cycle)
@@ -187,17 +187,17 @@ int ngx_module_woker_release(cycle_t *cycle)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (nn_modules[i].worker_release!= nullptr &&
-            nn_modules[i].worker_release(cycle) == DFS_ERROR) 
+            nn_modules[i].worker_release(cycle) == NGX_ERROR)
         {
             dfs_log_error(cycle->error_log, DFS_LOG_ERROR, 0,
                 "dfs_module_init_woker: module %s init failed\n",
                 nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int ngx_module_workethread_init(dfs_thread_t *thread)
@@ -207,17 +207,17 @@ int ngx_module_workethread_init(dfs_thread_t *thread)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (nn_modules[i].worker_thread_init != nullptr &&
-            nn_modules[i].worker_thread_init(thread) == DFS_ERROR) 
+            nn_modules[i].worker_thread_init(thread) == NGX_ERROR)
         {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, 0,
                 "dfs_module_init_woker: module %s init failed\n",
                 nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int ngx_module_wokerthread_release(dfs_thread_t *thread)
@@ -227,16 +227,16 @@ int ngx_module_wokerthread_release(dfs_thread_t *thread)
     for (i = 0; i < dfs_mod_max; i++) 
 	{
         if (nn_modules[i].worker_thread_release != nullptr &&
-            nn_modules[i].worker_thread_release(thread) == DFS_ERROR) 
+            nn_modules[i].worker_thread_release(thread) == NGX_ERROR)
         {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, 0,
                 "dfs_module_init_woker: module %s init failed\n",
                 nn_modules[i].name.data);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

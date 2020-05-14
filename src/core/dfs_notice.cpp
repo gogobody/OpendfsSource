@@ -17,9 +17,9 @@ int notice_init(event_base_t *base, notice_t *n,
     event_t *rev = nullptr;
 
     // pfd
-    if (pipe_open(&n->channel) != DFS_OK) 
+    if (pipe_open(&n->channel) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     c = conn_get_from_mem(n->channel.pfd[0]); // 0是读端
@@ -43,7 +43,7 @@ int notice_init(event_base_t *base, notice_t *n,
     rev->handler = noice_read_event_handler; // 读事件发生后调用 n->call_back(n->data)
 
     // EPOLLIN
-    if (epoll_add_event(base,rev, EVENT_READ_EVENT, 0) == DFS_ERROR)
+    if (epoll_add_event(base,rev, EVENT_READ_EVENT, 0) == NGX_ERROR)
 	{
         dfs_log_error(base->log, DFS_LOG_FATAL, 0,"event adde failed");
 		
@@ -52,7 +52,7 @@ int notice_init(event_base_t *base, notice_t *n,
     
     n->log = base->log;
 
-    return DFS_OK;
+    return NGX_OK;
     
 error:
     pipe_close(&n->channel);
@@ -62,13 +62,13 @@ error:
         conn_free_mem(c);
     }
     
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 // 向channel 中发送一个 "c"
 int notice_wake_up(notice_t *n)
 {
-    if (dfs_write_fd(n->channel.pfd[1], "C", 1) == DFS_ERROR) // 1 是写端
+    if (dfs_write_fd(n->channel.pfd[1], "C", 1) == NGX_ERROR) // 1 是写端
 	{
         if (errno != DFS_EAGAIN) 
 		{
@@ -77,7 +77,7 @@ int notice_wake_up(notice_t *n)
         }
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 读事件发生后调用 n->call_back(n->data)

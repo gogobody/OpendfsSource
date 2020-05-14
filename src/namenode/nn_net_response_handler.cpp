@@ -66,7 +66,7 @@ void net_response_handler(void *data)
             queue_init(&q);
             pop_all(tq, &q);
             //
-            write_back_pack_queue(&q, DFS_TRUE);
+            write_back_pack_queue(&q, NGX_TRUE);
         }
     } else
 	{
@@ -76,7 +76,7 @@ void net_response_handler(void *data)
 
         queue_init(&q);
         pop_all(tq, &q);
-        write_back_pack_queue(&q, DFS_TRUE);
+        write_back_pack_queue(&q, NGX_TRUE);
     }
 }
 
@@ -89,7 +89,7 @@ void write_back_notice_call(void *data)
 
     queue_init(&q);
     pop_all(tq, &q);
-    write_back_pack_queue(&q, DFS_TRUE);
+    write_back_pack_queue(&q, NGX_TRUE);
 }
 
 // 插入 task -> mc conn -> out task

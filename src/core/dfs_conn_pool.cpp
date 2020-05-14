@@ -20,14 +20,14 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 
     if (connection_n == 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     pool->connection_n = connection_n;
     pool->connections = (conn_t *)memory_calloc(sizeof(conn_t) * pool->connection_n);// 为connections分配内存
     if (!pool->connections) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     // 为read_events分配内存
     pool->read_events = (event_t *)memory_calloc(sizeof(event_t) * pool->connection_n);
@@ -35,7 +35,7 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 	{
         conn_pool_free(pool);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     // 为write_events分配内存
     pool->write_events = (event_t *)memory_calloc(sizeof(event_t) * pool->connection_n);
@@ -43,7 +43,7 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
 	{
         conn_pool_free(pool);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     conn = pool->connections;
@@ -63,17 +63,17 @@ int conn_pool_init(conn_pool_t *pool, uint32_t connection_n)
             conn[i].next = &conn[i + 1];
         }
         // 每个connection，对应一个read_events, 一个write_events
-        conn[i].fd = DFS_INVALID_FILE;
+        conn[i].fd = NGX_INVALID_FILE;
         conn[i].read = &revs[i];
-        conn[i].read->timer_event = DFS_FALSE;
+        conn[i].read->timer_event = NGX_FALSE;
         conn[i].write = &wevs[i];
-        conn[i].write->timer_event = DFS_FALSE;
+        conn[i].write->timer_event = NGX_FALSE;
     }
 
     pool->free_connections = conn;
     pool->free_connection_n = pool->connection_n;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void conn_pool_free(conn_pool_t *pool)
@@ -166,13 +166,13 @@ int conn_pool_common_init()
     comm_conn_lock.allocator = nullptr;
     memset(&comm_conn_pool, 0, sizeof(conn_pool_t));
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 int conn_pool_common_release(){
     comm_conn_lock.lock = DFS_LOCK_OFF;
     comm_conn_lock.allocator = nullptr;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void put_comm_conn(conn_t *c)

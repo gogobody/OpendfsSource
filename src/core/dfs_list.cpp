@@ -5,7 +5,7 @@ int list_init(list_t *list, pool_t *pool, uint32_t n, size_t size)
 {
     if (list->part.elts) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (pool) 
@@ -19,7 +19,7 @@ int list_init(list_t *list, pool_t *pool, uint32_t n, size_t size)
 	
     if (!list->part.elts) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     list->part.nelts = 0;
@@ -29,7 +29,7 @@ int list_init(list_t *list, pool_t *pool, uint32_t n, size_t size)
     list->nalloc = n;
     list->pool = pool;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void list_reset(list_t *list)

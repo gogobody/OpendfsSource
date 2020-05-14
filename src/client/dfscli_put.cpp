@@ -28,7 +28,7 @@ int dfscli_put(char *src, char *dst)
 	{
 	    dfscli_log(DFS_LOG_WARN, "dfscli_put, pool_alloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	strcpy(rw_ctx->src, src);
@@ -40,9 +40,9 @@ int dfscli_put(char *src, char *dst)
     // task.key dst
     // task - userinfo - blk_info
     // recv task ret,blk id,namespace id
-	if (dfs_create(rw_ctx) != DFS_OK) 
+	if (dfs_create(rw_ctx) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
     // 
 	dfs_write_blk(rw_ctx);
@@ -64,7 +64,7 @@ int dfscli_put(char *src, char *dst)
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // connect to namenode and send task
@@ -89,7 +89,7 @@ static int dfs_create(rw_context_t *rw_ctx)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -117,7 +117,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -128,7 +128,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)pool_alloc(dfs_cycle->pool, pLen);
@@ -138,7 +138,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(sockfd, pNext, pLen);
@@ -148,14 +148,14 @@ static int dfs_create(rw_context_t *rw_ctx)
 		
 	    close(sockfd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 		if (in_t.ret == KEY_EXIST) 
 		{
@@ -187,7 +187,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 
 		close(sockfd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	else if (nullptr != in_t.data && in_t.data_len > 0)
 	{
@@ -201,7 +201,7 @@ static int dfs_create(rw_context_t *rw_ctx)
 		memcpy(rw_ctx->dn_ips, resp_info.dn_ips, sizeof(resp_info.dn_ips));
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfs_close(rw_context_t *rw_ctx)
@@ -221,7 +221,7 @@ static int dfs_close(rw_context_t *rw_ctx)
 	{
 	    dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -230,21 +230,21 @@ static int dfs_close(rw_context_t *rw_ctx)
 	{
 	    dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
         dfscli_log(DFS_LOG_WARN, "close err, ret: %d", in_t.ret);
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //write blk to remote 
@@ -264,7 +264,7 @@ static int dfs_write_blk(rw_context_t *rw_ctx)
 		    dfscli_log(DFS_LOG_WARN, "pthread_create[%d] err, %s", 
 				i, strerror(errno));
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
 		}
 	}
 
@@ -276,21 +276,21 @@ static int dfs_write_blk(rw_context_t *rw_ctx)
 		    dfscli_log(DFS_LOG_WARN, "pthread_join[%d] err, %s", 
 				i, strerror(errno));
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
 		}
 
-		if (rw_ctx->res[i] != DFS_OK) 
+		if (rw_ctx->res[i] != NGX_OK)
 		{
             dfscli_log(DFS_LOG_WARN, "write blk %ld to %s err", 
 				rw_ctx->blk_id, rw_ctx->dn_ips[i]);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
 		}
 
 		rw_ctx->write_done_blk_rep++;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //write blk start
@@ -308,7 +308,7 @@ static void *write_blk_start(void *arg)
         dfscli_log(DFS_LOG_WARN, "open %s err, %s", 
 			rw_ctx->src, strerror(errno));
 
-		rw_ctx->res[dn_index] = DFS_ERROR;
+		rw_ctx->res[dn_index] = NGX_ERROR;
 			
         return nullptr;
 	}
@@ -316,7 +316,7 @@ static void *write_blk_start(void *arg)
 	int sockfd = dfs_connect(rw_ctx->dn_ips[dn_index], DN_PORT);
 	if (sockfd < 0) 
 	{
-	    rw_ctx->res[dn_index] = DFS_ERROR;
+	    rw_ctx->res[dn_index] = NGX_ERROR;
 
 		close(datafd);
 		
@@ -347,7 +347,7 @@ static void *write_blk_start(void *arg)
 	    dfscli_log(DFS_LOG_WARN, "send header to %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
 		
-        rw_ctx->res[dn_index] = DFS_ERROR;
+        rw_ctx->res[dn_index] = NGX_ERROR;
 
 		close(datafd);
 		close(sockfd);
@@ -358,12 +358,12 @@ static void *write_blk_start(void *arg)
     data_transfer_header_rsp_t rsp;
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
-	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != DFS_OK)) 
+	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != NGX_OK))
 	{
 	    dfscli_log(DFS_LOG_WARN, "recv header rsp from %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
 		
-        rw_ctx->res[dn_index] = DFS_ERROR;
+        rw_ctx->res[dn_index] = NGX_ERROR;
 
 		close(datafd);
 		close(sockfd);
@@ -378,7 +378,7 @@ static void *write_blk_start(void *arg)
         dfscli_log(DFS_LOG_WARN, "sendfile to %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
 
-		rw_ctx->res[dn_index] = DFS_ERROR;
+		rw_ctx->res[dn_index] = NGX_ERROR;
 
         close(datafd);
 		close(sockfd);
@@ -389,12 +389,12 @@ static void *write_blk_start(void *arg)
 	memset(&rsp, 0x00, sizeof(data_transfer_header_rsp_t));
 	// recv rsp 
 	res = recv(sockfd, &rsp, sizeof(data_transfer_header_rsp_t), 0);
-	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != DFS_OK)) 
+	if (res < 0 || (rsp.op_status != OP_STATUS_SUCCESS && rsp.err != NGX_OK))
 	{
 	    dfscli_log(DFS_LOG_WARN, "recv write done rsp from %s err, %s", 
 			rw_ctx->dn_ips[dn_index], strerror(errno));
 		
-        rw_ctx->res[dn_index] = DFS_ERROR;
+        rw_ctx->res[dn_index] = NGX_ERROR;
 
 		close(datafd);
 		close(sockfd);
@@ -413,18 +413,18 @@ static void *write_blk_start(void *arg)
 
 	if (fsize > sconf->blk_sz) 
 	{
-        if (dfs_write_next_blk(rw_ctx) != DFS_OK) 
+        if (dfs_write_next_blk(rw_ctx) != NGX_OK)
 		{
             dfscli_log(DFS_LOG_WARN, "dfs_write_next_blk err");
 
-			rw_ctx->res[dn_index] = DFS_ERROR;
+			rw_ctx->res[dn_index] = NGX_ERROR;
 
 		    return nullptr;
 		}
 	}
 	*/
 
-	rw_ctx->res[dn_index] = DFS_OK;
+	rw_ctx->res[dn_index] = NGX_OK;
 	
     return nullptr;
 }
@@ -450,7 +450,7 @@ static int write_blk_to_dn(long fsize, int out_fd, int in_fd) // sockfd, data fd
 
 			dfscli_log(DFS_LOG_WARN, "sendfile err, %s", strerror(errno));
 
-			return DFS_ERROR;
+			return NGX_ERROR;
 		}
 
 		fsize -= send_sz;
@@ -462,16 +462,16 @@ static int write_blk_to_dn(long fsize, int out_fd, int in_fd) // sockfd, data fd
 
 static int dfs_write_next_blk(rw_context_t *rw_ctx)
 {
-    if (dfs_get_additional_blk(rw_ctx) != DFS_OK) 
+    if (dfs_get_additional_blk(rw_ctx) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	// connect dn
 
 	// write blk to dn
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfs_get_additional_blk(rw_context_t *rw_ctx)
@@ -500,7 +500,7 @@ static int dfs_get_additional_blk(rw_context_t *rw_ctx)
 		
 	    close(rw_ctx->nn_fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -511,7 +511,7 @@ static int dfs_get_additional_blk(rw_context_t *rw_ctx)
 		
 	    close(rw_ctx->nn_fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)pool_alloc(dfs_cycle->pool, pLen);
@@ -521,7 +521,7 @@ static int dfs_get_additional_blk(rw_context_t *rw_ctx)
 		
 	    close(rw_ctx->nn_fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(rw_ctx->nn_fd, pNext, pLen);
@@ -531,20 +531,20 @@ static int dfs_get_additional_blk(rw_context_t *rw_ctx)
 		
 	    close(rw_ctx->nn_fd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 	    dfscli_log(DFS_LOG_WARN, "get_additional_blk err, ret: %d", in_t.ret);
 
 		close(rw_ctx->nn_fd);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	else if (nullptr != in_t.data && in_t.data_len > 0)
 	{
@@ -557,6 +557,6 @@ static int dfs_get_additional_blk(rw_context_t *rw_ctx)
 		memcpy(rw_ctx->dn_ips, resp_info.dn_ips, sizeof(resp_info.dn_ips));
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

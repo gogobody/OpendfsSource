@@ -25,7 +25,7 @@ int time_init(void)
     dfs_time = &cur_tv;
     time_update();
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 //更新时间缓存,它会在每次运行信号处理函数的时候被调用，
 void time_update(void)

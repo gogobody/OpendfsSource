@@ -98,7 +98,7 @@ void dn_conn_init(conn_t *c)
 	c->ev_timer = &thread->event_timer;
 
 	// if not ready and not active then add it to epoll
-	if (event_handle_read(c->ev_base, rev, 0) == DFS_ERROR) 
+	if (event_handle_read(c->ev_base, rev, 0) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"add read event failed");
@@ -211,7 +211,7 @@ static void dn_request_read_header(dn_request_t *r)
     } 
 	else 
 	{
-        rs = DFS_AGAIN;
+        rs = NGX_AGAIN;
     }
 
 	if (rs > 0) 
@@ -221,11 +221,11 @@ static void dn_request_read_header(dn_request_t *r)
     }
     else if (rs <= 0) 
 	{
-        if (rs == DFS_AGAIN) 
+        if (rs == NGX_AGAIN)
 		{
             event_timer_add(c->ev_timer, rev, CONN_TIME_OUT);
 		
-            rev->ready = DFS_FALSE;
+            rev->ready = NGX_FALSE;
         }
 		else 
 		{
@@ -306,7 +306,7 @@ static void dn_request_block_reading(dn_request_t *r)
 	rev = c->read;
 	
     if (event_delete(c->ev_base, rev, EVENT_READ_EVENT, EVENT_CLEAR_EVENT) 
-		== DFS_ERROR)
+		== NGX_ERROR)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"del read event failed");
@@ -324,7 +324,7 @@ static void dn_request_block_writing(dn_request_t *r)
 	wev = c->read;
 	
     if (epoll_del_event(c->ev_base, wev, EVENT_WRITE_EVENT, EVENT_CLEAR_EVENT)
-		== DFS_ERROR)
+		== NGX_ERROR)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"del write event failed");
@@ -389,7 +389,7 @@ static void dn_request_write_file(dn_request_t *r)
 	}
 
 	//
-	if (get_block_temp_path(r) != DFS_OK) 
+	if (get_block_temp_path(r) != NGX_OK)
 	{
 		dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
 
@@ -425,7 +425,7 @@ static void dn_request_header_response(dn_request_t *r)
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
-	header_rsp.err = DFS_OK;
+	header_rsp.err = NGX_OK;
 	
 	c = r->conn;
 	header_sz = sizeof(data_transfer_header_rsp_t);
@@ -487,7 +487,7 @@ static void dn_request_header_response(dn_request_t *r)
         return;
     }
 
-	if (event_handle_write(c->ev_base, c->write, 0) == DFS_ERROR) 
+	if (event_handle_write(c->ev_base, c->write, 0) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"add write event failed");
@@ -527,13 +527,13 @@ static void dn_request_send_header_response(dn_request_t *r)
 
 	// send res header
 	rs = send_header_response(r);
-	if (rs == DFS_OK) 
+	if (rs == NGX_OK)
 	{
 		dn_request_process_body(r);
 		
 	    return;
 	}
-	else if (rs == DFS_AGAIN) 
+	else if (rs == NGX_AGAIN)
 	{
         event_timer_add(c->ev_timer, wev, CONN_TIME_OUT);
 		
@@ -621,15 +621,15 @@ static int send_header_response(dn_request_t *r)
 
 	if (ctx->out == DFS_CHAIN_ERROR) 
 	{ 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
 	if (ctx->out) 
 	{
-		return DFS_AGAIN;
+		return NGX_AGAIN;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void dn_request_process_body(dn_request_t *r)
@@ -701,11 +701,11 @@ static void dn_request_send_block(dn_request_t *r)
     r->fio->data = r;
     r->fio->h = block_read_complete;
     r->fio->io_event = &get_local_thread()->io_events;
-    r->fio->faio_ret = DFS_ERROR;
+    r->fio->faio_ret = NGX_ERROR;
     r->fio->faio_noty = &get_local_thread()->faio_notify;
 	
     if (cfs_sendfile_chain((cfs_t *)dfs_cycle->cfs, r->fio, 
-		dfs_cycle->error_log) != DFS_OK) 
+		dfs_cycle->error_log) != NGX_OK)
 	{
         dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
     }
@@ -737,7 +737,7 @@ static int block_read_complete(void *data, void *task)
     dn_request_t *r = NULL;
 	conn_t       *c = NULL;
 	file_io_t    *fio = NULL;
-	int           rs = DFS_ERROR;
+	int           rs = NGX_ERROR;
 
 	r = (dn_request_t *)data;
 	c = r->conn;
@@ -752,38 +752,38 @@ static int block_read_complete(void *data, void *task)
 	    {
             dn_request_send_block_again(r);
 		
-            return DFS_OK;
+            return NGX_OK;
         }
 		
-	    if (event_handle_write(c->ev_base, c->write, 0) == DFS_ERROR) 
+	    if (event_handle_write(c->ev_base, c->write, 0) == NGX_ERROR)
 	    {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 				"add write event failed");
         
             dn_request_close(r, DN_REQUEST_ERROR_CONN);
 		
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     
         event_timer_add(c->ev_timer, c->write, CONN_TIME_OUT);
 	
-        return DFS_OK;
+        return NGX_OK;
 	}
-	else if (rs == DFS_ERROR) 
+	else if (rs == NGX_ERROR)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"send block failed");
 		
 	    dn_request_close(r, DN_REQUEST_ERROR_CONN);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	dn_request_read_done_response(r);
 
 	dn_request_close(r, DN_REQUEST_ERROR_NONE);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void dn_request_send_block_again(dn_request_t *r)
@@ -812,7 +812,7 @@ static void dn_request_send_block_again(dn_request_t *r)
     }
 	
     if (cfs_sendfile_chain((cfs_t *)dfs_cycle->cfs, r->fio, 
-		dfs_cycle->error_log) != DFS_OK) 
+		dfs_cycle->error_log) != NGX_OK)
 	{
         dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
     }
@@ -836,7 +836,7 @@ static void dn_request_recv_block(dn_request_t *r)
         return;
     }
 
-	if (event_handle_read(c->ev_base, rev, 0) == DFS_ERROR) 
+	if (event_handle_read(c->ev_base, rev, 0) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"add read event failed");
@@ -903,7 +903,7 @@ static void recv_block_handler(dn_request_t *r)
 		    return;
 	    }
 		
-	    if (rs == DFS_ERROR) 
+	    if (rs == NGX_ERROR)
 		{
 	        dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, errno, 
 				"net err, conn_fd: %d", c->fd);
@@ -913,7 +913,7 @@ static void recv_block_handler(dn_request_t *r)
 			return;
 	    }
 		
-	    if (rs == DFS_AGAIN) 
+	    if (rs == NGX_AGAIN)
 		{
 			break;
 	    }
@@ -928,11 +928,11 @@ static void recv_block_handler(dn_request_t *r)
     r->fio->data = r;
     r->fio->h = block_write_complete; // fio handler
     r->fio->io_event = &get_local_thread()->io_events;
-    r->fio->faio_ret = DFS_ERROR;
+    r->fio->faio_ret = NGX_ERROR;
     r->fio->faio_noty = &get_local_thread()->faio_notify;
 	
     if (cfs_write((cfs_t *)dfs_cycle->cfs, r->fio, 
-		dfs_cycle->error_log) != DFS_OK) 
+		dfs_cycle->error_log) != NGX_OK)
 	{
         dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
     }
@@ -943,20 +943,20 @@ static int block_write_complete(void *data, void *task)
 {
     dn_request_t *r = NULL;
 	file_io_t    *fio = NULL;
-	int           rs = DFS_ERROR;
+	int           rs = NGX_ERROR;
 
 	r = (dn_request_t *)data;
 	fio = (file_io_t *)task;
 	rs = fio->faio_ret;
 
-	if (rs == DFS_ERROR) 
+	if (rs == NGX_ERROR)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"do fio task failed");
 
 		dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	if (rs != fio->need) 
@@ -966,7 +966,7 @@ static int block_write_complete(void *data, void *task)
 
 		dn_request_close(r, DN_STATUS_INTERNAL_SERVER_ERROR);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	r->done += rs;// 完成了多少
@@ -976,7 +976,7 @@ static int block_write_complete(void *data, void *task)
 		//dn_request_recv_block(r);
 		recv_block_handler(r);
 		
-        return DFS_OK;
+        return NGX_OK;
 	}
 
 	// close fd
@@ -989,7 +989,7 @@ static int block_write_complete(void *data, void *task)
 
 	dn_request_close(r, DN_REQUEST_ERROR_NONE);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void dn_request_write_done_response(dn_request_t *r)
@@ -1001,7 +1001,7 @@ static void dn_request_write_done_response(dn_request_t *r)
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
-	header_rsp.err = DFS_OK;
+	header_rsp.err = NGX_OK;
 	
 	c = r->conn;
 	header_sz = sizeof(data_transfer_header_rsp_t);
@@ -1059,7 +1059,7 @@ static void dn_request_write_done_response(dn_request_t *r)
         return;
     }
 
-	if (event_handle_write(c->ev_base, c->write, 0) == DFS_ERROR) 
+	if (event_handle_write(c->ev_base, c->write, 0) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"add write event failed");
@@ -1097,11 +1097,11 @@ static void dn_request_send_write_done_response(dn_request_t *r)
     }
 
 	rs = send_header_response(r);
-	if (rs == DFS_OK) 
+	if (rs == NGX_OK)
 	{
 	    return;
 	}
-	else if (rs == DFS_AGAIN) 
+	else if (rs == NGX_AGAIN)
 	{
         event_timer_add(c->ev_timer, wev, CONN_TIME_OUT);
 		
@@ -1120,7 +1120,7 @@ static void dn_request_read_done_response(dn_request_t *r)
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
-	header_rsp.err = DFS_OK;
+	header_rsp.err = NGX_OK;
 	
 	c = r->conn;
 	header_sz = sizeof(data_transfer_header_rsp_t);
@@ -1178,7 +1178,7 @@ static void dn_request_read_done_response(dn_request_t *r)
         return;
     }
 
-	if (event_handle_write(c->ev_base, c->write, 0) == DFS_ERROR) 
+	if (event_handle_write(c->ev_base, c->write, 0) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"add write event failed");
@@ -1216,11 +1216,11 @@ static void dn_request_send_read_done_response(dn_request_t *r)
     }
 
 	rs = send_header_response(r);
-	if (rs == DFS_OK) 
+	if (rs == NGX_OK)
 	{
 	    return;
 	}
-	else if (rs == DFS_AGAIN) 
+	else if (rs == NGX_AGAIN)
 	{
         event_timer_add(c->ev_timer, wev, CONN_TIME_OUT);
 		

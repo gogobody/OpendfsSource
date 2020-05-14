@@ -8,12 +8,12 @@ int dfs_ipc_open(string_t *write_path)
 
     if (!write_path) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (pipe(to_log_fds)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     switch (ipc_pid = fork()) 
@@ -47,6 +47,6 @@ int dfs_ipc_open(string_t *write_path)
         return to_log_fds[1];
     }
     
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 

@@ -67,7 +67,7 @@ static int cfs_faio_ioinit(int thread_num)
     // faio worker thread handle data req task
     if (faio_manager_init(faio_mgr, &property, 0, &error) != FAIO_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // register handle func to process data req task in faio worker thread
@@ -89,12 +89,12 @@ static int cfs_faio_ioinit(int thread_num)
         goto faio_mgr_release;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 
 faio_mgr_release:
     faio_manager_release(faio_mgr, &error);
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 // => faio_read
@@ -110,10 +110,10 @@ static int cfs_faio_read(file_io_t *data, log_t *log)
     if (faio_read(faio_noty, cfs_faio_read_callback, &data->faio_task, &error) 
         != FAIO_OK) 
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int cfs_faio_write(file_io_t *data, log_t *log)
@@ -126,10 +126,10 @@ static int cfs_faio_write(file_io_t *data, log_t *log)
     if (faio_write(faio_noty, cfs_faio_write_callback, &data->faio_task, &error) 
         != FAIO_OK) 
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int cfs_faio_sendfile(file_io_t *data, log_t *log)
@@ -142,16 +142,16 @@ static int cfs_faio_sendfile(file_io_t *data, log_t *log)
     if (faio_sendfile(faio_noty, cfs_faio_send_file_callback, &data->faio_task, 
         &error) != FAIO_OK) 
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //
 static int cfs_faio_open(uchar_t *path, int flags, log_t *log)
 {
-    int fd = DFS_INVALID_FILE;
+    int fd = NGX_INVALID_FILE;
 
     fd = dfs_sys_open(path, flags, 0400); // open
     if (fd < 0) 
@@ -239,12 +239,12 @@ int cfs_faio_io_read(faio_data_task_t *task)
     {
         task->err.sys = errno;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     file_task->faio_ret = ret;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int cfs_faio_io_write(faio_data_task_t *task)
@@ -259,12 +259,12 @@ int cfs_faio_io_write(faio_data_task_t *task)
     {
         task->err.sys = errno;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     file_task->faio_ret = ret;
 
-    return DFS_OK;
+    return NGX_OK;
         
 }
 
@@ -290,29 +290,29 @@ int cfs_faio_io_send_file(faio_data_task_t *task)
 		rc = sendfile(sf_chain_task->conn_fd, sf_chain_task->store_fd, 
 			&file_task->offset, file_task->need);
         
-        if (rc == DFS_ERROR) 
+        if (rc == NGX_ERROR)
 		{
             if (errno == DFS_EAGAIN) 
 			{
                 file_task->faio_ret = DFS_EAGAIN;
 				
-                return DFS_OK;
+                return NGX_OK;
             } 
 			else if (errno == DFS_EINTR) 
 			{
                 continue;
             }
 			
-            file_task->faio_ret = DFS_ERROR;
+            file_task->faio_ret = NGX_ERROR;
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         if (!rc) 
 		{
-            file_task->faio_ret = DFS_ERROR;
+            file_task->faio_ret = NGX_ERROR;
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         if (rc > 0) 
@@ -321,9 +321,9 @@ int cfs_faio_io_send_file(faio_data_task_t *task)
         }
     }
 
-    file_task->faio_ret = DFS_OK;
+    file_task->faio_ret = NGX_OK;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void cfs_faio_send_file_callback(faio_data_task_t *task)

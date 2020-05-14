@@ -15,7 +15,7 @@ static void signal_handler(int sig, siginfo_t *info, void *context);
 
 int signal_setup(void)
 {
-    int ret = DFS_ERROR;
+    int ret = NGX_ERROR;
     
     //if we don't use aio thread method(use aio signal method),
     //we set aio_callback handler for SIGRTMIN + 1 signal
@@ -26,9 +26,9 @@ int signal_setup(void)
     sig_act.sa_flags = SA_SIGINFO;
     //sig_act.sa_sigaction = file_aio_callback;
     ret = sigaction(SIGRTMIN + 1, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 #endif
     //block IO and SIGRTMIN + 1 signal
@@ -40,69 +40,69 @@ int signal_setup(void)
     //set other sig handler
     sig_act.sa_sigaction = signal_handler;
     ret = sigaction(SIGALRM, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGINT, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGIO, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGCHLD, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGPIPE, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGSEGV, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGNAL_RECONF, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGNAL_QUIT, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     ret = sigaction(SIGNAL_TERMINATE, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     ret = sigaction(SIGNAL_TEST_STORE, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     ret = sigaction(SIGUSR1, &sig_act, nullptr);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
  
     return ret;

@@ -154,12 +154,12 @@ int time_monthtoi(const char *s)
                 return TIME_MONTH_JANUARY;
             }
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         if (ch1 != 'u') 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         if (ch2 == 'n') 
@@ -183,7 +183,7 @@ int time_monthtoi(const char *s)
     case 'M':
         if (ch1 != 'a') 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         if (ch2 == 'r') 
@@ -241,6 +241,6 @@ int time_monthtoi(const char *s)
         break;
     }
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 

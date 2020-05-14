@@ -27,7 +27,7 @@ int check_permission(task_t *task, fi_inode_t *finode,
 	{
 	    if (u == access)
 	    {
-	        return DFS_OK;
+	        return NGX_OK;
 	    }
 	} 
 	else if (0 == string_strncmp(task->group, finode->group, 
@@ -35,27 +35,27 @@ int check_permission(task_t *task, fi_inode_t *finode,
 	{
 	    if (g == access)
 	    {
-	        return DFS_OK;
+	        return NGX_OK;
 	    }
 	}
 	else
 	{
 	    if (o == access)
 	    {
-	        return DFS_OK;
+	        return NGX_OK;
 	    }
 	}
 
 	string_xxsprintf(err, "Permission denied: user=%s, access=%s", 
 		task->user, FsAction[access]);
 	
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 int is_super(char user[], string_t *admin)
 {
     return (0 == string_strncmp(user, admin->data, admin->len)) 
-		? DFS_TRUE : DFS_FALSE;
+		? NGX_TRUE : NGX_FALSE;
 }
 
 void get_permission(short permission, uchar_t *str)

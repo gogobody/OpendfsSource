@@ -13,7 +13,7 @@
 // open listening
 int conn_listening_open(array_t *listening, log_t *log)
 {
-    int          s = DFS_INVALID_FILE;
+    int          s = NGX_INVALID_FILE;
     int          reuseaddr = 1;
     uint32_t     i = 0;
     uint32_t     tries = 0;
@@ -22,7 +22,7 @@ int conn_listening_open(array_t *listening, log_t *log)
 
     if (!listening || !log) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     for (tries = 5; tries; tries--) //bind和listen最多重试5次
@@ -37,7 +37,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 continue;
             }
 
-            if (ls[i].fd != DFS_INVALID_FILE) 
+            if (ls[i].fd != NGX_INVALID_FILE)
 			{
                 dfs_log_error(log, DFS_LOG_ALERT, 0,
                     "conn_listening_open: %V, fd:%d already opened",
@@ -52,20 +52,20 @@ int conn_listening_open(array_t *listening, log_t *log)
             }
 
             s = socket(ls[i].family, ls[i].type, 0);
-            if (s == DFS_INVALID_FILE) 
+            if (s == NGX_INVALID_FILE)
 			{
                 dfs_log_error(log, DFS_LOG_ERROR, errno,
                     "conn_listening_open: create socket on %V failed",
                     &ls[i].addr_text);
 				
-                return DFS_ERROR;
+                return NGX_ERROR;
             }
             /*
                 默认情况下,server重启,调用socket,bind,然后listen,会失败.因为该端口正在被使用.如果设定SO_REUSEADDR,那么server重启才会成功.因此,
                 所有的TCP server都必须设定此选项,用以应对server重启的现象.
                 */
             if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-                (const void *) &reuseaddr, sizeof(int)) == DFS_ERROR) 
+                (const void *) &reuseaddr, sizeof(int)) == NGX_ERROR)
             {
                 dfs_log_error(log, DFS_LOG_ERROR, errno,
                     "conn_listening_open: SO_REUSEADDR %V failed",
@@ -77,7 +77,7 @@ int conn_listening_open(array_t *listening, log_t *log)
             if (ls[i].rcvbuf != -1) 
 			{
                 if (setsockopt(s, SOL_SOCKET, SO_RCVBUF,
-                    (const void *) &ls[i].rcvbuf, sizeof(int)) == DFS_ERROR) 
+                    (const void *) &ls[i].rcvbuf, sizeof(int)) == NGX_ERROR)
                 {
                     dfs_log_error(log, DFS_LOG_ALERT, 0,
                         "conn_listening_open: SO_RCVBUF fd:%d "
@@ -90,7 +90,7 @@ int conn_listening_open(array_t *listening, log_t *log)
             if (ls[i].sndbuf != -1) 
 		    {
                 if (setsockopt(s, SOL_SOCKET, SO_SNDBUF,
-                    (const void *) &ls[i].sndbuf, sizeof(int)) == DFS_ERROR) 
+                    (const void *) &ls[i].sndbuf, sizeof(int)) == NGX_ERROR)
                 {
                     dfs_log_error(log, DFS_LOG_ALERT, 0,
                         "conn_listening_open: SO_SNDBUF fd:%d "
@@ -101,7 +101,7 @@ int conn_listening_open(array_t *listening, log_t *log)
             }
 
             // we can't set linger onoff = 1 on listening socket
-            if (conn_nonblocking(s) == DFS_ERROR) 
+            if (conn_nonblocking(s) == NGX_ERROR)
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
                     "conn_listening_open: noblocking fd:%d "
@@ -114,7 +114,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 "conn_listening_open: bind fd:%d on addr:%V",
                 s, &ls[i].addr_text);
 			
-            if (bind(s, ls[i].sockaddr, ls[i].socklen) == DFS_ERROR) 
+            if (bind(s, ls[i].sockaddr, ls[i].socklen) == NGX_ERROR)
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
                     "conn_listening_open: bind fd:%d on addr:%V failed",
@@ -124,7 +124,7 @@ int conn_listening_open(array_t *listening, log_t *log)
 				
                 if (errno != DFS_EADDRINUSE) 
 				{
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 
                 failed = 1;
@@ -132,7 +132,7 @@ int conn_listening_open(array_t *listening, log_t *log)
                 continue;
             }
 
-            if (listen(s, ls[i].backlog) == DFS_ERROR) 
+            if (listen(s, ls[i].backlog) == NGX_ERROR)
 			{
                 dfs_log_error(log, DFS_LOG_EMERG, errno,
                     "conn_listening_open: listen fd:%d on addr:%V, "
@@ -166,15 +166,15 @@ int conn_listening_open(array_t *listening, log_t *log)
         dfs_log_error(log, DFS_LOG_EMERG, 0,
             "conn_listening_open: listening socket bind failed");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 	
 error:
     close(s);
 	
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 //ngx_listening_t创建空间，并通过addr赋值初始化
@@ -229,7 +229,7 @@ listening_t * conn_listening_add(array_t *listening, pool_t *pool,
 	
     ls->addr_text.len = string_xxsprintf(ls->addr_text.data,
         "%s:%d", address, port) - ls->addr_text.data;
-    ls->fd = DFS_INVALID_FILE;
+    ls->fd = NGX_INVALID_FILE;
     ls->family = AF_INET;
     ls->type = SOCK_STREAM;
     ls->sockaddr = (struct sockaddr *) sin;
@@ -253,13 +253,13 @@ int conn_listening_close(array_t *listening)
 
     for (i = 0; i < listening->nelts; i++) 
 	{
-        if (ls[i].fd != DFS_INVALID_FILE) 
+        if (ls[i].fd != NGX_INVALID_FILE)
 		{
             close(ls[i].fd);
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // thread_event_process
@@ -287,7 +287,7 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
                     "add listening %V,fd %d",
                     &ls[i].addr_text, ls[i].fd);
 				
-                return DFS_ERROR;
+                return NGX_ERROR;
             }
 			
             dfs_log_debug(ls[i].log, DFS_LOG_DEBUG, 0,
@@ -297,7 +297,7 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
             c->log = ls[i].log;
             ls[i].connection = c; //当前监听端口的connection
             rev = c->read;  //rev指向当前connection的读事件
-            rev->accepted = DFS_TRUE; //表示当前的读事件是监听端口的accept事件，可以用于epoll区分是一般的读事件还是监听对口的accept事件
+            rev->accepted = NGX_TRUE; //表示当前的读事件是监听端口的accept事件，可以用于epoll区分是一般的读事件还是监听对口的accept事件
             rev->handler = ls->handler; // listen_rev_handler
         }
 		else 
@@ -306,13 +306,13 @@ int conn_listening_add_event(event_base_t *base, array_t *listening)
         }
 		
         // setup listenting event
-        if (epoll_add_event(base, rev, EVENT_READ_EVENT, 0) == DFS_ERROR)
+        if (epoll_add_event(base, rev, EVENT_READ_EVENT, 0) == NGX_ERROR)
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conn_listening_del_event(event_base_t *base, array_t *listening)
@@ -327,12 +327,12 @@ int conn_listening_del_event(event_base_t *base, array_t *listening)
 	{
         c = ls[i].connection;
 		
-        if (event_delete(base, c->read, EVENT_READ_EVENT, 0) == DFS_ERROR) 
+        if (event_delete(base, c->read, EVENT_READ_EVENT, 0) == NGX_ERROR)
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

@@ -16,24 +16,24 @@ int conn_connect_peer(conn_peer_t *pc, event_base_t *ep_base)
 
     if (!pc) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     c = pc->connection;
     if (!c) 
 	{
-        return DFS_BUSY;
+        return NGX_BUSY;
     }
     
-    if (c->fd != DFS_INVALID_FILE) 
+    if (c->fd != NGX_INVALID_FILE)
 	{
         goto connecting;
     }
     
     c->fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (c->fd == DFS_ERROR) 
+    if (c->fd == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     conn_nonblocking(c->fd);
@@ -43,7 +43,7 @@ int conn_connect_peer(conn_peer_t *pc, event_base_t *ep_base)
     c->recv_chain = dfs_recv_chain;
     c->send_chain = dfs_send_chain;
     c->sendfile_chain = dfs_sendfile_chain;
-    c->sendfile = DFS_TRUE;
+    c->sendfile = NGX_TRUE;
 	
     if (pc->sockaddr->sa_family != AF_INET) 
 	{
@@ -59,26 +59,26 @@ int conn_connect_peer(conn_peer_t *pc, event_base_t *ep_base)
 connecting:
     
     // add conn to epoll, read write
-    if (event_add_conn(ep_base, c) == DFS_ERROR) 
+    if (event_add_conn(ep_base, c) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     errno = 0;
     rc = connect(c->fd, pc->sockaddr, pc->socklen);
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
         if (errno == DFS_EINPROGRESS) 
 		{
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     wev->ready = 1;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conn_tcp_nopush(int s)
@@ -158,7 +158,7 @@ void conn_set_default(conn_t *c, int s)
     c->error = 0;
     c->listening = nullptr;
     c->next = nullptr;
-    c->sendfile = DFS_FALSE;
+    c->sendfile = NGX_FALSE;
     c->sndlowat = 0;
     c->sockaddr = nullptr;
     memory_zero(&c->addr_text, sizeof(string_t));
@@ -172,7 +172,7 @@ void conn_set_default(conn_t *c, int s)
     
     rev->data = c;
     wev->data = c;
-    wev->write = DFS_TRUE;
+    wev->write = NGX_TRUE;
 }
 
 void conn_close(conn_t *c)
@@ -185,7 +185,7 @@ void conn_close(conn_t *c)
     if (c->fd > 0) 
 	{
         close(c->fd);
-        c->fd = DFS_INVALID_FILE;
+        c->fd = NGX_INVALID_FILE;
     
         // remove timers
         if (c->read->timer_set && c->ev_timer) 

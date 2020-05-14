@@ -18,7 +18,7 @@ int nn_error_log_init(cycle_t *cycle)
     
     error_log_init(slog, (log_time_ptr)time_logstr, nullptr);
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_error_log_release(cycle_t *cycle)

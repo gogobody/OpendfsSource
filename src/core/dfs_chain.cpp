@@ -29,7 +29,7 @@ int chain_reset(chain_t *cl)
         cl->buf->pos = cl->buf->last = cl->buf->start;
     }
   
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int chain_empty(chain_t *cl)
@@ -38,11 +38,11 @@ int chain_empty(chain_t *cl)
 	{
         if (buffer_size(cl->buf) > 0) 
 		{
-            return DFS_FALSE;
+            return NGX_FALSE;
         }
     }
   
-    return DFS_TRUE;
+    return NGX_TRUE;
 }
 
 uint64_t chain_size(chain_t *in) 
@@ -64,7 +64,7 @@ int chain_output(chain_output_ctx_t *ctx, chain_t *in)
     
     if (!ctx) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (in) 
@@ -74,13 +74,13 @@ int chain_output(chain_output_ctx_t *ctx, chain_t *in)
 	
     if (chain_empty(ctx->out)) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 	
     c = ctx->connection;
     if (!c) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	while (c->write->ready && ctx->out) 
@@ -99,16 +99,16 @@ int chain_output(chain_output_ctx_t *ctx, chain_t *in)
 	    if (ctx->out == DFS_CHAIN_ERROR) 
 		{
         
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 	}
 
 	if (ctx->out) 
 	{
-		return DFS_AGAIN;
+		return NGX_AGAIN;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int chain_output_with_limit(chain_output_ctx_t *ctx, chain_t *in, 
@@ -153,15 +153,15 @@ int chain_output_with_limit(chain_output_ctx_t *ctx, chain_t *in,
     
     if (ctx->out == DFS_CHAIN_ERROR) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
 	if (ctx->out) 
 	{
-		return DFS_AGAIN;
+		return NGX_AGAIN;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void chain_append_withsize(chain_t **dst_chain, chain_t *src_chain, 
@@ -218,7 +218,7 @@ int chain_append_buffer(pool_t *pool, chain_t **dst_chain,
     
     if (!pool || !dst_chain || !src_buffer) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 	
     while (*dst_chain) 
@@ -229,13 +229,13 @@ int chain_append_buffer(pool_t *pool, chain_t **dst_chain,
     ln = chain_alloc(pool);
     if (!ln) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     ln->buf = src_buffer;
     *dst_chain = ln;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int chain_append_buffer_withsize(pool_t *pool, chain_t **dst_chain, 
@@ -245,7 +245,7 @@ int chain_append_buffer_withsize(pool_t *pool, chain_t **dst_chain,
     
     if (!pool || !dst_chain || !src_buffer) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 	
     while (*dst_chain) 
@@ -256,13 +256,13 @@ int chain_append_buffer_withsize(pool_t *pool, chain_t **dst_chain,
     ln = chain_alloc(pool);
     if (!ln) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     ln->buf = src_buffer;
     *dst_chain = ln;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void chain_read_update(chain_t *chain, size_t size)
@@ -303,7 +303,7 @@ chain_t * chain_write_update(chain_t *chain, size_t size)
         bsize = buffer_size(chain->buf);
         if (size < bsize)
 		{
-			if (chain->buf->memory == DFS_TRUE) //说明发送出去的最后一字节数据的下一字节数据在in->buf->pos+send位置，下次从这个位置开始发送
+			if (chain->buf->memory == NGX_TRUE) //说明发送出去的最后一字节数据的下一字节数据在in->buf->pos+send位置，下次从这个位置开始发送
 			{
 	            chain->buf->pos += size;//这块内存没有完全发送完毕，悲剧，下回得从这里开始。
 			} 
@@ -319,7 +319,7 @@ chain_t * chain_write_update(chain_t *chain, size_t size)
         size -= bsize; //标记后面还有多少数据是我发送过的
 
 
-        if (chain->buf->memory == DFS_TRUE) //说明该in->buf数据已经全部发送出去
+        if (chain->buf->memory == NGX_TRUE) //说明该in->buf数据已经全部发送出去
 		{
             chain->buf->pos = chain->buf->last;
 		} 

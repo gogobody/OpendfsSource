@@ -37,7 +37,7 @@ void event_process_posted(volatile queue_t *posted, log_t *log)
             "event_process_posted: fd:%d conn:%p, timer key:%M write:%d",
             c->fd, c, ev->timer.key, ev->write);
 
-        if (c->fd != DFS_INVALID_FILE) 
+        if (c->fd != NGX_INVALID_FILE)
 		{
             dfs_log_debug(log, DFS_LOG_DEBUG, 0,
                 "%s: fd:%d conn:%p, timer key:%M write:%d, handle %p", __func__,
@@ -62,18 +62,18 @@ int event_handle_read(event_base_t *base, event_t *rev, uint32_t flags)
     if (!rev->active && !rev->ready) 
 	{
         if (epoll_add_event(base, rev, EVENT_READ_EVENT,
-            EVENT_CLEAR_EVENT) == DFS_ERROR)
+            EVENT_CLEAR_EVENT) == NGX_ERROR)
         {
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int event_del_read(event_base_t *base, event_t *rev)
 {
-    rev->ready = DFS_FALSE;
+    rev->ready = NGX_FALSE;
 	
     return event_delete(base, rev, EVENT_READ_EVENT, EVENT_CLEAR_EVENT);
 }
@@ -83,9 +83,9 @@ int event_handle_write(event_base_t *base, event_t *wev, size_t lowat)
     if (!wev->active && !wev->ready) 
 	{
         if (epoll_add_event(base, wev, EVENT_WRITE_EVENT,
-            EVENT_CLEAR_EVENT) == DFS_ERROR) 
+            EVENT_CLEAR_EVENT) == NGX_ERROR)
         {
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     } 
 	else 
@@ -94,12 +94,12 @@ int event_handle_write(event_base_t *base, event_t *wev, size_t lowat)
             "%s: fd:%d already in epoll", __func__, event_fd(wev->data));
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int event_del_write(event_base_t *base, event_t *wev)
 {
-    wev->ready = DFS_FALSE;
+    wev->ready = NGX_FALSE;
 	
     return event_delete(base, wev, EVENT_WRITE_EVENT, EVENT_CLEAR_EVENT);
 }

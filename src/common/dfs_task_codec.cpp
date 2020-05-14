@@ -7,7 +7,7 @@ int task_decode(buffer_t *buff, task_t *task)
 
     if (buffer_size(buff) <= 0) 
 	{
-		return DFS_AGAIN;
+		return NGX_AGAIN;
     }
 
     ret = task_decodefstr((char*)buff->pos, buffer_size(buff), task);
@@ -18,7 +18,7 @@ int task_decode(buffer_t *buff, task_t *task)
         
     buff->pos +=ret;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // encode task to buff
@@ -29,7 +29,7 @@ int task_encode(task_t *task, buffer_t *buff)
 
 	if (buffer_free_size(buff) <= 0) 
 	{
-		return DFS_AGAIN;
+		return NGX_AGAIN;
 	}
 		
 	ret = task_encode2str(task, (char*)buff->last, buffer_free_size(buff));
@@ -40,6 +40,6 @@ int task_encode(task_t *task, buffer_t *buff)
 	        
 	buff->last += ret;
 
-	return DFS_OK;
+	return NGX_OK;
 }
 

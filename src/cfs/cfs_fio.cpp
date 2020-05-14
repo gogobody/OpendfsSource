@@ -38,7 +38,7 @@ int cfs_fio_manager_init(cycle_t *cycle, fio_manager_t *fio_manager)
     n = cfs_fio_manager_refill(MAX_TASK_IDLE, fio_manager);
     if (n == MAX_TASK_IDLE) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 
     // 失败后的处理: 归还存储空间
@@ -59,7 +59,7 @@ int cfs_fio_manager_init(cycle_t *cycle, fio_manager_t *fio_manager)
         n--;
     }
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 file_io_t *cfs_fio_manager_alloc(fio_manager_t *fio_manager)
@@ -130,12 +130,12 @@ static uint32_t cfs_fio_manager_refill(uint32_t n, fio_manager_t *fio_manager)
         // 给 buffer 分配内存
         posix_memalign((void **)&fio->b->start, 512, reallength);
 
-        fio->b->temporary = DFS_FALSE;
+        fio->b->temporary = NGX_FALSE;
         fio->b->pos = fio->b->start; /* 待处理缓冲区起始位置 */
         fio->b->last = fio->b->start;
         fio->b->end = fio->b->last + reallength; /* end of buffer 缓冲区结束地址 */
-        fio->b->memory = DFS_TRUE;
-        fio->b->in_file = DFS_FALSE;
+        fio->b->memory = NGX_TRUE;
+        fio->b->in_file = NGX_FALSE;
 
         queue_insert_tail(&fio_manager->freeq, &fio->q);
 
@@ -202,7 +202,7 @@ int cfs_fio_manager_free(file_io_t *fio, fio_manager_t *fio_manager)
         cfs_fio_manager_indeed_free(frees, fio_manager);
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void cfs_fio_manager_indeed_free(uint64_t n, 
@@ -258,7 +258,7 @@ int cfs_fio_manager_destroy(fio_manager_t *fio_manager)
 			+ fio_manager->size);
     }
 
-	return DFS_OK;
+	return NGX_OK;
 }
 
 static size_t my_align(size_t d, uint32_t a)

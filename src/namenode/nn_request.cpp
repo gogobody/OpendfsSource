@@ -165,7 +165,7 @@ void nn_conn_init(conn_t *c)
     nn_conn_update_state(mc, ST_CONNCECTED);
 
 	// add read event
-    if (event_handle_read(c->ev_base, rev, 0) == DFS_ERROR) 
+    if (event_handle_read(c->ev_base, rev, 0) == NGX_ERROR)
 	{
         dfs_log_error(mc->log, DFS_LOG_ALERT, 0, "add read event failed");
 		
@@ -241,7 +241,7 @@ static int nn_conn_recv(nn_conn_t *mc)
     	blen = buffer_free_size(mc->in);
 	    if (!blen) 
 		{
-	        return DFS_BUFFER_FULL;
+	        return NGX_BUFFER_FULL;
 	    }
 		
    		n = c->recv(c, mc->in->last, blen); //sysio_unix_recv
@@ -254,21 +254,21 @@ static int nn_conn_recv(nn_conn_t *mc)
 		
 	    if (n == 0) 
 		{
-	        return DFS_CONN_CLOSED;
+	        return NGX_CONN_CLOSED;
 	    }
 		
-	    if (n == DFS_ERROR) 
+	    if (n == NGX_ERROR)
 		{
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 		
-	    if (n == DFS_AGAIN) 
+	    if (n == NGX_AGAIN)
 		{
-			return DFS_AGAIN;
+			return NGX_AGAIN;
 	    }
 	}
 	
-	return DFS_OK;
+	return NGX_OK;
 }
 
 // from nn_conn_read_handler
@@ -297,7 +297,7 @@ static int nn_conn_decode(nn_conn_t *mc)
 
 		// decode task to _in buffer
         rc = task_decode(mc->in, &node->tk);
-        if (rc == DFS_OK) 
+        if (rc == NGX_OK)
 		{
             // dispatch task when recv it
             // push task to last_task->tq
@@ -309,24 +309,24 @@ static int nn_conn_decode(nn_conn_t *mc)
             continue;
         }
 		
-        if (rc == DFS_ERROR) 
+        if (rc == NGX_ERROR)
 		{
 			nn_conn_free_task(mc, &node->qe);
 			buffer_reset(mc->in);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
             
-        if (rc == DFS_AGAIN)  // buffer 不够了也
+        if (rc == NGX_AGAIN)  // buffer 不够了也
 		{
             nn_conn_free_task(mc, &node->qe);
 			buffer_shrink(mc->in);
 			
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 	}
    	
-	return DFS_OK;
+	return NGX_OK;
 }
 
 // 入口。。。
@@ -349,18 +349,18 @@ static void nn_conn_read_handler(nn_conn_t *mc)
     rc = nn_conn_recv(mc);
     switch (rc) 
 	{
-    case DFS_CONN_CLOSED:
+    case NGX_CONN_CLOSED:
         err = (char *)"conn closed";
 		
         goto error;
 			
-    case DFS_ERROR:
+    case NGX_ERROR:
         err = (char *)"recv error, conn to be close";
 		
         goto error;
 			
-    case DFS_AGAIN:
-    case DFS_BUFFER_FULL:
+    case NGX_AGAIN:
+    case NGX_BUFFER_FULL:
         break;
     default:
         goto error;
@@ -370,7 +370,7 @@ static void nn_conn_read_handler(nn_conn_t *mc)
 
 
     rc = nn_conn_decode(mc);
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
     	err = (char *)"proto error";
 	
@@ -444,7 +444,7 @@ static int nn_conn_out_buffer(conn_t *c, buffer_t *b)
     
     if (!c->write->ready) 
 	{
-        return DFS_AGAIN;
+        return NGX_AGAIN;
     }
   
     size = buffer_size(b);
@@ -463,7 +463,7 @@ static int nn_conn_out_buffer(conn_t *c, buffer_t *b)
 	
 	buffer_reset(b);
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 插入 task -> mc conn -> out task
@@ -479,7 +479,7 @@ int nn_conn_outtask(nn_conn_t *mc, task_t *t)
 	{
 		nn_conn_free_task(mc, &node->qe);
         
-		return DFS_OK;
+		return NGX_OK;
 	}
 
 	queue_insert_tail(&mc->out_task, &node->qe);
@@ -503,7 +503,7 @@ int nn_conn_output(nn_conn_t *mc)
     
     if (!c->write->ready && buffer_size(mc->out) > 0 ) 
 	{
-        return DFS_AGAIN;
+        return NGX_AGAIN;
     }
     
     mc->write_event_handler = nn_conn_write_handler;
@@ -519,7 +519,7 @@ repack:
 
 		// encode task to out buffer
 		rc = task_encode(t, mc->out);
-		if (rc == DFS_OK)  // 这个task push完成就释放空间
+		if (rc == NGX_OK)  // 这个task push完成就释放空间
 		{
 			queue_remove(qe);
 			nn_conn_free_task(mc, qe);
@@ -527,12 +527,12 @@ repack:
 			continue;
 		}
 
-		if (rc == DFS_AGAIN)  // 塞满一个buffer 就发
+		if (rc == NGX_AGAIN)  // 塞满一个buffer 就发
 		{
 			goto send;
 		}
 		
-		if (rc == DFS_ERROR) 
+		if (rc == NGX_ERROR)
 		{
             queue_remove(qe);
 			nn_conn_free_task(mc, qe);
@@ -542,30 +542,30 @@ repack:
 send:
     if(!buffer_size(mc->out))  // buffer size 0
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 
     // send buffer
 	rc = nn_conn_out_buffer(c, mc->out);
-    if (rc == DFS_ERROR) 
+    if (rc == NGX_ERROR)
 	{
         err_msg = (char *)"send data error  close conn";
 		
 		goto close;
     }
     
-    if (rc == DFS_AGAIN) 
+    if (rc == NGX_AGAIN)
 	{
-        if (event_handle_write(c->ev_base, c->write, 0) == DFS_ERROR) 
+        if (event_handle_write(c->ev_base, c->write, 0) == NGX_ERROR)
 		{
             dfs_log_error(mc->log, DFS_LOG_FATAL, 0, "event_handle_write");
 			
-        	return DFS_ERROR;
+        	return NGX_ERROR;
         }
 		
         event_timer_add(c->ev_timer, c->write, CONN_TIME_OUT);
 		
-        return DFS_AGAIN; 
+        return NGX_AGAIN;
     }
     
     goto repack;
@@ -574,7 +574,7 @@ close:
 	dfs_log_error(c->log, DFS_LOG_FATAL, 0, err_msg);
     nn_conn_finalize(mc);
 	
-	return DFS_ERROR;
+	return NGX_ERROR;
 }
 
 // pop free task from free_task queue
@@ -637,7 +637,7 @@ int nn_conn_update_state(nn_conn_t *mc, int state)
 {
     mc->state = state;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_conn_get_state(nn_conn_t *mc)

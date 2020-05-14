@@ -65,19 +65,19 @@ static int thread_setup(dfs_thread_t *thread, int type)
     thread->event_base.nevents = sconf->connection_n;
 	thread->type = type;
     
-    if (thread_event_init(thread) != DFS_OK) 
+    if (thread_event_init(thread) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	thread->event_base.time_update = time_update;
     // 初始化线程连接池
-	if (conn_pool_init(&thread->conn_pool, sconf->connection_n) != DFS_OK) 
+	if (conn_pool_init(&thread->conn_pool, sconf->connection_n) != NGX_OK)
 	{
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void thread_worker_exit(dfs_thread_t *thread)
@@ -153,7 +153,7 @@ void worker_processer(cycle_t *cycle, void *data)
     process_t     *process = NULL;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);
-    if (ret == DFS_ERROR) 
+    if (ret == NGX_ERROR)
 	{
         exit(PROCESS_FATAL_EXIT);
     }
@@ -161,7 +161,7 @@ void worker_processer(cycle_t *cycle, void *data)
     process_type = PROCESS_WORKER;
     main_thread->event_base.nevents = 512;
     // 初始化 epoll 和 timer
-    if (thread_event_init(main_thread) != DFS_OK) 
+    if (thread_event_init(main_thread) != NGX_OK)
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"thread_event_init() failed");
@@ -173,7 +173,7 @@ void worker_processer(cycle_t *cycle, void *data)
     // faio thread process queue task
     // init cache management
     // init report queue
-    if (dfs_module_woker_init(cycle) != DFS_OK) 
+    if (dfs_module_woker_init(cycle) != NGX_OK)
 	{
 		dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"dfs_module_woker_init() failed");
@@ -202,7 +202,7 @@ void worker_processer(cycle_t *cycle, void *data)
     // 获取 namespaceid 和 监控 report 上报
     // 发送心跳
     //
-	if (create_ns_service_thread(cycle) != DFS_OK)
+	if (create_ns_service_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno,
             "create ns service thread failed");
@@ -210,7 +210,7 @@ void worker_processer(cycle_t *cycle, void *data)
         exit(PROCESS_FATAL_EXIT);
     }
     // 扫描 blk ，更新 hashtable 和 全局 reporter
-	if (create_data_blk_scanner(cycle) != DFS_OK) 
+	if (create_data_blk_scanner(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
             "create_data_blk_scanner failed");
@@ -219,7 +219,7 @@ void worker_processer(cycle_t *cycle, void *data)
 	}
     //创建worker线程
     //处理posted events？
-    if (create_worker_thread(cycle) != DFS_OK)
+    if (create_worker_thread(cycle) != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno,
             "create worker thread failed");
@@ -237,7 +237,7 @@ void worker_processer(cycle_t *cycle, void *data)
      * 这样有信息进来的时候就可以通知到了。*/
     // 子进程读取通道消息
     if (channel_add_event(process->channel[1],
-        EVENT_READ_EVENT, channel_handler, NULL) != DFS_OK) 
+        EVENT_READ_EVENT, channel_handler, NULL) != NGX_OK)
     {
         exit(PROCESS_FATAL_EXIT);
     }
@@ -248,7 +248,7 @@ void worker_processer(cycle_t *cycle, void *data)
 		{
             stop_worker_thread();
 			stop_ns_service_thread();
-			blk_scanner_running = DFS_FALSE;
+			blk_scanner_running = NGX_FALSE;
 			
             break;
         }
@@ -278,33 +278,33 @@ int create_worker_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     for (i = 0; i < woker_num; i++) 
 	{
         // 初始化epoll connection pool
-        if (thread_setup(&woker_threads[i], THREAD_WORKER) == DFS_ERROR) 
+        if (thread_setup(&woker_threads[i], THREAD_WORKER) == NGX_ERROR)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 				"thread_setup err");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
         
     for (i = 0; i < woker_num; i++) 
 	{
         woker_threads[i].run_func = thread_worker_cycle; //
-        woker_threads[i].running = DFS_TRUE;
+        woker_threads[i].running = NGX_TRUE;
         woker_threads[i].state = THREAD_ST_UNSTART;
 		
-        if (thread_create(&woker_threads[i]) != DFS_OK) 
+        if (thread_create(&woker_threads[i]) != NGX_OK)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 				"thread_create err");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         threads_total_add(1);
@@ -319,11 +319,11 @@ int create_worker_thread(cycle_t *cycle)
            dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
                    "create_worker thread[%d] err", i);
 		   
-           return DFS_ERROR;
+           return NGX_ERROR;
         }
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // worker 线程的 处理函数
@@ -341,7 +341,7 @@ static void * thread_worker_cycle(void *arg)
     // init faio \ fio
     // init notifier eventfd
     // 初始化 io events 队列 posted events, posted bad events
-    if (dfs_module_workethread_init(me) != DFS_OK) 
+    if (dfs_module_workethread_init(me) != NGX_OK)
 	{
         goto exit;
     }
@@ -357,7 +357,7 @@ static void * thread_worker_cycle(void *arg)
         // eventfd 进程间通信
         // handle 处理 fio回调
         if (channel_add_event(me->faio_notify.nfd, EVENT_READ_EVENT, 
-            dio_event_handler, (void *)me) == DFS_ERROR)
+            dio_event_handler, (void *)me) == NGX_ERROR)
         {
             goto exit;
         }
@@ -416,7 +416,7 @@ static int channel_add_event(int fd, int event,
 
     if (!c) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     // worker thread  event base
     base = thread_get_event_base();
@@ -432,12 +432,12 @@ static int channel_add_event(int fd, int event,
 
     // epoll add event
     // ev->data(conn)->fd
-    if (epoll_add_event(base, ev, event, 0) == DFS_ERROR)
+    if (epoll_add_event(base, ev, event, 0) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //ngx_channel_handler
@@ -468,7 +468,7 @@ static void channel_handler(event_t *ev)
 		
         dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0, "channel: %i", n);
 		
-        if (n == DFS_ERROR) 
+        if (n == NGX_ERROR)
 		{
             if (ev_base->event_flags & EVENT_USE_EPOLL_EVENT) 
 			{
@@ -483,13 +483,13 @@ static void channel_handler(event_t *ev)
 		
         if (ev_base->event_flags & EVENT_USE_EVENTPORT_EVENT) 
 		{
-            if (epoll_add_event(ev_base, ev, EVENT_READ_EVENT, 0) == DFS_ERROR)
+            if (epoll_add_event(ev_base, ev, EVENT_READ_EVENT, 0) == NGX_ERROR)
 			{
                 return;
             }
         }
 		
-        if (n == DFS_AGAIN) 
+        if (n == NGX_AGAIN)
 		{
             return;
         }
@@ -527,13 +527,13 @@ static void channel_handler(event_t *ev)
                 ch.slot, ch.pid, process->pid,
                 process->channel[0]);
 			
-            if (close(process->channel[0]) == DFS_ERROR) {
+            if (close(process->channel[0]) == NGX_ERROR) {
                 dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                     "close() channel failed");
             }
 			
-            process->channel[0] = DFS_INVALID_FILE;
-            process->pid = DFS_INVALID_PID;
+            process->channel[0] = NGX_INVALID_FILE;
+            process->pid = NGX_INVALID_PID;
             break;
 			
         case CHANNEL_CMD_BACKUP:
@@ -547,7 +547,7 @@ static void stop_worker_thread()
 {
     for (int i = 0; i < woker_num; i++) 
 	{
-        woker_threads[i].running = DFS_FALSE;
+        woker_threads[i].running = NGX_FALSE;
     }
 }
 
@@ -579,7 +579,7 @@ static int create_ns_service_thread(cycle_t *cycle)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, "pool_calloc err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     for (i = 0; i < ns_service_num; i++)
@@ -589,20 +589,20 @@ static int create_ns_service_thread(cycle_t *cycle)
 			&ns_service_threads[i].ns_info.port);
         if (count != 2)
         {
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
         // namenode 的run func
 		ns_service_threads[i].run_func = thread_ns_service_cycle;
 
-        ns_service_threads[i].running = DFS_TRUE;
+        ns_service_threads[i].running = NGX_TRUE;
         ns_service_threads[i].state = THREAD_ST_UNSTART;
 		// 线程创建之后运行 thread_ns_service_cycle，参数是thread 本身
-        if (thread_create(&ns_service_threads[i]) != DFS_OK) 
+        if (thread_create(&ns_service_threads[i]) != NGX_OK)
 		{
             dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0, 
 				"thread_create err");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         threads_total_add(1);
@@ -617,11 +617,11 @@ static int create_ns_service_thread(cycle_t *cycle)
            dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
                    "create ns service thread[%d] err", i);
 		   
-           return DFS_ERROR;
+           return NGX_ERROR;
         }
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int get_ns_srv_names(uchar_t *path, uchar_t names[][64])
@@ -662,7 +662,7 @@ static void *thread_ns_service_cycle(void * args)
     while (me->running) 
 	{
         // 连接上 namenode 获取 namespaceid
-        if (dn_register(me) != DFS_OK) 
+        if (dn_register(me) != NGX_OK)
 		{
             sleep(1);
 
@@ -684,7 +684,7 @@ static void stop_ns_service_thread()
 {
     for (int i = 0; i < ns_service_num; i++) 
 	{
-        ns_service_threads[i].running = DFS_FALSE;
+        ns_service_threads[i].running = NGX_FALSE;
     }
 }
 
@@ -693,14 +693,14 @@ static int create_data_blk_scanner(cycle_t *cycle)
 {
     pthread_t pid;
 
-	if (pthread_create(&pid, NULL, &blk_scanner_start, NULL) != DFS_OK) 
+	if (pthread_create(&pid, NULL, &blk_scanner_start, NULL) != NGX_OK)
     {
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 			"create blk_scanner thread failed");
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

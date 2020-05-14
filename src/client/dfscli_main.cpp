@@ -143,10 +143,10 @@ int main(int argc, char **argv)
 	{
 	    help(argc, argv);
 
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
-    int            ret = DFS_OK; //0
+    int            ret = NGX_OK; //0
 	cycle_t       *cycle = nullptr;
     conf_server_t *sconf = nullptr;
 	char           cmd[16] = {0};
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
         config_file.len = strlen(DEFAULT_CONF_FILE);
     }
 
-	if ((ret = cycle_init(cycle)) != DFS_OK) 
+	if ((ret = cycle_init(cycle)) != NGX_OK)
 	{ 
         fprintf(stderr, "cycle_init fail\n");
 		
@@ -278,7 +278,7 @@ int dfs_connect(char* ip, int port)
 	{
 	    dfscli_log(DFS_LOG_WARN, "socket() err: %s", strerror(errno));
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	int reuse = 1;
@@ -296,7 +296,7 @@ int dfs_connect(char* ip, int port)
 	    dfscli_log(DFS_LOG_WARN, "connect to %s:%d err: %s", 
 			ip, port, strerror(errno));
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	return sockfd;
@@ -345,7 +345,7 @@ static int dfscli_mkdir(char *path)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -366,7 +366,7 @@ static int dfscli_mkdir(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -377,14 +377,14 @@ static int dfscli_mkdir(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 	    if (in_t.ret == KEY_EXIST) 
 		{
@@ -407,7 +407,7 @@ static int dfscli_mkdir(char *path)
 
 	close(sockfd);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfscli_rmr(char *path)
@@ -421,7 +421,7 @@ static int dfscli_rmr(char *path)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -440,7 +440,7 @@ static int dfscli_rmr(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -451,14 +451,14 @@ static int dfscli_rmr(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
         if (in_t.ret == NOT_DIRECTORY) 
 		{
@@ -481,7 +481,7 @@ static int dfscli_rmr(char *path)
 
 	close(sockfd);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfscli_ls(char *path)
@@ -495,7 +495,7 @@ static int dfscli_ls(char *path)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -514,7 +514,7 @@ static int dfscli_ls(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -525,7 +525,7 @@ static int dfscli_ls(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)malloc(pLen);
@@ -535,7 +535,7 @@ static int dfscli_ls(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(sockfd, pNext, pLen);
@@ -548,14 +548,14 @@ static int dfscli_ls(char *path)
 		free(pNext);
 		pNext = nullptr;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 		if (in_t.ret == KEY_NOTEXIST) 
 		{
@@ -580,7 +580,7 @@ static int dfscli_ls(char *path)
 	free(pNext);
 	pNext = nullptr;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int showDirsFiles(char *p, int len)
@@ -625,7 +625,7 @@ static int showDirsFiles(char *p, int len)
 		len -= fiiLen;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int getTimeStr(uint64_t msec, char *str, int len)
@@ -637,7 +637,7 @@ static int getTimeStr(uint64_t msec, char *str, int len)
 	p = gmtime(&t);
 	strftime(str, len, "%Y-%m-%d %H:%M:%S", p);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int isPathValid(char *path)
@@ -649,13 +649,13 @@ static int isPathValid(char *path)
 	    if (*p == '\\' || *p == ':' || *p == '*' || *p == '?' || *p == '"' 
 			|| *p == '<' || *p == '>' || *p == '|') 
 		{
-			return DFS_FALSE;
+			return NGX_FALSE;
 		}
 
 		p++;
 	}
 		
-    return DFS_TRUE;
+    return NGX_TRUE;
 }
 
 //check path is rigth format
@@ -669,7 +669,7 @@ static int getValidPath(char *src, char *dst)
 	{
 	    strcpy(dst, "/");
 		
-        return DFS_OK;
+        return NGX_OK;
 	}
 
 	while (*s != '\000') 
@@ -695,7 +695,7 @@ static int getValidPath(char *src, char *dst)
 	    *(d--) = '\000';
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dfscli_rm(char *path)
@@ -709,7 +709,7 @@ static int dfscli_rm(char *path)
     int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
 	task_t out_t;
@@ -728,7 +728,7 @@ static int dfscli_rm(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -739,14 +739,14 @@ static int dfscli_rm(char *path)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
         if (in_t.ret == NOT_FILE) 
 		{
@@ -769,6 +769,6 @@ static int dfscli_rm(char *path)
 
 	close(sockfd);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

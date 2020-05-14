@@ -42,7 +42,7 @@ int nn_conn_listening_init(cycle_t *cycle)
          dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
             "no space to alloc listen_for_dn pool");
 		 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	cycle->listening_for_cli.elts = pool_calloc(cycle->pool,
@@ -52,7 +52,7 @@ int nn_conn_listening_init(cycle_t *cycle)
          dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
             "no space to alloc listen_for_cli pool");
 		 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	cycle->listening_for_dn.nelts = 0;
@@ -76,7 +76,7 @@ int nn_conn_listening_init(cycle_t *cycle)
 		
         if (!ls) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
@@ -90,31 +90,31 @@ int nn_conn_listening_init(cycle_t *cycle)
 		
         if (!ls) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
 	// open listening
 	if (conn_listening_open(&cycle->listening_for_dn,
-        cycle->error_log) != DFS_OK) 
+        cycle->error_log) != NGX_OK)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (conn_listening_open(&cycle->listening_for_cli,
-        cycle->error_log) != DFS_OK) 
+        cycle->error_log) != NGX_OK)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // handle rev event
 // 初始化
 static void listen_rev_handler(event_t *ev)
 {
-    int           s = DFS_INVALID_FILE;
+    int           s = NGX_INVALID_FILE;
     char          sa[DFS_SOCKLEN];
     log_t        *log = nullptr;
     uchar_t      *address = nullptr;
@@ -139,7 +139,7 @@ static void listen_rev_handler(event_t *ev)
     {
         s = accept(lc->fd, reinterpret_cast<sockaddr *>(sa), &socklen);
 
-        if (s == DFS_INVALID_FILE) 
+        if (s == NGX_INVALID_FILE)
 		{
             if (errno == DFS_EAGAIN) 
 			{
@@ -201,7 +201,7 @@ static void listen_rev_handler(event_t *ev)
 		
         memory_memcpy(nc->sockaddr, sa, socklen);
 		
-        if (conn_nonblocking(s) == DFS_ERROR) 
+        if (conn_nonblocking(s) == NGX_ERROR)
 		{
              dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                 "conn_accept: setnonblocking failed");
@@ -219,7 +219,7 @@ static void listen_rev_handler(event_t *ev)
         nc->listening = ls;
         nc->socklen = socklen;
         wev = nc->write;
-        wev->ready = DFS_FALSE;
+        wev->ready = NGX_FALSE;
 
         nc->addr_text.data = (uchar_t *)pool_calloc(nc->pool, ADDR_MAX_LEN);
         if (!nc->addr_text.data) 

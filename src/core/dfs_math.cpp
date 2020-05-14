@@ -603,18 +603,18 @@ int dfs_math_is_prime(size_t x)
 
     if (x <= 1) 
 	{
-        return DFS_FALSE;
+        return NGX_FALSE;
     }
 
     for (i = 2; i * i <= x; ++i) 
 	{
         if (x % i == 0) 
 		{
-            return DFS_FALSE;
+            return NGX_FALSE;
         }
     }
 
-    return DFS_TRUE;
+    return NGX_TRUE;
 }
 
 size_t dfs_math_find_prime(size_t x)

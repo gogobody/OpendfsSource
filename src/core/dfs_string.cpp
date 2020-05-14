@@ -210,7 +210,7 @@ uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max,
     uchar_t        *p = nullptr;
     uchar_t         zero = 0;
     uchar_t        *pend = nullptr;
-    uchar_t         temp[DFS_INT64_LEN + 1];
+    uchar_t         temp[NGX_INT64_LEN + 1];
     rb_msec_t       ms;
     string_t       *v = nullptr;
     static uchar_t  hex[] = "0123456789abcdef";
@@ -235,7 +235,7 @@ uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max,
             hexadecimal = 0;
             max_width = 0;
             slen = (size_t) - 1;
-            p = temp + DFS_INT64_LEN;
+            p = temp + NGX_INT64_LEN;
 			
             while (*fmt >= '0' && *fmt <= '9') 
 			{
@@ -420,7 +420,7 @@ uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max,
 				
                 if (max_width) 
 				{
-                    width = DFS_INT64_LEN;
+                    width = NGX_INT64_LEN;
                 }
                 break;
 				
@@ -434,7 +434,7 @@ uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max,
                 hexadecimal = 2;
                 sign = 0;
                 zero = '0';
-                width = DFS_PTR_SIZE * 2;
+                width = NGX_PTR_SIZE * 2;
                 break;
 				
             case 'c':
@@ -506,13 +506,13 @@ uchar_t * string_xxvsnprintf(uchar_t *buf, size_t max,
                 } while (ui64 /= 10);
             }
 			
-            len = (temp + DFS_INT64_LEN) - p;
+            len = (temp + NGX_INT64_LEN) - p;
             while (len++ < width && buf < pend) 
 			{
                 *buf++ = zero;
             }
 			
-            len = (temp + DFS_INT64_LEN) - p;
+            len = (temp + NGX_INT64_LEN) - p;
             if (buf + len > pend) 
 			{
                 len = pend - buf;
@@ -799,7 +799,7 @@ int string_xxstrncasercmp(uchar_t *s1, uchar_t *s2, size_t n)
 
 int string_xxstrtoi(uchar_t *line, size_t n)
 {
-    int negflag = DFS_FALSE;
+    int negflag = NGX_FALSE;
     int value = 0;
 
     if (0 == n) 
@@ -809,7 +809,7 @@ int string_xxstrtoi(uchar_t *line, size_t n)
 	
     if (*line == '-') 
 	{
-        negflag = DFS_TRUE;
+        negflag = NGX_TRUE;
         line++;
     }
 	
@@ -828,7 +828,7 @@ int string_xxstrtoi(uchar_t *line, size_t n)
 
 int string_xxstrhextoi(uchar_t *line, size_t n)
 {
-    int     negflag = DFS_FALSE;
+    int     negflag = NGX_FALSE;
     int     value = 0;
     uchar_t c = 0, ch = 0;
 
@@ -839,7 +839,7 @@ int string_xxstrhextoi(uchar_t *line, size_t n)
 	
     if (*line == '-') 
 	{
-        negflag = DFS_TRUE;
+        negflag = NGX_TRUE;
         line++;
     }
 	
@@ -869,7 +869,7 @@ int string_xxstrhextoi(uchar_t *line, size_t n)
 
 ssize_t string_xxstrtossize(uchar_t *line, size_t n)
 {
-    int     negflag = DFS_FALSE;
+    int     negflag = NGX_FALSE;
     ssize_t value = 0;
 
     if (0 == n) 
@@ -879,7 +879,7 @@ ssize_t string_xxstrtossize(uchar_t *line, size_t n)
 	
     if (*line == '-') 
 	{
-        negflag = DFS_TRUE;
+        negflag = NGX_TRUE;
         line++;
     }
 	
@@ -902,14 +902,14 @@ uint32_t string_xxstrtoui(uchar_t *line, size_t n)
 
     if (0 == n) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     for (value = 0; n--; line++) 
 	{
         if (*line < '0' || *line > '9') 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         value = value * 10 + (*line - '0');
@@ -924,14 +924,14 @@ size_t string_xxstrtosize(uchar_t *line, size_t n)
 
     if (0 == n) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     for (value = 0; n--; line++) 
 	{
         if (*line < '0' || *line > '9') 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         value = value * 10 + (*line - '0');
@@ -946,14 +946,14 @@ time_t string_xxstrtotime(uchar_t *line, size_t n)
 
     if (0 == n) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     for (value = 0; n--; line++) 
 	{
         if (*line < '0' || *line > '9') 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         value = value * 10 + (*line - '0');
@@ -1051,13 +1051,13 @@ int string_base64_decode(string_t *dst, string_t *src)
 		
         if (basis64[src->data[len]] == 77) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 	
     if (1 == (len % 4)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     s = src->data;
@@ -1084,7 +1084,7 @@ int string_base64_decode(string_t *dst, string_t *src)
 	
     dst->len = d - dst->data;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 /*

@@ -29,7 +29,7 @@ ssize_t sysio_unix_recv(conn_t *c, uchar_t *buf, size_t size)
         dfs_log_error(c->log, DFS_LOG_WARN, 0,
             "sysio_unix_recv: c is nullptr");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (!buf) 
@@ -37,7 +37,7 @@ ssize_t sysio_unix_recv(conn_t *c, uchar_t *buf, size_t size)
         dfs_log_error(c->log, DFS_LOG_WARN, 0,
             "sysio_unix_recv: buf is nullptr");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     for (;;) 
@@ -70,16 +70,16 @@ ssize_t sysio_unix_recv(conn_t *c, uchar_t *buf, size_t size)
             dfs_log_debug(c->log,DFS_LOG_DEBUG, 0,
                 "sysio_unix_recv: not ready");
 			
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
  
         dfs_log_error(c->log, DFS_LOG_ERROR, errno,
             "sysio_unix_recv: error, fd:%d", c->fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 ssize_t sysio_readv_chain(conn_t *c, chain_t *chain)
@@ -139,7 +139,7 @@ ssize_t sysio_readv_chain(conn_t *c, chain_t *chain)
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                 "sysio_readv_chain: not ready");
 			
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 		
         if (errno == DFS_EINTR) 
@@ -150,10 +150,10 @@ ssize_t sysio_readv_chain(conn_t *c, chain_t *chain)
         dfs_log_error(c->log, DFS_LOG_WARN, errno,
             "sysio_readv_chain: read error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     } 
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 ssize_t sysio_udp_unix_recv(conn_t *c, uchar_t *buf, size_t size)
@@ -184,16 +184,16 @@ ssize_t sysio_udp_unix_recv(conn_t *c, uchar_t *buf, size_t size)
             dfs_log_debug(c->log, DFS_LOG_DEBUG, errno,
                 "sysio_udp_unix_recv: not ready");
 			
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 
         dfs_log_error(c->log, DFS_LOG_WARN, errno,
             "sysio_udp_unix_recv: recv error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 ssize_t sysio_unix_send(conn_t *c, uchar_t *buf, size_t size)
@@ -244,16 +244,16 @@ ssize_t sysio_unix_send(conn_t *c, uchar_t *buf, size_t size)
             dfs_log_debug(c->log, DFS_LOG_DEBUG, errno,
                 "sysio_unix_send: not ready");
 			
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 
         dfs_log_error(c->log, DFS_LOG_WARN, errno,
             "sysio_unix_send: send error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // ngx_writev_chain
@@ -299,7 +299,7 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
     while (in && packall_size < limit) 
 	{
         last_size = packall_size; //last_size为上一次调用ngx_writev发送出去的字节数
-		if (in->buf->memory == DFS_FALSE) 
+		if (in->buf->memory == NGX_FALSE)
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                 "%s, file data break", __func__);
@@ -358,7 +358,7 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
             continue;
         }
 		
-        if (sent_size == DFS_AGAIN)  //
+        if (sent_size == NGX_AGAIN)  //
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                 "%s, writev_chain again", __func__);
@@ -368,7 +368,7 @@ chain_t * sysio_writev_chain(conn_t *c, chain_t *in, size_t limit)
             return in;
         }
 		
-        if (sent_size == DFS_ERROR) 
+        if (sent_size == NGX_ERROR)
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, errno,
                 "sysio_writev_chain: writev error, fd:%d", c->fd);
@@ -433,7 +433,7 @@ chain_t * sysio_sendfile_chain(conn_t *c, chain_t *in,
 	
     while (in && sent < limit) 
 	{
-		if (in->buf->memory == DFS_TRUE) 
+		if (in->buf->memory == NGX_TRUE)
 		{
             dfs_log_debug(c->log, DFS_LOG_DEBUG, 0,
                 "%s, memory data break", __func__);
@@ -461,7 +461,7 @@ chain_t * sysio_sendfile_chain(conn_t *c, chain_t *in,
             __func__, limit, sent, pack_size, in->buf->file_pos);
 		
 		rc = sendfile(c->fd, fd, &in->buf->file_pos, pack_size);
-		if (rc == DFS_ERROR) 
+		if (rc == NGX_ERROR)
 		{
 			if (errno == DFS_EAGAIN) 
 			{
@@ -533,7 +533,7 @@ static int sysio_pack_chain_to_iovs(sysio_vec *iovs, int iovs_count,
 	
     while (in && i < iovs_count && *last_size < limit) 
 	{
-		if (in->buf->memory == DFS_FALSE) 
+		if (in->buf->memory == NGX_FALSE)
 		{
 			break;
 		}
@@ -572,7 +572,7 @@ static int sysio_pack_chain_to_iovs(sysio_vec *iovs, int iovs_count,
 
 static ssize_t sysio_writev_iovs(conn_t *c, sysio_vec *iovs, int count)
 {
-    ssize_t rc = DFS_ERROR;
+    ssize_t rc = NGX_ERROR;
     
     if (!c || !iovs || count <= 0) 
 	{
@@ -589,7 +589,7 @@ static ssize_t sysio_writev_iovs(conn_t *c, sysio_vec *iovs, int count)
             return rc;
         }
 		
-        if (rc == DFS_ERROR) 
+        if (rc == NGX_ERROR)
 		{
             if (errno == DFS_EINTR) 
 			{
@@ -598,18 +598,18 @@ static ssize_t sysio_writev_iovs(conn_t *c, sysio_vec *iovs, int count)
 			
             if (errno == DFS_EAGAIN) 
 			{
-                return DFS_AGAIN;
+                return NGX_AGAIN;
             }
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         if (rc == 0) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 

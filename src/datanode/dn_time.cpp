@@ -26,7 +26,7 @@ int time_init(void)
     dfs_time = &cur_tv;
     time_update();
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void time_update(void)

@@ -11,7 +11,7 @@
 
 #define BLK_NUM_IN_DN 100000
 
-uint32_t blk_scanner_running = DFS_TRUE;
+uint32_t blk_scanner_running = NGX_TRUE;
 
 static queue_t g_storage_dir_q;
 static int     g_storage_dir_n = 0;
@@ -56,16 +56,16 @@ int dn_data_storage_master_init(cycle_t *cycle)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"pool_alloc err");
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 	// 初始化 cfs 的各项函数
 	if (cfs_setup(cycle->pool, (cfs_t *)cycle->cfs, cycle->error_log) 
-		!= DFS_OK) 
+		!= NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 子进程
@@ -75,31 +75,31 @@ int dn_data_storage_worker_init(cycle_t *cycle)
 {
     queue_init(&g_storage_dir_q);
 
-	if (init_storage_dirs(cycle) != DFS_OK) 
+	if (init_storage_dirs(cycle) != NGX_OK)
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
     puts("##dn_data_storage_worker_init");
-	if (create_storage_dirs(cycle) != DFS_OK) 
+	if (create_storage_dirs(cycle) != NGX_OK)
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
     // faio thread process queue task
-	if (cfs_prepare_work(cycle) != DFS_OK)  // cfs_faio_ioinit(int thread_num)
+	if (cfs_prepare_work(cycle) != NGX_OK)  // cfs_faio_ioinit(int thread_num)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     // blk cache management
 	g_dn_bcm = blk_cache_mgmt_new_init();
     if (!g_dn_bcm) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // init blk report queue
 	blk_report_queue_init();
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int dn_data_storage_worker_release(cycle_t *cycle)
@@ -109,7 +109,7 @@ int dn_data_storage_worker_release(cycle_t *cycle)
 
 	blk_report_queue_release();
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 
@@ -121,15 +121,15 @@ int dn_data_storage_thread_init(dfs_thread_t *thread)
 {
     // init fio_manager
     // 初始化 n 个fio ，并且添加到 fio manager 的free queue
-    if (cfs_fio_manager_init(dfs_cycle, &thread->fio_mgr) != DFS_OK) 
+    if (cfs_fio_manager_init(dfs_cycle, &thread->fio_mgr) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
     // 初始化 notifier
     // 创建 event fd 初始化 0
-	if (cfs_notifier_init(&thread->faio_notify) != DFS_OK) 
+	if (cfs_notifier_init(&thread->faio_notify) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     // 初始化 io events 队列 posted events, posted bad events
     return cfs_ioevent_init(&thread->io_events);
@@ -160,7 +160,7 @@ static int init_storage_dirs(cycle_t *cycle)
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"pool_alloc err");
 
-			return DFS_ERROR;
+			return NGX_ERROR;
 		}
 
         sd->id = i;
@@ -170,7 +170,7 @@ static int init_storage_dirs(cycle_t *cycle)
 		g_storage_dir_n++;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // create storage dirs
@@ -185,20 +185,20 @@ static int create_storage_dirs(cycle_t *cycle)
 		
 		entry = queue_next(entry);
 
-	    if (access(sd->current, F_OK) != DFS_OK) 
+	    if (access(sd->current, F_OK) != NGX_OK)
 	    {
 	        if (mkdir(sd->current, 
-				S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+				S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	        {
 	            dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 					"mkdir %s err", sd->current);
 		
-	            return DFS_ERROR;
+	            return NGX_ERROR;
 	        }
 	    }
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // namenode
@@ -216,24 +216,24 @@ int setup_ns_storage(dfs_thread_t *thread)
 		entry = queue_next(entry);
 
         sprintf(path, "%s/VERSION", sd->current);
-        if (check_version(path) != DFS_OK) 
+        if (check_version(path) != NGX_OK)
 		{
             exit(PROCESS_KILL_EXIT);
 		}
 
         sprintf(path, "%s/NS-%ld", sd->current, thread->ns_info.namespaceID);
-		if (check_namespace(path, thread->ns_info.namespaceID) != DFS_OK) 
+		if (check_namespace(path, thread->ns_info.namespaceID) != NGX_OK)
 		{
             exit(PROCESS_KILL_EXIT);
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int check_version(char *path)
 {
-    if (access(path, F_OK) != DFS_OK) 
+    if (access(path, F_OK) != NGX_OK)
 	{
 	    int fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0664);
 	    if (fd < 0) 
@@ -241,7 +241,7 @@ static int check_version(char *path)
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"open %s err", path);
 		
-            return DFS_ERROR;
+            return NGX_ERROR;
 	    }
 
         if (0 == strcmp(g_last_version, "")) 
@@ -260,7 +260,7 @@ static int check_version(char *path)
 
 			close(fd);
 
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 	    }
 
 	    close(fd);
@@ -273,7 +273,7 @@ static int check_version(char *path)
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 				"open %s err", path);
 		
-            return DFS_ERROR;
+            return NGX_ERROR;
 	    }
 
         char rBuf[128] = "";
@@ -284,7 +284,7 @@ static int check_version(char *path)
 
 		    close(fd);
 
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 	    }
 
         char version[128] = "";
@@ -301,11 +301,11 @@ static int check_version(char *path)
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, 0, 
 				"storageID in %s is incompatible with others.", path);
 			
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //
@@ -315,32 +315,32 @@ static int check_namespace(char *path, int64_t namespaceID)
     char curDir[PATH_LEN] = "";
 	char verDir[PATH_LEN] = "";
 	
-    if (access(path, F_OK) != DFS_OK) 
+    if (access(path, F_OK) != NGX_OK)
 	{
-	    if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+	    if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	    {
 	        dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"mkdir %s err", path);
 		
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 
 		sprintf(bbwDir, "%s/blocksBeingWritten", path);
-		if (mkdir(bbwDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+		if (mkdir(bbwDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	    {
 	        dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"mkdir %s err", bbwDir);
 		
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 
         sprintf(curDir, "%s/current", path);
-		if (mkdir(curDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+		if (mkdir(curDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	    {
 	        dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"mkdir %s err", curDir);
 		
-	        return DFS_ERROR;
+	        return NGX_ERROR;
 	    }
 
 		sprintf(verDir, "%s/VERSION", curDir);
@@ -350,7 +350,7 @@ static int check_namespace(char *path, int64_t namespaceID)
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 				"open %s err", verDir);
 		
-            return DFS_ERROR;
+            return NGX_ERROR;
 	    }
 
 		char version[128] = "";
@@ -363,7 +363,7 @@ static int check_namespace(char *path, int64_t namespaceID)
 
 			close(fd);
 
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 	    }
 
 	    close(fd);
@@ -380,7 +380,7 @@ static int check_namespace(char *path, int64_t namespaceID)
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 				"open %s err", verDir);
 		
-            return DFS_ERROR;
+            return NGX_ERROR;
 	    }
 
         char rBuf[128] = "";
@@ -391,7 +391,7 @@ static int check_namespace(char *path, int64_t namespaceID)
 
 		    close(fd);
 
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 	    }
 
         int64_t dn_ns_id = 0;
@@ -406,11 +406,11 @@ static int check_namespace(char *path, int64_t namespaceID)
 				"namenode namespaceID = %ld, datanode namespaceID = %ld", 
 				verDir, namespaceID, dn_ns_id);
 			
-		    return DFS_ERROR;
+		    return NGX_ERROR;
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int create_storage_subdirs(char *path)
@@ -421,32 +421,32 @@ static int create_storage_subdirs(char *path)
 	for (int i = 0; i < SUBDIR_LEN; i++) 
 	{	
         sprintf(subDir, "%s/subdir%d", path, i);
-		if (access(subDir, F_OK) != DFS_OK) 
+		if (access(subDir, F_OK) != NGX_OK)
 		{
-            if (mkdir(subDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != DFS_OK) 
+            if (mkdir(subDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) != NGX_OK)
 	        {
 	            dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 					"mkdir %s err", subDir);
 		
-	            return DFS_ERROR;
+	            return NGX_ERROR;
 	        }
 
 			for (int j = 0; j < SUBDIR_LEN; j++) 
 			{
                 sprintf(ssubDir, "%s/subdir%d", subDir, j);
 				if (mkdir(ssubDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH) 
-					!= DFS_OK) 
+					!= NGX_OK)
 	            {
 	                dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 						"mkdir %s err", ssubDir);
 		
-	                return DFS_ERROR;
+	                return NGX_ERROR;
 	            }
 			}
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // mgmt is management
@@ -474,7 +474,7 @@ static blk_cache_mgmt_t *blk_cache_mgmt_create(size_t index_num)
         goto err_out;
     }
     
-    if (blk_mem_mgmt_create(&bcm->mem_mgmt, index_num) != DFS_OK) 
+    if (blk_mem_mgmt_create(&bcm->mem_mgmt, index_num) != NGX_OK)
 	{
         goto err_mem_mgmt;
     }
@@ -534,7 +534,7 @@ static int blk_mem_mgmt_create(blk_cache_mem_t *mem_mgmt,
         goto err_mblks;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 
 err_mblks:
     dfs_mem_allocator_delete(mem_mgmt->allocator);
@@ -543,7 +543,7 @@ err_allocator:
     memory_free(mem_mgmt->mem, mem_mgmt->mem_size);
 	
 err_mem:
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static struct mem_mblks *blk_mblks_create(blk_cache_mem_t *mem_mgmt, 
@@ -604,7 +604,7 @@ static void blk_cache_mgmt_release(blk_cache_mgmt_t *bcm)
 
 static int uint64_cmp(const void *s1, const void *s2, size_t sz)
 {
-    return *(uint64_t *)s1 == *(uint64_t *)s2 ? DFS_FALSE : DFS_TRUE; 
+    return *(uint64_t *)s1 == *(uint64_t *)s2 ? NGX_FALSE : NGX_TRUE;
 }
 
 // 取余
@@ -639,7 +639,7 @@ int block_object_add(char *path, long ns_id, long blk_id)
 	if (blk) 
 	{
 	    // check diff
-        return DFS_OK;
+        return NGX_OK;
 	}
 
 	struct stat sb;
@@ -673,7 +673,7 @@ int block_object_add(char *path, long ns_id, long blk_id)
     // 不在hashtable里的向nn上报
     notify_blk_report(blk);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int block_object_del(long blk_id)
@@ -683,7 +683,7 @@ int block_object_del(long blk_id)
 	blk = block_object_get(blk_id);
 	if (!blk) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	unlink(blk->path);
@@ -696,12 +696,12 @@ int block_object_del(long blk_id)
 
 	pthread_rwlock_unlock(&g_dn_bcm->cache_rwlock);
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int block_read(dn_request_t *r, file_io_t *fio)
 {
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void io_lock(volatile uint64_t *lock)
@@ -746,10 +746,10 @@ int get_block_temp_path(dn_request_t *r)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"string_xxxpdup %s err", tmpDir);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int write_block_done(dn_request_t *r)
@@ -768,12 +768,12 @@ int write_block_done(dn_request_t *r)
 		r->header.block_id);
 
 	// 调用rename快速移动文件，但是rename不能跨分区跨磁盘
-	if (rename((char *)r->path, blkDir) != DFS_OK) 
+	if (rename((char *)r->path, blkDir) != NGX_OK)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"rename %s to %s err", r->path, blkDir);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	strcpy((char *)r->path, blkDir);
@@ -806,7 +806,7 @@ static int get_disk_id(long block_id, char *path)
 		}
 	}
 
-	return DFS_OK;
+	return NGX_OK;
 }
 
 static int recv_blk_report(dn_request_t *r)
@@ -838,7 +838,7 @@ static int recv_blk_report(dn_request_t *r)
 	// 提示name node 收到 blk
     notify_nn_receivedblock(blk);
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // scanner线程
@@ -898,7 +898,7 @@ static int scan_current_dir(char *dir)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	while (NULL != (ent = readdir(p_dir))) 
@@ -919,7 +919,7 @@ static int scan_current_dir(char *dir)
 
 	closedir(p_dir);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void get_namespace_id(char *src, char *id)
@@ -944,7 +944,7 @@ static void get_namespace_id(char *src, char *id)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	while (NULL != (ent = readdir(p_dir))) 
@@ -962,7 +962,7 @@ static void get_namespace_id(char *src, char *id)
 
 	closedir(p_dir);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int scan_subdir(char *dir, long namespace_id)
@@ -977,7 +977,7 @@ static int scan_subdir(char *dir, long namespace_id)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	while (NULL != (ent = readdir(p_dir))) 
@@ -995,7 +995,7 @@ static int scan_subdir(char *dir, long namespace_id)
 
 	closedir(p_dir);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int scan_subdir_subdir(char *dir, long namespace_id)
@@ -1010,7 +1010,7 @@ static int scan_subdir_subdir(char *dir, long namespace_id)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	while (NULL != (ent = readdir(p_dir))) 
@@ -1029,7 +1029,7 @@ static int scan_subdir_subdir(char *dir, long namespace_id)
 
 	closedir(p_dir);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void get_blk_id(char *src, char *id)

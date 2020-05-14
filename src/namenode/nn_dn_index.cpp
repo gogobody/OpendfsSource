@@ -50,18 +50,18 @@ int nn_dn_index_worker_init(cycle_t *cycle)
 	g_dcm = dn_cache_mgmt_new_init(conf);
     if (!g_dcm) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-	if (dn_cache_mgmt_timer_new(g_dcm, conf) != DFS_OK) 
+	if (dn_cache_mgmt_timer_new(g_dcm, conf) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	queue_init(&g_dn_q);
 	g_dn_n = 0;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_dn_index_worker_release(cycle_t *cycle)
@@ -70,7 +70,7 @@ int nn_dn_index_worker_release(cycle_t *cycle)
 	g_dcm = nullptr;
 	g_dn_n = 0;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 初始化 dcm data cache management
@@ -99,7 +99,7 @@ static dn_cache_mgmt_t *dn_cache_mgmt_create(size_t index_num)
         goto err_out;
     }
     
-    if (dn_mem_mgmt_create(&dcm->mem_mgmt, index_num) != DFS_OK) 
+    if (dn_mem_mgmt_create(&dcm->mem_mgmt, index_num) != NGX_OK)
 	{
         goto err_mem_mgmt;
     }
@@ -155,7 +155,7 @@ static int dn_mem_mgmt_create(dn_cache_mem_t *mem_mgmt,
         goto err_mblks;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 
 err_mblks:
     dfs_mem_allocator_delete(mem_mgmt->allocator);
@@ -164,7 +164,7 @@ err_allocator:
     memory_free(mem_mgmt->mem, mem_mgmt->mem_size);
 	
 err_mem:
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static struct mem_mblks *dn_mblks_create(dn_cache_mem_t *mem_mgmt, 
@@ -219,13 +219,13 @@ static int dn_cache_mgmt_timer_new(dn_cache_mgmt_t *dcm,
 		DN_NUM_IN_CLUSTER, dfs_hashtable_hash_key8, nullptr);
     if (!dcm->dn_timer_htable)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     dcm->timeout = SEC2MSEC(conf->dn_timeout);
     pthread_rwlock_init(&dcm->timer_rwlock, nullptr);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int dn_hash_keycmp(const void *arg1, const void *arg2, 
@@ -310,7 +310,7 @@ out:
 	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
 		"datanode %s register", dns->dni.id);
 	
-    task->ret = DFS_OK;
+    task->ret = NGX_OK;
 
 	task->data_len = sizeof(int64_t);
 	task->data = malloc(task->data_len);
@@ -391,13 +391,13 @@ int nn_dn_heartbeat(task_t *task)
 			pthread_rwlock_unlock(&g_dcm->cache_rwlock);
 		}
 		
-		task->ret = DFS_OK;
+		task->ret = NGX_OK;
 	} else
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 
 			0, "datanode %s haven't registered yet", task->key);
 		
-        task->ret = DFS_ERROR;
+        task->ret = NGX_ERROR;
 	}
 
     return write_back(node);
@@ -478,7 +478,7 @@ static void dn_timer_update(dn_store_t *dns)
 //
 int nn_dn_recv_blk_report(task_t *task)
 {
-	int          rs = DFS_OK;
+	int          rs = NGX_OK;
 	dn_store_t  *dns = nullptr;
 	blk_store_t *blk = nullptr;
 
@@ -498,7 +498,7 @@ int nn_dn_recv_blk_report(task_t *task)
 			"blk %d is from dead or unregistered node %s", 
 			rbi.blk_id, rbi.dn_ip);
 
-		rs = DFS_ERROR;
+		rs = NGX_ERROR;
 
 		goto out;
 	}
@@ -506,7 +506,7 @@ int nn_dn_recv_blk_report(task_t *task)
 	blk = add_block(rbi.blk_id, rbi.blk_sz, rbi.dn_ip);
     if (!blk) 
 	{
-        rs = DFS_ERROR;
+        rs = NGX_ERROR;
 	}
 
     pthread_rwlock_wrlock(&g_dcm->cache_rwlock);
@@ -523,12 +523,12 @@ out:
 
 int nn_dn_del_blk_report(task_t *task)
 {
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_dn_blk_report(task_t *task)
 {
-	int          rs = DFS_OK;
+	int          rs = NGX_OK;
 	dn_store_t  *dns = nullptr;
 	blk_store_t *blk = nullptr;
 
@@ -548,7 +548,7 @@ int nn_dn_blk_report(task_t *task)
 			"blk %d is from dead or unregistered node %s", 
 			rbi.blk_id, rbi.dn_ip);
 
-		rs = DFS_ERROR;
+		rs = NGX_ERROR;
 
 		goto out;
 	}
@@ -558,7 +558,7 @@ int nn_dn_blk_report(task_t *task)
 	if (blk) 
 	{
 
-        rs = DFS_OK;
+        rs = NGX_OK;
 
 		goto out;
 	}
@@ -567,7 +567,7 @@ int nn_dn_blk_report(task_t *task)
 	blk = add_block(rbi.blk_id, rbi.blk_sz, rbi.dn_ip);
     if (!blk) 
 	{
-        rs = DFS_ERROR;
+        rs = NGX_ERROR;
 	}
 
     pthread_rwlock_wrlock(&g_dcm->cache_rwlock);
@@ -596,7 +596,7 @@ int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"no avalable datanode");
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 
 	cur = queue_head(&g_dn_q); //
@@ -609,7 +609,7 @@ int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 
 	pthread_rwlock_unlock(&g_dcm->cache_rwlock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int notify_dn_2_delete_blk(long blk_id, char dn_ip[32])
@@ -617,7 +617,7 @@ int notify_dn_2_delete_blk(long blk_id, char dn_ip[32])
     dn_store_t *dns = get_dn_store_obj((uchar_t *)dn_ip);
 	if (!dns) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	del_blk_t *dblk = (del_blk_t *)malloc(sizeof(del_blk_t));
@@ -626,7 +626,7 @@ int notify_dn_2_delete_blk(long blk_id, char dn_ip[32])
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"malloc err");
 
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 
 	queue_init(&dblk->me);
@@ -640,6 +640,6 @@ int notify_dn_2_delete_blk(long blk_id, char dn_ip[32])
 
 	pthread_rwlock_unlock(&g_dcm->cache_rwlock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

@@ -41,7 +41,7 @@ int cycle_init(cycle_t *cycle)
     
     if (cycle == nullptr)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
   
     cycle->conf_file.data = string_xxpdup(cycle->pool , &config_file);
@@ -77,12 +77,12 @@ int cycle_init(cycle_t *cycle)
     conf_objects = get_nn_conf_object(); // init funcs
 
     // conf_objects
-    if (conf_context_init(ctx, &config_file, log, conf_objects) != DFS_OK) 
+    if (conf_context_init(ctx, &config_file, log, conf_objects) != NGX_OK)
 	{
         goto error;
     }
     // parse conf file
-    if (conf_context_parse(ctx) != DFS_OK) 
+    if (conf_context_parse(ctx) != NGX_OK)
 	{
         printf("configure parse failed at line %d\n", ctx->conf_line); 
 		
@@ -99,17 +99,17 @@ int cycle_init(cycle_t *cycle)
 	
     nn_error_log_init(dfs_cycle);
 	
-    return DFS_OK;
+    return NGX_OK;
     
 error:
-     return DFS_ERROR;
+     return NGX_ERROR;
 }
 
 int cycle_free(cycle_t *cycle)
 {
     if (!cycle) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
    
     if (cycle->pool) 
@@ -121,7 +121,7 @@ int cycle_free(cycle_t *cycle)
 
     cycle = nullptr;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 array_t * cycle_get_listen_for_cli()

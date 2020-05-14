@@ -71,10 +71,10 @@ int thread_create(void *args)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0,
             "thread_create err: %s", strerror(ret));
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void thread_clean(dfs_thread_t *thread)
@@ -84,14 +84,14 @@ void thread_clean(dfs_thread_t *thread)
 // init epoll
 int thread_event_init(dfs_thread_t *thread)
 {
-    if (epoll_init(&thread->event_base, dfs_cycle->error_log) == DFS_ERROR) 
+    if (epoll_init(&thread->event_base, dfs_cycle->error_log) == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     event_timer_init(&thread->event_timer, time_curtime, dfs_cycle->error_log);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 不同的线程 处理 epoll 事件

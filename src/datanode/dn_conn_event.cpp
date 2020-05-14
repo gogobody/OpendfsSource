@@ -41,7 +41,7 @@ int conn_listening_init(cycle_t *cycle)
          dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
             "no space to alloc listening_for_cli pool");
 		 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	cycle->listening_for_cli.nelts = 0;
@@ -61,7 +61,7 @@ int conn_listening_init(cycle_t *cycle)
 		
         if (!ls) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
 		strcpy(cycle->listening_ip, (const char *)bind_for_cli[i].addr.data);
@@ -70,19 +70,19 @@ int conn_listening_init(cycle_t *cycle)
 	// open listening
 	// listening fd = sockfd
 	if (conn_listening_open(&cycle->listening_for_cli, cycle->error_log) 
-		!= DFS_OK) 
+		!= NGX_OK)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 处理函数
 // accept handler
 static void listen_rev_handler(event_t *ev)
 {
-    int           s = DFS_INVALID_FILE;
+    int           s = NGX_INVALID_FILE;
     char          sa[DFS_SOCKLEN];
     log_t        *log = NULL;
     uchar_t      *address = NULL;
@@ -110,7 +110,7 @@ static void listen_rev_handler(event_t *ev)
         /*accept一个新的连接, accept 的时候 lc->fd = ls->fd*/
         s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
 
-        if (s == DFS_INVALID_FILE) 
+        if (s == NGX_INVALID_FILE)
 		{
             if (errno == DFS_EAGAIN) 
 			{
@@ -171,7 +171,7 @@ static void listen_rev_handler(event_t *ev)
 		
         memory_memcpy(nc->sockaddr, sa, socklen);
 		
-        if (conn_nonblocking(s) == DFS_ERROR) 
+        if (conn_nonblocking(s) == NGX_ERROR)
 		{
              dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                 "conn_accept: setnonblocking failed");
@@ -190,7 +190,7 @@ static void listen_rev_handler(event_t *ev)
         nc->listening = ls;
         nc->socklen = socklen;
         wev = nc->write;
-        wev->ready = DFS_FALSE;
+        wev->ready = NGX_FALSE;
 
         nc->addr_text.data = (uchar_t *)pool_calloc(nc->pool, ADDR_MAX_LEN);
         if (!nc->addr_text.data) 

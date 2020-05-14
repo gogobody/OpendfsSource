@@ -135,13 +135,13 @@ static void *conf_server_init(pool_t *pool)
     }
 	
     if (array_init(&sconf->bind_for_cli, pool, CONF_SERVER_BIND_N, 
-        sizeof(server_bind_t)) != DFS_OK) 
+        sizeof(server_bind_t)) != NGX_OK)
     {
         return nullptr;
     }
 
     if (array_init(&sconf->bind_for_dn, pool, CONF_SERVER_BIND_N, 
-        sizeof(server_bind_t)) != DFS_OK) 
+        sizeof(server_bind_t)) != NGX_OK)
     {
         return nullptr;
     }
@@ -158,7 +158,7 @@ static int conf_server_make_default(void *var)
     set_def_int(sconf->send_buff_len, 		    DEF_SBUFF_LEN);
     set_def_int(sconf->max_tqueue_len, 		    DEF_MMAX_TQUEUE_LEN);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
@@ -174,18 +174,18 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
     if (args[vi].len == 0 || !args[vi].data) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     p = (uint32_t *)((uchar_t *)v->conf + offset);
@@ -203,13 +203,13 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
             {
                 *p = conf_macro[i].value;
 				
-                return DFS_OK;
+                return NGX_OK;
             }
         }
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 

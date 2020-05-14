@@ -32,7 +32,7 @@ buffer_t * buffer_create(pool_t *pool, size_t size)
             return nullptr;
         }
 		
-		b->temporary = DFS_FALSE;
+		b->temporary = NGX_FALSE;
     } 
 	else 
 	{
@@ -48,14 +48,14 @@ buffer_t * buffer_create(pool_t *pool, size_t size)
             return nullptr;
         }
 		
-        b->temporary = DFS_TRUE;
+        b->temporary = NGX_TRUE;
     }
     //设置各类指针
     b->pos = b->start;
     b->last = b->start;
     b->end = b->last + size;
-    b->memory = DFS_TRUE;
-    b->in_file = DFS_FALSE;
+    b->memory = NGX_TRUE;
+    b->in_file = NGX_FALSE;
 	
     return b;
 }

@@ -40,7 +40,7 @@ int array_init(array_t *array, pool_t *pool, uint32_t n, size_t size)
 {
     if (!array || (n == 0) || (size == 0)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     array->nelts = 0;
@@ -59,10 +59,10 @@ int array_init(array_t *array, pool_t *pool, uint32_t n, size_t size)
 	
     if (!array->elts) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void array_reset(array_t *a)

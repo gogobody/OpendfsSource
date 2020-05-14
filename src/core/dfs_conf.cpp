@@ -55,7 +55,7 @@ int conf_context_init(conf_context_t*ctx, string_t *file, log_t *log,
 // parse conf file
 int conf_context_parse(conf_context_t *ctx)
 {
-    int               ret = DFS_ERROR;
+    int               ret = NGX_ERROR;
     struct stat       s;
     string_t         *name = nullptr;
     conf_file_read_t *file = nullptr;
@@ -70,28 +70,28 @@ int conf_context_parse(conf_context_t *ctx)
         dfs_log_error(ctx->log, DFS_LOG_ERROR, errno,
             "open config file \"%V\" failed",  name);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     ret = fstat(file->fd, &s);
-    if (ret != DFS_OK) 
+    if (ret != NGX_OK)
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, errno,
             "fstat file fd:%d, \"%V\" failed", name);
 		
         conf_file_close(file, ctx->log);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     file->size = s.st_size;
 
 	// mmap 把文件读取到 file -> buf
-    if (conf_file_read(file, ctx->log) != DFS_OK) 
+    if (conf_file_read(file, ctx->log) != NGX_OK)
 	{
         conf_file_close(file, ctx->log);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     ctx->conf_objects_array = (array_t *)array_create(ctx->pool, CONF_MAX_CLASS_N,
@@ -104,32 +104,32 @@ int conf_context_parse(conf_context_t *ctx)
 		
         conf_file_close(file, ctx->log);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	// 解析上面保存的用户空间的文件 ngx_conf_read_token
-    if (conf_parse_buf(ctx, file->buf, file->size) != DFS_OK) 
+    if (conf_parse_buf(ctx, file->buf, file->size) != NGX_OK)
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0, 
             "parse bfuf failed conf_line:%d", ctx->conf_line);
 		
         conf_file_close(file, ctx->log);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     conf_file_close(file, ctx->log);
 
     // make default
-    if (conf_make_objects_default(ctx) != DFS_OK) 
+    if (conf_make_objects_default(ctx) != NGX_OK)
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0, 
             "conf_make_objects_default failed conf_line");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //参数fd为即将映射到进程空间的文件描述字
@@ -141,10 +141,10 @@ static int conf_file_read(conf_file_read_t *file, log_t *log)
         dfs_log_error(log, DFS_LOG_ERROR, errno,
             "conf_file_read: mmap config file failed");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 // 解析上面保存的用户空间的文件 gx_conf_read_token
 // https://blog.csdn.net/jackywgw/article/details/51454006?xx
@@ -175,7 +175,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 
     if (!buf || size == 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     tmp_pool = pool_create(CONF_POOL_SIZE, DFS_PAGE_SIZE, ctx->log);
@@ -183,7 +183,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0, "no space to alloc");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     arr_type = (array_t *)array_create(tmp_pool, CONF_MAX_TYPE_ARRAY_N, sizeof(conf_args_t));
@@ -232,7 +232,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
                             "at line %d: no more space to parse configure", line);
                         ctx->conf_line = line;
 						
-                        return DFS_ERROR;
+                        return NGX_ERROR;
                     }
 					
                     word->data = (uchar_t *)pool_alloc(tmp_pool, option_len + 1);
@@ -242,7 +242,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
                             "at line %d: no more space to parse configure", line);
                         ctx->conf_line = line;
 						
-                        return DFS_ERROR;
+                        return NGX_ERROR;
                     }
 					
                     word->len = option_len;
@@ -305,7 +305,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 						
                         ctx->conf_line = line;
 						
-                        return DFS_ERROR;
+                        return NGX_ERROR;
                     }
                 }
 				
@@ -324,7 +324,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 					
                     ctx->conf_line = line;
 					
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 				
                 comment = 1;
@@ -338,7 +338,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 					
                     ctx->conf_line = line;
 					
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 
                 line++;
@@ -351,7 +351,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 					
                     ctx->conf_line = line;
 					
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 				
                 if (comment) 
@@ -378,7 +378,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 						 
                          ctx->conf_line = line;
 						 
-                         return DFS_ERROR;
+                         return NGX_ERROR;
                     }
 					
                     word->len = option_len;
@@ -466,7 +466,7 @@ normal_char:
 	{
         ctx->conf_line = type[i].line;
 		
-        if (conf_parse_type(ctx, &type[i]) != DFS_OK) 
+        if (conf_parse_type(ctx, &type[i]) != NGX_OK)
 		{
             goto error;
         }
@@ -478,7 +478,7 @@ normal_char:
     for (i = 0; i < opt_n; i++) 
 	{
         ctx->conf_line = type[i].line;
-        if (conf_parse_option(ctx, &opt[i]) != DFS_OK) 
+        if (conf_parse_option(ctx, &opt[i]) != NGX_OK)
 		{
             goto error;
         }
@@ -486,20 +486,20 @@ normal_char:
 
     pool_destroy(tmp_pool);
 
-    return DFS_OK;
+    return NGX_OK;
 
 error:
 
     pool_destroy(tmp_pool);
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static int conf_file_close(conf_file_read_t *file, log_t *log)
 {
     if (file->fd < 0) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 
     if (!file->buf) 
@@ -507,7 +507,7 @@ static int conf_file_close(conf_file_read_t *file, log_t *log)
          dfs_log_error(log, DFS_LOG_ERROR, 0,
             "conf_file_close: close file failed");
 		 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     munmap(file->buf, file->size);
@@ -516,7 +516,7 @@ static int conf_file_close(conf_file_read_t *file, log_t *log)
     file->fd = -1;
     file->size = 0;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_make_objects_default(conf_context_t *ctx)
@@ -530,16 +530,16 @@ static int conf_make_objects_default(conf_context_t *ctx)
 
     for (i = 0; i < conf_objects_array->nelts; i++) 
 	{
-        if (v[i].make_default != NULL && v[i].make_default(&v[i]) != DFS_OK) 
+        if (v[i].make_default != NULL && v[i].make_default(&v[i]) != NGX_OK)
 		{
             dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
                 "%V make_default fail", &v->name);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
@@ -575,23 +575,23 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
         }
 
         //
-        if (conf_parse_object(ctx, &word[1], &objects[i]) != DFS_OK) 
+        if (conf_parse_object(ctx, &word[1], &objects[i]) != NGX_OK)
 		{
             dfs_log_error(log, DFS_LOG_ERROR, 0, 
                 "at line %d: unknown object: \"%V\"", ctx->conf_line, &word[1]);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         args->nelts = 0;
 		
-        return DFS_OK;
+        return NGX_OK;
     }
 
     dfs_log_error(log, DFS_LOG_ERROR, 0, "at line %d: unknown directive: "
         "\"%V %V;\"", ctx->conf_line, &word[0], &word[1]);
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
@@ -619,7 +619,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
         dfs_log_error(log, DFS_LOG_ERROR, 0, "at line %d: invalid parameters, " 
             "only allows from two to four", line);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // word[1] is "=" or "~"
@@ -639,18 +639,18 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
             }
 
             // 在这里调用了 init 函数
-            if (conf_parse_object(ctx, &word[1], &objects[i]) != DFS_OK) 
+            if (conf_parse_object(ctx, &word[1], &objects[i]) != NGX_OK)
 			{
-                return DFS_ERROR;
+                return NGX_ERROR;
             }
 			
-            return DFS_OK;
+            return NGX_OK;
         }
 
         dfs_log_error(log, DFS_LOG_ERROR, 0, "at line %d: Unknown directive \"%V\"", 
                 line, &word[0]);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     } 
 	else 
 	{
@@ -660,7 +660,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
             dfs_log_error(log , DFS_LOG_ERROR, 0, "at line %d: missing \".\" in"
                 "\"%V\"", line, &word[0]);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         var.data = word[0].data ;
@@ -673,17 +673,17 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
             dfs_log_error(log, DFS_LOG_ERROR, 0,
                 "at line %d: Unknown directive \"%V\"", line, &var);
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         if (conf_parse_object_att(ctx, vclass, &att, word, args->nelts,
-            vclass->option) != DFS_OK) 
+            vclass->option) != NGX_OK)
         {
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static conf_variable_t * conf_get_vobject(conf_context_t *ctx, 
@@ -727,20 +727,20 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
             "No more space to parse configure", ctx->conf_objects_array->nelts);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     //var->name = *variable;
     if (conf_string_pdup(ctx->pool,
-        &v->name, var) == DFS_ERROR) 
+        &v->name, var) == NGX_ERROR)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (conf_string_pdup(ctx->pool,
-        &v->obj_name, &obj->name) == DFS_ERROR) 
+        &v->obj_name, &obj->name) == NGX_ERROR)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     // malloc memory from conf
@@ -748,13 +748,13 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
     v->conf = obj->init(ctx->pool);
     if (v->conf == NULL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     v->option = obj->option;
     v->make_default = obj->make_default;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v, 
@@ -779,7 +779,7 @@ static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v,
 
         if (oper->len != 1) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         } 
 		else if ((option[i].type == OPE_EQUAL) && (*oper->data == '=')) 
 		{
@@ -791,22 +791,22 @@ static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v,
         } 
 		else 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         if (option[i].handler(v, option[i].offset, type, args, args_n) < 0) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
-        return DFS_OK;
+        return NGX_OK;
     }
 
     dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
         "class \"%V\" not have this option \"%V\", at line:%d",
         &v->name, att, ctx->conf_line);
 	
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static int conf_string_pdup(pool_t *pool, string_t *dst, string_t *src)
@@ -814,12 +814,12 @@ static int conf_string_pdup(pool_t *pool, string_t *dst, string_t *src)
     dst->data = string_xxpdup(pool, src);
     if (!dst->data) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     dst->len = src->len;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 

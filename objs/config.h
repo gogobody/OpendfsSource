@@ -4,8 +4,8 @@
 #endif
 
 
-#ifndef DFS_PTR_SIZE
-#define DFS_PTR_SIZE  8
+#ifndef NGX_PTR_SIZE
+#define NGX_PTR_SIZE  8
 #endif
 
 

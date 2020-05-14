@@ -45,7 +45,7 @@ int dn_register(dfs_thread_t *thread)
     int sockfd = ns_srv_init(thread->ns_info.ip, thread->ns_info.port);
 	if (sockfd < 0) 
 	{
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	task_t out_t;
@@ -63,7 +63,7 @@ int dn_register(dfs_thread_t *thread)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -75,7 +75,7 @@ int dn_register(dfs_thread_t *thread)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)malloc(pLen);
@@ -86,7 +86,7 @@ int dn_register(dfs_thread_t *thread)
 		
 	    close(sockfd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(sockfd, pNext, pLen);
@@ -100,14 +100,14 @@ int dn_register(dfs_thread_t *thread)
 		free(pNext);
 		pNext = NULL;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"dn_register err, ret: %d", in_t.ret);
@@ -117,7 +117,7 @@ int dn_register(dfs_thread_t *thread)
 		free(pNext);
 		pNext = NULL;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	else if (NULL != in_t.data && in_t.data_len > 0) 
 	{
@@ -129,7 +129,7 @@ int dn_register(dfs_thread_t *thread)
 	free(pNext);
 	pNext = NULL;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // socket 链接 namenode 返回 sockfd
@@ -141,7 +141,7 @@ static int ns_srv_init(char* ip, int port)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"socket() err");
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	int reuse = 1;
@@ -159,7 +159,7 @@ static int ns_srv_init(char* ip, int port)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"connect(%s: %d) err", ip, port);
 		
-	    return DFS_ERROR;
+	    return NGX_ERROR;
 	}
 
 	return sockfd;
@@ -183,7 +183,7 @@ int offer_service(dfs_thread_t *thread)
 		{
 		    g_last_heartbeat = now_time;
 			
-		    if (send_heartbeat(thread->ns_info.sockfd) != DFS_OK)
+		    if (send_heartbeat(thread->ns_info.sockfd) != NGX_OK)
 			{
 			    goto out;
 			}
@@ -193,7 +193,7 @@ int offer_service(dfs_thread_t *thread)
 		// 从 cli 接收完成之后上报
         if (g_recv_blk_report.num > 0) // 接收的？send receivedblock_report
 		{
-            if (receivedblock_report(thread->ns_info.sockfd) != DFS_OK) 
+            if (receivedblock_report(thread->ns_info.sockfd) != NGX_OK)
 		    {
                 goto out;
 		    }
@@ -202,7 +202,7 @@ int offer_service(dfs_thread_t *thread)
         // 从scanner 那里扫描到，不在hashtable里的上报
 		if (g_blk_report.num > 0)  // 上报的？
 		{
-            if (block_report(thread->ns_info.sockfd) != DFS_OK) 
+            if (block_report(thread->ns_info.sockfd) != NGX_OK)
 		    {
                 goto out;
 		    }
@@ -228,7 +228,7 @@ out:
 	thread->ns_info.sockfd = -1;
 	thread->ns_info.namespaceID = -1;
 	
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static int send_heartbeat(int sockfd)
@@ -246,7 +246,7 @@ static int send_heartbeat(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"write err, ws: %d, sLen: %d", ws, sLen);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	int pLen = 0;
@@ -256,7 +256,7 @@ static int send_heartbeat(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
 			"read err, rLen: %d", rLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char *pNext = (char *)malloc(pLen);
@@ -265,7 +265,7 @@ static int send_heartbeat(int sockfd)
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
 			"malloc err, pLen: %d", pLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	rLen = read(sockfd, pNext, pLen);
@@ -277,14 +277,14 @@ static int send_heartbeat(int sockfd)
 		free(pNext);
 		pNext = NULL;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(pNext, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"send_heartbeat err, ret: %d", in_t.ret);
@@ -292,7 +292,7 @@ static int send_heartbeat(int sockfd)
 		free(pNext);
 		pNext = NULL;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	} 
 	else if (NULL != in_t.data && in_t.data_len > 0) 
 	{
@@ -305,7 +305,7 @@ static int send_heartbeat(int sockfd)
 	free(pNext);
 	pNext = NULL;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //
@@ -345,7 +345,7 @@ static int receivedblock_report(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"write err, ws: %d, sLen: %d", ws, sLen);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -355,25 +355,25 @@ static int receivedblock_report(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
 			"read err, rLen: %d", rLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"receivedblock_report err, ret: %d", in_t.ret);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
 		"receivedblock_report ok, ret: %d", in_t.ret);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int wait_to_work(int second)
@@ -398,7 +398,7 @@ static int wait_to_work(int second)
     
 	pthread_mutex_unlock(&g_recv_blk_report.lock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 初始化 blk report queue
@@ -416,7 +416,7 @@ int blk_report_queue_init()
 	pthread_mutex_init(&g_blk_report.lock, NULL);
 	pthread_cond_init(&g_blk_report.cond, NULL);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int blk_report_queue_release()
@@ -429,7 +429,7 @@ int blk_report_queue_release()
 	pthread_cond_destroy(&g_blk_report.cond);
 	g_blk_report.num = 0;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 提示name node 收到 blk
@@ -444,7 +444,7 @@ int notify_nn_receivedblock(block_info_t *blk)
     
     pthread_mutex_unlock(&g_recv_blk_report.lock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int block_report(int sockfd)
@@ -483,7 +483,7 @@ static int block_report(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"write err, ws: %d, sLen: %d", ws, sLen);
 
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	char rBuf[BUF_SZ] = "";
@@ -493,25 +493,25 @@ static int block_report(int sockfd)
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
 			"read err, rLen: %d", rLen);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 	
 	task_t in_t;
 	bzero(&in_t, sizeof(task_t));
 	task_decodefstr(rBuf, rLen, &in_t);
 
-    if (in_t.ret != DFS_OK) 
+    if (in_t.ret != NGX_OK)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
 			"block_report err, ret: %d", in_t.ret);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
 	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
 		"block_report ok, ret: %d", in_t.ret);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // blk info插入 g_blk_report
@@ -524,7 +524,7 @@ int notify_blk_report(block_info_t *blk)
     
     pthread_mutex_unlock(&g_blk_report.lock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int delete_blks(char *p, int len)
@@ -542,6 +542,6 @@ static int delete_blks(char *p, int len)
 		len -= pLen;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

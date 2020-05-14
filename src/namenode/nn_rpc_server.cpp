@@ -12,14 +12,14 @@ int nn_rpc_worker_init(cycle_t *cycle)
     //conf_server_t *conf = nullptr;
 	//conf = (conf_server_t *)cycle->sconf;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_rpc_worker_release(cycle_t *cycle)
 {
     (void) cycle;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // do task
@@ -92,9 +92,9 @@ int nn_rpc_service_run(task_t *task)
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"unknown optype: ", optype);
 		
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

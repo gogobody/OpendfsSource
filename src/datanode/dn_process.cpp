@@ -31,7 +31,7 @@ process_t  processes[PROCESSES_MAX]; // gloabal processes' info
 extern char   **environ;
 extern char   **dfs_argv;
 
-static int      process_old_alived = DFS_FALSE;
+static int      process_old_alived = NGX_FALSE;
 dfs_thread_t   *main_thread = NULL;
 
 static int process_reap_workers(cycle_t *cycle);
@@ -49,21 +49,21 @@ int process_check_running(cycle_t *cycle)
 
     if (stat(pid_file, &st) < 0) 
 	{
-        return DFS_FALSE;
+        return NGX_FALSE;
     }
 
     pid = process_get_pid(cycle);
-    if (pid == (pid_t)DFS_ERROR) 
+    if (pid == (pid_t)NGX_ERROR)
 	{
-   	    return DFS_FALSE;
+   	    return NGX_FALSE;
     }
 
     if (kill(pid, 0) < 0) 
 	{
-   	    return DFS_FALSE;
+   	    return NGX_FALSE;
     }
 
-    return DFS_TRUE;
+    return NGX_TRUE;
 }
 
 // 该函数在主线程循环中需要创建工作进程的地方被调用
@@ -81,7 +81,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 	{
         for (slot = 0; slot < process_last; slot++) 
 		{
-            if (processes[slot].pid == DFS_INVALID_PID)  //先找到一个可用的slot
+            if (processes[slot].pid == NGX_INVALID_PID)  //先找到一个可用的slot
 			{
                 break;
             }
@@ -92,7 +92,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
             dfs_log_error(log, DFS_LOG_WARN, 0,
                 "no more than %d processes can be spawned", PROCESSES_MAX);
 			
-            return DFS_INVALID_PID;
+            return NGX_INVALID_PID;
         }
     }
 
@@ -112,24 +112,24 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
           送来的数据：而在子进程中则关闭sv[0]套接字，仅使用sv[l]套接字既可以接收父进程发来的数据，也可以向父进程发送数据。
           注意socketpair的协议族为AF_UNIX UNXI域
           */  
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, processes[slot].channel) == DFS_ERROR)
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, processes[slot].channel) == NGX_ERROR)
     {
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 	
 	/* 设置master的channel[0](即写端口)，channel[1](即读端口)均为非阻塞方式 */  
-    if (conn_nonblocking(processes[slot].channel[0]) == DFS_ERROR) 
+    if (conn_nonblocking(processes[slot].channel[0]) == NGX_ERROR)
 	{
         channel_close(processes[slot].channel, cycle->error_log);
 
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 
-    if (conn_nonblocking(processes[slot].channel[1]) == DFS_ERROR) 
+    if (conn_nonblocking(processes[slot].channel[1]) == NGX_ERROR)
 	{
         channel_close(processes[slot].channel, cycle->error_log);
 
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 	
 	/* 
@@ -144,11 +144,11 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
           其与O_ASYNC文件状态标志等效，可通过fcntl的F_SETFL命令设置or清除 
          */ 
 
-    if (ioctl(processes[slot].channel[0], FIOASYNC, &on) == DFS_ERROR) 
+    if (ioctl(processes[slot].channel[0], FIOASYNC, &on) == NGX_ERROR)
 	{
         channel_close(processes[slot].channel, cycle->error_log);
 
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 	/* F_SETOWN：用于指定接收SIGIO和SIGURG信号的socket属主（进程ID或进程组ID） 
 			  * 这里意思是指定Master进程接收SIGIO和SIGURG信号 
@@ -156,23 +156,23 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 			  * SIGURG信号是在新的带外数据到达socket时产生的 
 			 */ 
 
-    if (fcntl(processes[slot].channel[0], F_SETOWN, process_pid) == DFS_ERROR) 
+    if (fcntl(processes[slot].channel[0], F_SETOWN, process_pid) == NGX_ERROR)
 	{
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 
-    if (fcntl(processes[slot].channel[0], F_SETFD, FD_CLOEXEC) == DFS_ERROR) 
+    if (fcntl(processes[slot].channel[0], F_SETFD, FD_CLOEXEC) == NGX_ERROR)
 	{
         channel_close(processes[slot].channel, cycle->error_log);
 
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 
-    if (fcntl(processes[slot].channel[1], F_SETFD, FD_CLOEXEC) == DFS_ERROR) 
+    if (fcntl(processes[slot].channel[1], F_SETFD, FD_CLOEXEC) == NGX_ERROR)
 	{
         channel_close(processes[slot].channel, cycle->error_log);
 
-        return DFS_INVALID_PID;
+        return NGX_INVALID_PID;
     }
 
     process_slot = slot; // 这一步将在ngx_pass_open_channel()中用到，就是设置下标，用于寻找本次创建的子进程  
@@ -182,11 +182,11 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
     printf("pid:%d\n",pid);
     switch (pid) 
 	{
-        case DFS_INVALID_PID:
+        case NGX_INVALID_PID:
 
             channel_close(processes[slot].channel, cycle->error_log);
 
-            return DFS_INVALID_PID;
+            return NGX_INVALID_PID;
 			
         case 0: //子进程
             puts("子进程run");
@@ -194,7 +194,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
             
             proc(cycle, data); // 调用proc回调函数，即ngx_worker_process_cycle。之后worker子进程从这里开始执行
 
-            return DFS_INVALID_PID;
+            return NGX_INVALID_PID;
 			
         default: //父进程，但是这时候打印的pid为子进程ID
 
@@ -206,7 +206,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
     processes[slot].data = data;
     processes[slot].name = name;
     processes[slot].ps = PROCESS_STATUS_RUNNING;
-    processes[slot].ow  = DFS_FALSE;
+    processes[slot].ow  = NGX_FALSE;
     processes[slot].restart_gap = dfs_time->tv_sec;
 
     if (slot == process_last) 
@@ -233,9 +233,9 @@ void process_broadcast(int slot, int cmd)
         if ((s == process_slot)
             || (processes[s].ps & PROCESS_STATUS_EXITED)
             || (processes[s].ps & PROCESS_STATUS_EXITING)
-            || (processes[s].pid == DFS_INVALID_PID)
-            || (processes[s].channel[0] == DFS_INVALID_FILE)
-            || (processes[s].ow == DFS_TRUE))
+            || (processes[s].pid == NGX_INVALID_PID)
+            || (processes[s].channel[0] == NGX_INVALID_FILE)
+            || (processes[s].ow == NGX_TRUE))
         {
             continue;
         }
@@ -270,7 +270,7 @@ void process_get_status()
             return;
         }
 
-        if (pid == DFS_INVALID_PID) 
+        if (pid == NGX_INVALID_PID)
 		{
 
             if (errno == DFS_EINTR) 
@@ -304,10 +304,10 @@ int process_change_workdir(string_t *dir)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
             "process_change_workdir failed!\n");
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void process_set_old_workers()
@@ -316,10 +316,10 @@ void process_set_old_workers()
 
     for (i = 0; i < process_last; i++) 
 	{
-        if (processes[i].pid != DFS_INVALID_PID
+        if (processes[i].pid != NGX_INVALID_PID
             && (processes[i].ps & PROCESS_STATUS_RUNNING)) 
         {
-            processes[i].ow = DFS_TRUE;
+            processes[i].ow = NGX_TRUE;
         }
     }
 }
@@ -344,7 +344,7 @@ void process_signal_workers(int signo)
             break;
     }
 
-    ch.fd = DFS_INVALID_FILE;
+    ch.fd = NGX_INVALID_FILE;
 
     /* 子进程创建的时候，父进程的东西都会被子进程继承，
      * 所以后面创建的进程能够得到前面进程的channel信息，
@@ -353,8 +353,8 @@ void process_signal_workers(int signo)
      * 这样就可以相互通信了。*/
     for (i = 0; i < process_last; i++) 
 	{
-        if (processes[i].pid == DFS_INVALID_PID
-            || processes[i].ow == DFS_FALSE) 
+        if (processes[i].pid == NGX_INVALID_PID
+            || processes[i].ow == NGX_FALSE)
         {
             continue;
         }
@@ -363,10 +363,10 @@ void process_signal_workers(int signo)
 		{
             //向 每个进程 channel[0]发送信息
             if (channel_write(processes[i].channel[0], &ch,
-                sizeof(channel_t), dfs_cycle->error_log) == DFS_OK)
+                sizeof(channel_t), dfs_cycle->error_log) == NGX_OK)
             {
                 processes[i].ps |= PROCESS_STATUS_EXITING;
-                processes[i].ow = DFS_FALSE;
+                processes[i].ow = NGX_FALSE;
 				
                 continue;
             }
@@ -375,18 +375,18 @@ void process_signal_workers(int signo)
         dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0,
             "kill (%P, %d)", processes[i].pid, signo);
 		
-        if (kill(processes[i].pid, signo) == DFS_ERROR) 
+        if (kill(processes[i].pid, signo) == NGX_ERROR)
 		{
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                 "kill(%P, %d) failed", processes[i].pid, signo);
         }
 		
-        processes[i].pid = DFS_INVALID_PID;
+        processes[i].pid = NGX_INVALID_PID;
         channel_close(processes[i].channel, dfs_cycle->error_log);
-        processes[i].channel[0] = DFS_INVALID_FILE;
-        processes[i].channel[1] = DFS_INVALID_FILE;
+        processes[i].channel[0] = NGX_INVALID_FILE;
+        processes[i].channel[1] = NGX_INVALID_FILE;
         processes[i].ps = 0;
-        processes[i].ow = DFS_FALSE;
+        processes[i].ow = NGX_FALSE;
     }
 }
 
@@ -395,18 +395,18 @@ void process_notify_workers_backup()
     int       idx = 0;
     channel_t ch;
 	
-    ch.fd = DFS_INVALID_FILE;
+    ch.fd = NGX_INVALID_FILE;
     ch.command = CHANNEL_CMD_BACKUP;
 
     for (idx = 0; idx < process_last; idx++) 
 	{
-        if (processes[idx].pid == DFS_INVALID_PID) 
+        if (processes[idx].pid == NGX_INVALID_PID)
 		{
             continue;
         }
 
         if (channel_write(processes[idx].channel[0], &ch,
-                    sizeof(channel_t), dfs_cycle->error_log) != DFS_OK) 
+                    sizeof(channel_t), dfs_cycle->error_log) != NGX_OK)
         {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_WARN,
                     0, "send backup command error!");
@@ -423,14 +423,14 @@ int process_start_workers(cycle_t *cycle)
     dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "process_start_workers");
 
     if (process_spawn(cycle, worker_processer, NULL,
-        (char *)"worker process", PROCESS_SLOT_AUTO) == DFS_INVALID_PID) 
+        (char *)"worker process", PROCESS_SLOT_AUTO) == NGX_INVALID_PID)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     process_broadcast(process_slot, CHANNEL_CMD_OPEN);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 开启监听端口并start worker ，执行上面的 startworkers
@@ -455,7 +455,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
 
 	//SIG_BLOCK 该值代表的功能是将newset所指向的信号集中所包含的信号加到当前的信号掩码中，作为新的信号屏蔽字
-    if (sigprocmask(SIG_BLOCK, &set, NULL) == DFS_ERROR)  //用于改变进程的当前阻塞信号集,也可以用来检测当前进程的信号掩码。
+    if (sigprocmask(SIG_BLOCK, &set, NULL) == NGX_ERROR)  //用于改变进程的当前阻塞信号集,也可以用来检测当前进程的信号掩码。
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno,
             "sigprocmask() failed");
@@ -505,7 +505,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
     for (i = 0; i < PROCESSES_MAX; i++) 
 	{
-        processes[i].pid = DFS_INVALID_PID;
+        processes[i].pid = NGX_INVALID_PID;
     }
 
 	// 本质上这是一个跨进程的互斥锁，以这个互斥锁来保证只有一个进程具备监听accept事件的能力
@@ -514,12 +514,12 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     // listen_rev_handler 处理 listening 事件
     // cli 的listening初始化，并加入listening数组
 
-    if (conn_listening_init(cycle) != DFS_OK) 
+    if (conn_listening_init(cycle) != NGX_OK)
 	{
         return;
     }
     // start worker
-    if (process_start_workers(cycle) != DFS_OK) 
+    if (process_start_workers(cycle) != NGX_OK)
 	{
         return;
     }
@@ -558,7 +558,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 			最后，返回一个live标志位，如果所有的子进程都已经正常退出，则live为0，初次之外live为1。*/
                 live = process_reap_workers(cycle);
 
-                process_old_alived = DFS_FALSE;
+                process_old_alived = NGX_FALSE;
 				
                 continue;
             }
@@ -615,10 +615,10 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
                 live = process_reap_workers(cycle);
 				
-                process_old_alived = DFS_FALSE;
+                process_old_alived = NGX_FALSE;
             }
 
-            if (process_doing & PROCESS_DOING_BACKUP && live == DFS_TRUE) 
+            if (process_doing & PROCESS_DOING_BACKUP && live == NGX_TRUE)
 			{
                 process_notify_workers_backup();
                 process_doing &= ~PROCESS_DOING_BACKUP;
@@ -632,43 +632,43 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 static int process_reap_workers(cycle_t *cycle)
 {
     int i = 0;
-    int live = DFS_FALSE;
+    int live = NGX_FALSE;
 	
     for (i = 0; i < process_last; i++) 
 	{
-        if (processes[i].pid == DFS_INVALID_PID)
+        if (processes[i].pid == NGX_INVALID_PID)
 		{
             continue;
         }
 
         if (!(processes[i].ps & PROCESS_STATUS_EXITED)) 
 		{
-            live = DFS_TRUE;
+            live = NGX_TRUE;
 			
-            if (processes[i].ow == DFS_TRUE) 
+            if (processes[i].ow == NGX_TRUE)
 			{
-                process_old_alived = DFS_TRUE;
+                process_old_alived = NGX_TRUE;
             }
 			
             continue;
         }
 		
-        if (processes[i].ow == DFS_TRUE) 
+        if (processes[i].ow == NGX_TRUE)
 		{
-            processes[i].pid = DFS_INVALID_PID;
+            processes[i].pid = NGX_INVALID_PID;
             processes[i].ow = 0;
             channel_close(processes[i].channel, cycle->error_log);
-            processes[i].channel[0] = DFS_INVALID_FILE;
-            processes[i].channel[1] = DFS_INVALID_FILE;           
+            processes[i].channel[0] = NGX_INVALID_FILE;
+            processes[i].channel[1] = NGX_INVALID_FILE;
             continue;
         }
 		
         // detach this process
-        processes[i].pid = DFS_INVALID_PID;
+        processes[i].pid = NGX_INVALID_PID;
         processes[i].ps = PROCESS_STATUS_EXITED;
         channel_close(processes[i].channel, cycle->error_log);
-        processes[i].channel[0] = DFS_INVALID_FILE;
-        processes[i].channel[1] = DFS_INVALID_FILE;
+        processes[i].channel[0] = NGX_INVALID_FILE;
+        processes[i].channel[1] = NGX_INVALID_FILE;
         // respawn the process if need
 
         if (dfs_time->tv_sec - processes[i].restart_gap <= MAX_RESTART_NUM) 
@@ -681,7 +681,7 @@ static int process_reap_workers(cycle_t *cycle)
 		
         if (process_spawn(cycle, processes[i].proc,
             processes[i].data, processes[i].name, i)
-            == DFS_INVALID_PID) 
+            == NGX_INVALID_PID)
         {
             dfs_log_error(cycle->error_log, DFS_LOG_ALERT, 0,
                 "can not respawn %s", processes[i].name);
@@ -689,7 +689,7 @@ static int process_reap_workers(cycle_t *cycle)
             continue;
         }
 
-        live = DFS_TRUE;
+        live = NGX_TRUE;
     }
 
     return live;
@@ -707,7 +707,7 @@ int process_write_pid_file(pid_t pid)
     sconf = (conf_server_t *)dfs_cycle->sconf; 
     if (!sconf) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     pid_file = sconf->pid_file.data;
@@ -719,7 +719,7 @@ int process_write_pid_file(pid_t pid)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_WARN, 0,
                 "process_write_pid_file failed!");
 		fprintf(stderr,"%s\n",strerror(errno));
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     n = write(fd, buf, last - buf);
@@ -728,10 +728,10 @@ int process_write_pid_file(pid_t pid)
 
     if (n < 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //get pid from pid file?
@@ -751,7 +751,7 @@ int process_get_pid(cycle_t *cycle)
         dfs_log_error(cycle->error_log,DFS_LOG_WARN, errno,
             "process_write_pid_file failed!");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     n = read(fd, buf, 10);
@@ -760,7 +760,7 @@ int process_get_pid(cycle_t *cycle)
 
     if (n <= 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     return atoi(buf);
@@ -783,7 +783,7 @@ void process_close_other_channel()
 	
     for (i = 0; i < process_last; i++) 
 	{
-        if (processes[i].pid == DFS_INVALID_PID) 
+        if (processes[i].pid == NGX_INVALID_PID)
 		{
             continue;
         }
@@ -793,12 +793,12 @@ void process_close_other_channel()
             continue;
         }
 		
-        if (processes[i].channel[1] == DFS_INVALID_FILE) 
+        if (processes[i].channel[1] == NGX_INVALID_FILE)
 		{
             continue;
         }
 		
-        if (close(processes[i].channel[1]) == DFS_ERROR) 
+        if (close(processes[i].channel[1]) == NGX_ERROR)
 		{
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
                 "close() channel failed");
@@ -806,7 +806,7 @@ void process_close_other_channel()
     }
 
     // close this process's write fd
-    if (close(processes[process_slot].channel[0]) == DFS_ERROR) 
+    if (close(processes[process_slot].channel[0]) == NGX_ERROR)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno,
             "close() channel failed");

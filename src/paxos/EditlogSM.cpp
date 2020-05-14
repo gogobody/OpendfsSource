@@ -27,7 +27,7 @@ bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID,
     if (poSMCtx != nullptr && poSMCtx->m_pCtx != nullptr)
     {
         PhxEditlogSMCtx * poPhxEditlogSMCtx = (PhxEditlogSMCtx *)poSMCtx->m_pCtx; // 继承 SMCtx
-        poPhxEditlogSMCtx->iExecuteRet = DFS_OK;
+        poPhxEditlogSMCtx->iExecuteRet = NGX_OK;
         poPhxEditlogSMCtx->llInstanceID = llInstanceID; // 提议的值
         // paxos handler
 		update_fi_cache_mgmt(llInstanceID, sPaxosValue, poPhxEditlogSMCtx->data);
@@ -37,7 +37,7 @@ bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID,
         update_fi_cache_mgmt(llInstanceID, sPaxosValue, nullptr);
 	}
 
-    return DFS_TRUE;
+    return NGX_TRUE;
 }
 
 const int PhxEditlogSM::SMID() const 
@@ -54,6 +54,6 @@ int PhxEditlogSM::SyncCheckpointInstanceID(const uint64_t llInstanceID)
 {
     m_llCheckpointInstanceID = llInstanceID;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

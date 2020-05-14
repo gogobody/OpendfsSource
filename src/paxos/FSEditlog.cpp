@@ -36,7 +36,7 @@ int FSEditlog::RunPaxos()
     Options oOptions;
     // MakeLogStoragePath函数生成我们存放PhxPaxos产生的数据的目录路径
     int ret = MakeLogStoragePath(oOptions.sLogStoragePath);
-    if (ret != DFS_OK)
+    if (ret != NGX_OK)
     {
         return ret;
     }
@@ -60,7 +60,7 @@ int FSEditlog::RunPaxos()
     oOptions.pLogFunc = nn_log_paxos;
 
     ret = Node::RunNode(oOptions, m_poPaxosNode); //通过Node::RunNode即可获得PhxPaxos的实例指针
-    if (ret != DFS_OK)
+    if (ret != NGX_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
             "run paxos fail, ret %d", ret);
@@ -70,7 +70,7 @@ int FSEditlog::RunPaxos()
 
     dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, "run paxos ok...");
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 const NodeInfo FSEditlog::GetMaster(const string & sKey)
@@ -99,7 +99,7 @@ int FSEditlog::Propose(const string & sKey, const string & sPaxosValue,
 
     uint64_t llInstanceID = 0;
     int ret = m_poPaxosNode->Propose(iGroupIdx, sPaxosValue, llInstanceID, &oCtx);
-    if (ret != DFS_OK)
+    if (ret != NGX_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
             "paxos propose fail, ret %d", ret);
@@ -107,7 +107,7 @@ int FSEditlog::Propose(const string & sKey, const string & sPaxosValue,
         return ret;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int FSEditlog::MakeLogStoragePath(std::string & sLogStoragePath)
@@ -118,19 +118,19 @@ int FSEditlog::MakeLogStoragePath(std::string & sLogStoragePath)
 
     sLogStoragePath = string(sTmp);
 
-    if (DFS_ERROR == access(sLogStoragePath.c_str(), F_OK))
+    if (NGX_ERROR == access(sLogStoragePath.c_str(), F_OK))
     {
-        if (DFS_ERROR == mkdir(sLogStoragePath.c_str(), 
+        if (NGX_ERROR == mkdir(sLogStoragePath.c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
         {       
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
                 "Create dir fail, path %s", sLogStoragePath.c_str());
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }       
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int FSEditlog::GetGroupIdx(const string & sKey)

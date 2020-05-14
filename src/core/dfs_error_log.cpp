@@ -65,13 +65,13 @@ error_log_init(log_t  *slog, log_time_ptr tm_handler,
 	{
         printf("error_log_init_with_sconf: open error log failed!");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     slog->log_time_handler = tm_handler;
     slog->log_level_handler = !lv_handler ? default_level : lv_handler;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int error_log_release(log_t  *slog)
@@ -81,7 +81,7 @@ int error_log_release(log_t  *slog)
         error_log_close(slog);
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void error_log_core(log_t *log, uint32_t level, char *file, 
@@ -101,7 +101,7 @@ void error_log_core(log_t *log, uint32_t level, char *file,
 		return;
  	}
 	
-    if (!log || log->file->fd == DFS_INVALID_FILE) 
+    if (!log || log->file->fd == NGX_INVALID_FILE)
 	{
         return;
     }
@@ -117,7 +117,7 @@ void error_log_core(log_t *log, uint32_t level, char *file,
     memory_memcpy(errstr + len, stime->data, stime->len);
     p = errstr + len + stime->len;
     p = string_xxsnprintf(p, last - p, " [%s] ", error_levels[level].data);
-    p = string_xxsnprintf(p, last - p, "%P#" DFS_TID_T_FMT ": ",
+    p = string_xxsnprintf(p, last - p, "%P#" NGX_TID_T_FMT ": ",
         getpid(),  pthread_self());
     p = string_xxsnprintf(p, last - p, "[%s:%d] ", file, line);
     va_start(args, fmt);
@@ -142,9 +142,9 @@ void error_log_core(log_t *log, uint32_t level, char *file,
         }
     }
 
-    if (p > last - DFS_LINEFEED_SIZE) 
+    if (p > last - NGX_LINEFEED_SIZE)
 	{
-        p = last - DFS_LINEFEED_SIZE;
+        p = last - NGX_LINEFEED_SIZE;
     }
 
     *p++ = LF;
@@ -199,7 +199,7 @@ void error_log_debug_core(log_t *log, uint32_t level, char *file,
     p = errstr + stime->len + len;
     slevel = log->log_level_handler(level);
     p = string_xxsnprintf(p, last - p, " [%s] ", slevel->data);
-    p = string_xxsnprintf(p, last - p, "%P#" DFS_TID_T_FMT ": ",
+    p = string_xxsnprintf(p, last - p, "%P#" NGX_TID_T_FMT ": ",
         getpid(),  pthread_self());
     p = string_xxsnprintf(p, last - p, "[%s:%d] ", file, line);
     va_start(args, fmt);
@@ -227,9 +227,9 @@ void error_log_debug_core(log_t *log, uint32_t level, char *file,
         }
     }
 
-    if (p > last - DFS_LINEFEED_SIZE) 
+    if (p > last - NGX_LINEFEED_SIZE)
 	{
-        p = last - DFS_LINEFEED_SIZE;
+        p = last - NGX_LINEFEED_SIZE;
     }
 
     *p++ = LF;
@@ -322,7 +322,7 @@ int error_log_close(log_t *log)
         log->file->fd = DFS_INVALID_FILE;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int error_log_set_handle(log_t *log, log_time_ptr tm_handler, 
@@ -331,6 +331,6 @@ int error_log_set_handle(log_t *log, log_time_ptr tm_handler,
     log->log_time_handler = tm_handler;
     log->log_level_handler = !lv_handler ? default_level : lv_handler;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 

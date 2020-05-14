@@ -39,12 +39,12 @@ static int parse_ipport(const char * pcStr, NodeInfo & oNodeInfo)
     int count = sscanf(pcStr, "%[^':']:%d", sIP, &iPort);
     if (count != 2)
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     oNodeInfo.SetIPPort(sIP, iPort);
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int parse_ipport_list(const char * pcStr, 
@@ -79,7 +79,7 @@ static int parse_ipport_list(const char * pcStr,
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // paxos worker init
@@ -90,23 +90,23 @@ int nn_paxos_worker_init(cycle_t *cycle)
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;
 
     NodeInfo oMyNode; //当前运行节点的IP/PORT参数
-    if (parse_ipport((const char *)sconf->my_paxos.data, oMyNode) != DFS_OK)
+    if (parse_ipport((const char *)sconf->my_paxos.data, oMyNode) != NGX_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
             "parse myip:myport err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     NodeInfoList vecNodeList; // Paxos由多个节点构成，这个列表设置这些节点的IP/PORT信息。
     // 当开启了PhxPaxos的成员管理功能后，这个信息仅仅会被接受一次作为集群的初始化，后面将会无视这个参数的存在。
     if (parse_ipport_list((const char *)sconf->ot_paxos.data, vecNodeList) 
-		!= DFS_OK)
+		!= NGX_OK)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
             "parse ip:port err");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     string editlogDir = string((const char *)sconf->editlog_dir.data);
@@ -119,10 +119,10 @@ int nn_paxos_worker_init(cycle_t *cycle)
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
             "new FSEditlog(...) err");
      
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_paxos_worker_release(cycle_t *cycle)
@@ -133,7 +133,7 @@ int nn_paxos_worker_release(cycle_t *cycle)
 		g_editlog = nullptr;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_paxos_run()
@@ -220,10 +220,10 @@ static int do_paxos_task(task_t *task)
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"unknown optype: ", optype);
 		
-		return DFS_ERROR;
+		return NGX_ERROR;
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int check_traverse(uchar_t *path, task_t *task, 
@@ -238,16 +238,16 @@ int check_traverse(uchar_t *path, task_t *task,
             break;
 		}
 		
-		if (check_permission(task, finodes[i], EXECUTE, err) != DFS_OK)
+		if (check_permission(task, finodes[i], EXECUTE, err) != NGX_OK)
 		{
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 				"check_permission err: %s, path: %s", err, path);
 
-			return DFS_ERROR;
+			return NGX_ERROR;
 		}
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //
@@ -256,15 +256,15 @@ int check_ancestor_access(uchar_t *path, task_t *task,
 {
     uchar_t err[1024] = "";
 
-	if (check_permission(task, finode, access, err) != DFS_OK)
+	if (check_permission(task, finode, access, err) != NGX_OK)
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"check_permission err: %s, path: %s", err, path);
 
-		return DFS_ERROR;
+		return NGX_ERROR;
     }
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int log_mkdir(task_t *task)
@@ -311,7 +311,7 @@ static int log_mkdir(task_t *task)
 	// 找到哪一级目录不存在
 	parent_index = get_path_inodes(keys, names_sz, finodes);
 
-	if (parent_index > 0 && finodes[parent_index]->is_directory == DFS_FALSE) 
+	if (parent_index > 0 && finodes[parent_index]->is_directory == NGX_FALSE)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"Parent path is not a directory: %s", path);
@@ -334,7 +334,7 @@ static int log_mkdir(task_t *task)
 			return write_back(node);
 		}
 		
-        if (check_traverse(path, task, finodes, names_sz) != DFS_OK) 
+        if (check_traverse(path, task, finodes, names_sz) != NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 
@@ -342,7 +342,7 @@ static int log_mkdir(task_t *task)
 	    }
 
 		if (check_ancestor_access(path, task, WRITE, finodes[parent_index]) 
-			!= DFS_OK) 
+			!= NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 
@@ -446,7 +446,7 @@ static int log_rmr(task_t *task)
 	
     if (!is_super(task->user, &dfs_cycle->admin))
     {
-		if (check_ancestor_access(path, task, WRITE, &finode) != DFS_OK) 
+		if (check_ancestor_access(path, task, WRITE, &finode) != NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 
@@ -471,27 +471,28 @@ static int log_rmr(task_t *task)
 	return write_back(node);
 }
 
+// inc g_edit_op_num
 static int inc_edit_op_num()
 {
     conf_server_t *conf = (conf_server_t *)dfs_cycle->sconf;
 	
     g_edit_op_num++;
-	if (g_edit_op_num == conf->checkpoint_num) 
+	if (g_edit_op_num == conf->checkpoint_num) // 操作数达到了 checkpoint_num
 	{
 	    pthread_t pid;
 		
-	    if (pthread_create(&pid, nullptr, &checkpoint_start, nullptr) != DFS_OK)
+	    if (pthread_create(&pid, nullptr, &checkpoint_start, nullptr) != NGX_OK)
 		{
 		    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 				"create checkpoint thread failed");
 
-			//return DFS_ERROR;
+			//return NGX_ERROR;
 		}
 	    
 	    g_edit_op_num = 0; 
 	}
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static void * checkpoint_start(void *arg)
@@ -558,7 +559,7 @@ static int log_create(task_t *task)
 	parent_index = get_path_inodes(keys, names_sz, finodes);
 
 	if ((parent_index <= 0) || (parent_index > 0 
-		&& finodes[parent_index]->is_directory == DFS_FALSE)) 
+		&& finodes[parent_index]->is_directory == NGX_FALSE))
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, 0, 
 			"Parent path is not a directory: %s", path);
@@ -581,7 +582,7 @@ static int log_create(task_t *task)
 			return write_back(node);
 		}
 		
-        if (check_traverse(path, task, finodes, names_sz) != DFS_OK) 
+        if (check_traverse(path, task, finodes, names_sz) != NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 
@@ -589,7 +590,7 @@ static int log_create(task_t *task)
 	    }
 
 		if (check_ancestor_access(path, task, WRITE, finodes[parent_index]) 
-			!= DFS_OK) 
+			!= NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 
@@ -609,7 +610,7 @@ static int log_create(task_t *task)
 	}
 
 	// 从 g_dn_q 中选择一个存储节点 datanode
-	if (generate_dns(blk_info.blk_rep, &resp_info) != DFS_OK)
+	if (generate_dns(blk_info.blk_rep, &resp_info) != NGX_OK)
 	{
         task->ret = NOT_DATANODE;
 
@@ -686,7 +687,7 @@ static int log_get_additional_blk(task_t *task)
 		return write_back(node);
 	}
 
-    if (generate_dns(blk_info.blk_rep, &resp_info) != DFS_OK)
+    if (generate_dns(blk_info.blk_rep, &resp_info) != NGX_OK)
 	{
         task->ret = NOT_DATANODE;
 
@@ -804,7 +805,7 @@ static int log_rm(task_t *task)
 	
     if (!is_super(task->user, &dfs_cycle->admin))
     {
-		if (check_ancestor_access(path, task, WRITE, &finode) != DFS_OK) 
+		if (check_ancestor_access(path, task, WRITE, &finode) != NGX_OK)
 	    {
             task->ret = PERMISSION_DENY;
 

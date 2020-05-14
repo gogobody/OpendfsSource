@@ -20,40 +20,40 @@
 #define DFS_MAX_SIZE_T_VALUE    2147483647L
 
 /* sys return value */
-#define DFS_OK                  0
-#define DFS_ERROR              -1
+#define NGX_OK                  0
+#define NGX_ERROR              -1
 
-#define DFS_AGAIN              -2
-#define DFS_BUSY               -3
+#define NGX_AGAIN              -2
+#define NGX_BUSY               -3
 #define DFS_PUSH               -4
 #define DFS_DECLINED           -5
 #define DFS_ABORT              -6
 #define DFS_GO_ON              -7
 #define DFS_BADMEM             -8
-#define DFS_BUFFER_FULL        -9
-#define DFS_CONN_CLOSED        -10
+#define NGX_BUFFER_FULL        -9
+#define NGX_CONN_CLOSED        -10
 #define DFS_TIME_OUT           -11
 
-#define DFS_TRUE                1
-#define DFS_FALSE               0
+#define NGX_TRUE                1
+#define NGX_FALSE               0
 
-#define DFS_LINEFEED_SIZE       1
-#define DFS_INVALID_FILE       -1
-#define DFS_INVALID_PID        -1
+#define NGX_LINEFEED_SIZE       1
+#define NGX_INVALID_FILE       -1
+#define NGX_INVALID_PID        -1
 #define DFS_FILE_ERROR         -1  
 
-#define DFS_TID_T_FMT           "%ud"    
-#define DFS_INT32_LEN           sizeof("-2147483648") - 1          
-#define DFS_INT64_LEN           sizeof("-9223372036854775808") - 1 
-#define DFS_PTR_SIZE            4
+#define NGX_TID_T_FMT           "%ud"
+#define NGX_INT32_LEN           sizeof("-2147483648") - 1
+#define NGX_INT64_LEN           sizeof("-9223372036854775808") - 1
+#define NGX_PTR_SIZE            4
 
 #define MB_SIZE                   1024 * 1024
 #define GB_SIZE                   1024 * 1024 * 1024UL
 
 #if (DFS_PTR_SIZE == 4)
-#define DFS_INT_T_LEN DFS_INT32_LEN
+#define DFS_INT_T_LEN NGX_INT32_LEN
 #else
-#define DFS_INT_T_LEN DFS_INT64_LEN
+#define DFS_INT_T_LEN NGX_INT64_LEN
 #endif
 
 #if ((__GNU__ == 2) && (__GNUC_MINOR__ < 8))

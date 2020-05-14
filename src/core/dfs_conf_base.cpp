@@ -12,7 +12,7 @@
 #define CONF_SERVER_DEF_IP   "0.0.0.0"
 
 #define CONF_INVALID_DIGITAL_LEN(len, digtal_type) \
-    (len) > CONF_MAX_LEN_##digtal_type ? DFS_TRUE : DFS_FALSE
+    (len) > CONF_MAX_LEN_##digtal_type ? NGX_TRUE : NGX_FALSE
     
 int conf_parse_int_array(conf_variable_t *v, uint32_t offset, int type,
                                 string_t *args, int args_n)
@@ -23,12 +23,12 @@ int conf_parse_int_array(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n > CONF_TAKE12) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     codes = (array_t *)((uchar_t *)v->conf + offset);
@@ -39,7 +39,7 @@ int conf_parse_int_array(conf_variable_t *v, uint32_t offset, int type,
         *code = string_xxstrtoui(args[i].data, args[i].len);
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_short(conf_variable_t *v, uint32_t offset, int type,
@@ -50,18 +50,18 @@ int conf_parse_short(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
     if (CONF_INVALID_DIGITAL_LEN(args[vi].len, SHORT)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     port = (short *)((uchar_t *)v->conf + offset);
@@ -69,10 +69,10 @@ int conf_parse_short(conf_variable_t *v, uint32_t offset, int type,
 	
     if (*port <= 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_bytes_size(conf_variable_t *v, uint32_t offset, int type,
@@ -87,12 +87,12 @@ int conf_parse_bytes_size(conf_variable_t *v, uint32_t offset, int type,
 
     if ( (type != OPE_EQUAL) || !v ) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
@@ -142,12 +142,12 @@ int conf_parse_bytes_size(conf_variable_t *v, uint32_t offset, int type,
     } 
 	else 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     *size = b_size;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_percent(conf_variable_t *v, uint32_t offset, int type,
@@ -160,7 +160,7 @@ int conf_parse_percent(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL || args_n != CONF_TAKE3) 
     {
-        return DFS_ERROR;
+        return NGX_ERROR;
 	}
 
     vi = args_n - 1;
@@ -178,7 +178,7 @@ int conf_parse_percent(conf_variable_t *v, uint32_t offset, int type,
             }
 			else 
 			{
-                return DFS_ERROR;
+                return NGX_ERROR;
             }
         }
 		
@@ -187,7 +187,7 @@ int conf_parse_percent(conf_variable_t *v, uint32_t offset, int type,
 
     *perc = (double )b_size / 100;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_string(conf_variable_t *v, uint32_t offset, int type,
@@ -197,24 +197,24 @@ int conf_parse_string(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     str = (string_t *)((uchar_t *)v->conf + offset);
     if (str->len > 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     str->data = string_xxdup(&args[args_n -1]);
     str->len = args[args_n -1].len;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_int(conf_variable_t *v, uint32_t offset, 
@@ -225,30 +225,30 @@ int conf_parse_int(conf_variable_t *v, uint32_t offset,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
 
     if (CONF_INVALID_DIGITAL_LEN(args[args_n - 1].len, INT))
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     p = (int *)((uchar_t *)v->conf + offset);
     *p = (int)string_xxstrtoui(args[vi].data, args[vi].len);
 	
-    if (*p == DFS_ERROR) 
+    if (*p == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_deftime_t(conf_variable_t *v, uint32_t offset, int type,
@@ -260,7 +260,7 @@ int conf_parse_deftime_t(conf_variable_t *v, uint32_t offset, int type,
     p = (time_t *)((uchar_t *)v->conf + offset);
     if (*p != CONF_TIME_T_NOT_SET) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     rc = conf_parse_time_t(v, offset, type, args, args_n);
@@ -276,30 +276,30 @@ int conf_parse_time_t(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
 
     if (CONF_INVALID_DIGITAL_LEN(args[vi].len, TIME_T)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     p = (time_t *)((uchar_t *)v->conf + offset);
     *p = string_xxstrtotime(args[vi].data, args[vi].len);
 	
-    if (*p == DFS_ERROR) 
+    if (*p == NGX_ERROR)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int conf_parse_macro(conf_variable_t *v, uint32_t offset, int type,
@@ -316,19 +316,19 @@ int conf_parse_macro(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
 	
     if (args[vi].len == 0 || !args[vi].data) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     p = (uint32_t *)((uchar_t *)v->conf + offset);
@@ -347,11 +347,11 @@ int conf_parse_macro(conf_variable_t *v, uint32_t offset, int type,
             {
                 *p = conf_macro[i].value;
 				
-                return DFS_OK;
+                return NGX_OK;
             }
         }
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     // multi value type, the init value should be uint32_t
@@ -381,7 +381,7 @@ int conf_parse_macro(conf_variable_t *v, uint32_t offset, int type,
 		
         if (!matched) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 		
         start = pos + 1;
@@ -403,11 +403,11 @@ int conf_parse_macro(conf_variable_t *v, uint32_t offset, int type,
         {
             *p |= conf_macro[i].value;
 			
-            return DFS_OK;
+            return NGX_OK;
         }
     }
 
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 int conf_parse_list_string(conf_variable_t *v, uint32_t offset, int type,
@@ -418,20 +418,20 @@ int conf_parse_list_string(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL || args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     l = (list_t *)((uchar_t *)v->conf + offset);
     p = (string_t *)list_push(l);
     if (p == nullptr)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	
     p->data = string_xxxpdup(l->pool, args[args_n -1].data, args[args_n -1].len);
     p->len = args[args_n -1].len;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 static int conf_parse_valid_bind_ipv4(string_t *bind_str)
@@ -505,17 +505,17 @@ static int bind_ipv4_str_cmp(void *b1, void *b2)
     {
     	if (port == c1->port) 
 		{
-            return DFS_TRUE;
+            return NGX_TRUE;
         }
     }
 
     if (port == c1->port
     	&& !string_strncmp(c1->addr.data, str->data, c1->addr.len)) 
     {
-    	return DFS_TRUE;
+    	return NGX_TRUE;
     }
 	
-    return DFS_FALSE;
+    return NGX_FALSE;
 }
 
 int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
@@ -533,7 +533,7 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
 
     if (type != OPE_EQUAL || args_n != CONF_TAKE3) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     vi = args_n - 1;
@@ -541,7 +541,7 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
     bind_type = conf_parse_valid_bind_ipv4(&args[vi]);
     if (bind_type == CONF_BIND_TYPE_ERROR) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
     
     l = (array_t *)((uchar_t *)v->conf + offset);
@@ -567,7 +567,7 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
 
     if (array_find(l, &args[vi], bind_ipv4_str_cmp)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     sp = (uchar_t *)string_strchr(args[vi].data, ':');
@@ -586,7 +586,7 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
 
     if (!port || port > 65535) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     bind = (server_bind_t *)array_push(l);
@@ -595,7 +595,7 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
 	
     if (!bind->addr.data) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     bind->addr.len = len;
@@ -610,6 +610,6 @@ int conf_parse_bind(conf_variable_t *v, uint32_t offset, int type,
         memory_free(tmp_bind_str.data, tmp_bind_str.len);
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

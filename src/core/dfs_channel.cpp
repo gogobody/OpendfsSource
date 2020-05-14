@@ -53,17 +53,17 @@ int channel_write(int socket, channel_t *ch,
 
     n = sendmsg(socket, &msg, 0);
 
-    if (n == DFS_ERROR) 
+    if (n == NGX_ERROR)
 	{
         if (errno == DFS_EAGAIN) 
 		{
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 接受到信息
@@ -93,36 +93,36 @@ int channel_read(int socket, channel_t *ch, size_t size, log_t *log)
     //接收消息
     n = recvmsg(socket, &msg, 0);
 
-    if (n == DFS_ERROR) 
+    if (n == NGX_ERROR)
 	{
         if (errno == DFS_EAGAIN) 
 		{
-            return DFS_AGAIN;
+            return NGX_AGAIN;
         }
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (n == 0) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if ((size_t) n < sizeof(channel_t)) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     if (ch->command == CHANNEL_CMD_OPEN) 
 	{
         if (cmsg.cm.cmsg_len < (socklen_t) CMSG_LEN(sizeof(int))) 
 		{
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         if (cmsg.cm.cmsg_level != SOL_SOCKET || cmsg.cm.cmsg_type != SCM_RIGHTS)
         {
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
 
         //ch->fd = *(int *) CMSG_DATA(&cmsg.cm);

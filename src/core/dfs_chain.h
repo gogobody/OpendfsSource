@@ -4,7 +4,7 @@
 #include "dfs_types.h"
 #include "dfs_buffer.h"
 
-#define DFS_CHAIN_ERROR (chain_t *) DFS_ERROR
+#define DFS_CHAIN_ERROR (chain_t *) NGX_ERROR
 
 // 链表
 struct chain_s 

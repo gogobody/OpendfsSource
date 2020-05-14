@@ -45,12 +45,12 @@ int nn_blk_index_worker_init(cycle_t *cycle)
 	g_nn_bcm = blk_cache_mgmt_new_init();
     if (!g_nn_bcm) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 	dfs_atomic_lock_init(&g_uid_ctx.seq_lock);
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int nn_blk_index_worker_release(cycle_t *cycle)
@@ -58,7 +58,7 @@ int nn_blk_index_worker_release(cycle_t *cycle)
     blk_cache_mgmt_release(g_nn_bcm);
 	g_nn_bcm = nullptr;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // 初始化bcm  cache mgmt
@@ -86,7 +86,7 @@ static blk_cache_mgmt_t *blk_cache_mgmt_create(size_t index_num)
         goto err_out;
     }
     
-    if (blk_mem_mgmt_create(&bcm->mem_mgmt, index_num) != DFS_OK) 
+    if (blk_mem_mgmt_create(&bcm->mem_mgmt, index_num) != NGX_OK)
 	{
         goto err_mem_mgmt;
     }
@@ -142,7 +142,7 @@ static int blk_mem_mgmt_create(blk_cache_mem_t *mem_mgmt,
         goto err_mblks;
     }
 
-    return DFS_OK;
+    return NGX_OK;
 
 err_mblks:
     dfs_mem_allocator_delete(mem_mgmt->allocator);
@@ -151,7 +151,7 @@ err_allocator:
     memory_free(mem_mgmt->mem, mem_mgmt->mem_size);
 	
 err_mem:
-    return DFS_ERROR;
+    return NGX_ERROR;
 }
 
 static struct mem_mblks *blk_mblks_create(blk_cache_mem_t *mem_mgmt, 
@@ -209,7 +209,7 @@ static void blk_cache_mgmt_release(blk_cache_mgmt_t *bcm)
 
 static int uint64_cmp(const void *s1, const void *s2, size_t sz)
 {
-    return *(uint64_t *)s1 == *(uint64_t *)s2 ? DFS_FALSE : DFS_TRUE; 
+    return *(uint64_t *)s1 == *(uint64_t *)s2 ? NGX_FALSE : NGX_TRUE;
 }
 
 static size_t req_hash(const void *data, size_t data_size, 
@@ -239,7 +239,7 @@ int block_object_del(long id)
 	blk = get_blk_store_obj(id);
 	if (!blk) 
 	{
-        return DFS_OK;
+        return NGX_OK;
 	}
 
 	notify_dn_2_delete_blk(id, blk->dn_ip);
@@ -254,7 +254,7 @@ int block_object_del(long id)
 
 	pthread_rwlock_unlock(&g_nn_bcm->cache_rwlock);
     
-    return DFS_OK;
+    return NGX_OK;
 }
 
 blk_store_t *add_block(long blk_id, long blk_sz, char dn_ip[32])

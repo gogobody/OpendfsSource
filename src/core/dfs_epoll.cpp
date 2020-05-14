@@ -7,12 +7,12 @@
 int epoll_init(event_base_t *ep_base, log_t *log)
 {
     ep_base->ep = epoll_create(ep_base->nevents);
-    if (ep_base->ep == DFS_INVALID_FILE) 
+    if (ep_base->ep == NGX_INVALID_FILE)
 	{
         dfs_log_error(log, DFS_LOG_EMERG,
             errno, "epoll_init: epoll_create failed");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     ep_base->event_list = (epoll_event_t *)memory_calloc(
@@ -22,7 +22,7 @@ int epoll_init(event_base_t *ep_base, log_t *log)
         dfs_log_error(log, DFS_LOG_EMERG, 0,
             "epoll_init: alloc event_list failed");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
 #if (EVENT_HAVE_CLEAR_EVENT)
@@ -37,18 +37,18 @@ int epoll_init(event_base_t *ep_base, log_t *log)
     queue_init(&ep_base->posted_events);
     ep_base->log = log;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 void epoll_done(event_base_t *ep_base)
 {
-    if (close(ep_base->ep) == DFS_ERROR) 
+    if (close(ep_base->ep) == NGX_ERROR)
 	{
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll close() failed");
     }
 
-    ep_base->ep = DFS_INVALID_FILE;
+    ep_base->ep = NGX_INVALID_FILE;
     if (ep_base->event_list) 
 	{
         memory_free(ep_base->event_list,
@@ -119,20 +119,20 @@ int epoll_add_event(event_base_t *ep_base, event_t *ev,
     // ready是另一层处理，这个fd虽然在epoll中，但是有时这个fd可以读写，有时则是未就绪的。
     // 那么当可读写时，ready就会被置1。这样我们就可以来读写数据了。当我们从fd读写到EAGAIN时，ready就会被清零，意味着当前这个fd未就绪。
     // 但是它不影响active，因为这个fd仍然在epoll中，ready==0只是要等待后续的读写触发。
-    ev->active = DFS_TRUE;
+    ev->active = NGX_TRUE;
 
     if (epoll_ctl(ep_base->ep, op, c->fd, &ee) == -1)
 	{
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll_add_event: fd:%d op:%d, failed", c->fd, op);
-        ev->active = DFS_FALSE;
+        ev->active = NGX_FALSE;
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    ev->active = DFS_TRUE;
+    ev->active = NGX_TRUE;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int epoll_del_event(event_base_t *ep_base, event_t *ev, 
@@ -157,7 +157,7 @@ int epoll_del_event(event_base_t *ep_base, event_t *ev,
 	{
         ev->active = 0;
 		
-        return DFS_OK;
+        return NGX_OK;
     }
 
     if (event == EVENT_READ_EVENT) 
@@ -190,12 +190,12 @@ int epoll_del_event(event_base_t *ep_base, event_t *ev,
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll_ctl(%d, %d) failed", op, c->fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     ev->active = 0;
 	
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int epoll_add_connection(event_base_t *ep_base, conn_t *c)
@@ -204,7 +204,7 @@ int epoll_add_connection(event_base_t *ep_base, conn_t *c)
     
     if (!c) 
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     memory_zero(&ee, sizeof(ee));
@@ -216,13 +216,13 @@ int epoll_add_connection(event_base_t *ep_base, conn_t *c)
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll_ctl(EPOLL_CTL_ADD, %d) failed", c->fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    c->read->active = DFS_TRUE;
-    c->write->active = DFS_TRUE;
+    c->read->active = NGX_TRUE;
+    c->write->active = NGX_TRUE;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int epoll_del_connection(event_base_t *ep_base, conn_t *c, uint32_t flags)
@@ -232,7 +232,7 @@ int epoll_del_connection(event_base_t *ep_base, conn_t *c, uint32_t flags)
  
     if (!ep_base) 
 	{
-        return DFS_OK;
+        return NGX_OK;
     }
 	
     /*
@@ -245,7 +245,7 @@ int epoll_del_connection(event_base_t *ep_base, conn_t *c, uint32_t flags)
 	{
         c->read->active = 0;
         c->write->active = 0;
-        return DFS_OK;
+        return NGX_OK;
     }
 
     op = EPOLL_CTL_DEL;
@@ -257,13 +257,13 @@ int epoll_del_connection(event_base_t *ep_base, conn_t *c, uint32_t flags)
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll_ctl(%d, %d) failed", op, c->fd);
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     c->read->active = 0;
     c->write->active = 0;
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 // epoll main func
@@ -301,22 +301,22 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
             dfs_log_error(ep_base->log, DFS_LOG_EMERG, errno,
                           "epoll_process_events: epoll_wait failed");
 
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
-        return DFS_OK;
+        return NGX_OK;
     }
 
     if (events_num == 0)
 	{
         if (timer != EVENT_TIMER_INFINITE)
 		{
-            return DFS_OK;
+            return NGX_OK;
         }
 
         dfs_log_error(ep_base->log, DFS_LOG_ALERT, errno,
             "epoll_process_events: epoll_wait no events or timeout");
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     for (i = 0; i < events_num; i++)
@@ -341,7 +341,7 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
           携带的instance就不等于rev->instance了，因此我们也就识别出该stale event，跳过不处理了。
          */
         // 防止“过期事件”
-        if (c->fd == DFS_INVALID_FILE || rev->instance != instance)
+        if (c->fd == NGX_INVALID_FILE || rev->instance != instance)
 		{
             /*
              * the stale event from a file descriptor
@@ -377,7 +377,7 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
         if ((events & EPOLLIN) && rev->active)
 		{
             // 设置 event ready
-            rev->ready = DFS_TRUE;
+            rev->ready = NGX_TRUE;
 
             if (!rev->handler)
 			{
@@ -415,7 +415,7 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
         if ((events & EPOLLOUT) && wev->active)
 		{
             // 设置 event ready
-            wev->ready = DFS_TRUE;
+            wev->ready = NGX_TRUE;
 
             if (!wev->handler)
 			{
@@ -445,6 +445,6 @@ int epoll_process_events(event_base_t *ep_base, rb_msec_t timer,
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 

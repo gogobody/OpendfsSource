@@ -17,7 +17,7 @@ int          dfs_argc;
 char       **dfs_argv;
 
 string_t     config_file;
-static int   g_quit = DFS_FALSE;
+static int   g_quit = NGX_FALSE;
 static int   show_version;
 sys_info_t   dfs_sys_info;
 extern pid_t process_pid;
@@ -50,7 +50,7 @@ static int parse_cmdline( int argc, char *const *argv)
 				{
                     dfs_show_help();
 					
-                    return DFS_ERROR;
+                    return NGX_ERROR;
                 }
 				
                 if (*optarg == '/') 
@@ -82,7 +82,7 @@ static int parse_cmdline( int argc, char *const *argv)
                 break;
 				
             case 'q':
-                g_quit = DFS_TRUE;
+                g_quit = NGX_TRUE;
                 break;
 				
             case 'h':
@@ -90,16 +90,16 @@ static int parse_cmdline( int argc, char *const *argv)
             default:
                 dfs_show_help();
 				
-                return DFS_ERROR;
+                return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 int main(int argc, char **argv)
 {
-    int            ret = DFS_OK;
+    int            ret = NGX_OK;
     cycle_t       *cycle = NULL;
     conf_server_t *sconf = NULL;
     
@@ -107,14 +107,14 @@ int main(int argc, char **argv)
 
     time_init();//时间缓存
 
-    if (parse_cmdline(argc, argv) != DFS_OK) 
+    if (parse_cmdline(argc, argv) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (!show_version && sys_get_info(&dfs_sys_info) != DFS_OK) 
+    if (!show_version && sys_get_info(&dfs_sys_info) != NGX_OK)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
  
     if (config_file.data == NULL) //加载默认配置文件
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     
     if (g_quit) 
 	{
-        if ((ret = cycle_init(cycle))!= DFS_OK) 
+        if ((ret = cycle_init(cycle))!= NGX_OK)
 		{
             fprintf(stderr, "cycle_init fail\n");
 			
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         if (process_pid < 0)
 		{
             fprintf(stderr, " get server pid fail\n");
-            ret = DFS_ERROR;
+            ret = NGX_ERROR;
 			
             goto out;
         }
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
         kill(process_pid, SIGNAL_QUIT);
         printf("service is stoped\n");
 		
-        ret = DFS_OK;
+        ret = NGX_OK;
 		
         goto out;
     }
@@ -153,21 +153,21 @@ int main(int argc, char **argv)
     umask(0022);//默认创建新文件权限为755
 
     // cycle init 主要初始化配置文件结构体，解析配置文件，初始化error log相关结构体
-    if ((ret = cycle_init(cycle)) != DFS_OK) 
+    if ((ret = cycle_init(cycle)) != NGX_OK)
 	{
         fprintf(stderr, "cycle_init fail\n");
 		
         goto out;
     }
 
-    if ((ret = process_check_running(cycle)) == DFS_TRUE) // check if process running
+    if ((ret = process_check_running(cycle)) == NGX_TRUE) // check if process running
 	{
         fprintf(stderr, "datanode is already running\n");
 		
     	goto out;
     }
 
-    if ((ret = sys_limit_init(cycle)) != DFS_OK) //设置资源限制
+    if ((ret = sys_limit_init(cycle)) != NGX_OK) //设置资源限制
 	{
         fprintf(stderr, "sys_limit_init error\n");
 		
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
     // init module index
 	dfs_module_setup();
     // dn_data_storage_master_init // 初始化 cfs io func
-	if ((ret = dfs_module_master_init(cycle)) != DFS_OK)  // init master 函数
+	if ((ret = dfs_module_master_init(cycle)) != NGX_OK)  // init master 函数
 	{
 		fprintf(stderr, "master init fail\n");
 		
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
     
     sconf = (conf_server_t *)cycle->sconf;
 
-    if (process_change_workdir(&sconf->coredump_dir) != DFS_OK) // change dir to coredump_dir
+    if (process_change_workdir(&sconf->coredump_dir) != NGX_OK) // change dir to coredump_dir
     {
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
                       "process_change_workdir failed!\n");
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
         goto failed;
     }
 
-    if (dn_signal_setup() != DFS_OK) 
+    if (dn_signal_setup() != NGX_OK)
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
                 "setup signal failed!\n");
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
         goto failed;
     }
     // 临时屏蔽fork
-//    if (sconf->daemon == DFS_TRUE && dn_daemon() == DFS_ERROR)
+//    if (sconf->daemon == NGX_TRUE && dn_daemon() == NGX_ERROR)
 //	{
 //        dfs_log_error(cycle->error_log, DFS_LOG_FATAL, 0,
 //                "dfs_daemon failed");
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 
     process_pid = getpid();
 
-    if (process_write_pid_file(process_pid) == DFS_ERROR) // write pid to sconfig file
+    if (process_write_pid_file(process_pid) == NGX_ERROR) // write pid to sconfig file
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_WARN, 0, 
                 "write pid file error");
@@ -250,8 +250,8 @@ out:
 // 设置守护进程
 int dn_daemon()
 {
-    int fd = DFS_INVALID_FILE;
-    int pid = DFS_ERROR;
+    int fd = NGX_INVALID_FILE;
+    int pid = NGX_ERROR;
 
     pid = fork();
 
@@ -263,73 +263,73 @@ int dn_daemon()
 	{
         printf("dfs_daemon: fork failed\n");
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
-    if (setsid() == DFS_ERROR)  // 为子进程设置一个新的会话
+    if (setsid() == NGX_ERROR)  // 为子进程设置一个新的会话
 
 	{
         printf("dfs_daemon: setsid failed\n");
 
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     umask(0022); //umask默认权限来给所有新建的文件赋予初始权限
 
     fd = open("/dev/null", O_RDWR); //实际上就是实现对fd 0, 1, 2的屏蔽
-    if (fd == DFS_INVALID_FILE) 
+    if (fd == NGX_INVALID_FILE)
 	{
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 
     // 为了打印输入输出注释了dup2
 
-//    if (dup2(fd, STDIN_FILENO) == DFS_ERROR)  // 0
+//    if (dup2(fd, STDIN_FILENO) == NGX_ERROR)  // 0
 //	{
 //        printf("dfs_daemon: dup2(STDIN) failed\n");
 //
-//        return DFS_INVALID_FILE;
+//        return NGX_INVALID_FILE;
 //    }
 //
-//    if (dup2(fd, STDOUT_FILENO) == DFS_ERROR) // 1
+//    if (dup2(fd, STDOUT_FILENO) == NGX_ERROR) // 1
 //	{
 //        printf("dfs_daemon: dup2(STDOUT) failed\n");
 //
-//        return DFS_ERROR;
+//        return NGX_ERROR;
 //    }
 //
-//    if (dup2(fd, STDERR_FILENO) == DFS_ERROR) // 2 /* Standard error output. */
+//    if (dup2(fd, STDERR_FILENO) == NGX_ERROR) // 2 /* Standard error output. */
 //	{
 //        printf("dfs_daemon: dup2(STDERR) failed\n");
 //
-//        return DFS_ERROR;
+//        return NGX_ERROR;
 //    }
 
     if (fd > STDERR_FILENO) 
 	{
-        if (close(fd) == DFS_ERROR) 
+        if (close(fd) == NGX_ERROR)
 		{
             printf("dfs_daemon: close() failed\n");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //设置资源限制
 static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
 {
-    int            ret = DFS_ERROR;
-    int            need_set = DFS_FALSE;
+    int            ret = NGX_ERROR;
+    int            need_set = NGX_FALSE;
     struct rlimit  rl;
     log_t         *log;
 
     log = dfs_cycle->error_log;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);//进程能够打开的最多文件数目，此限制会影响到sysconf的_SC_OPEN_MAX的返回值
-    if (ret == DFS_ERROR) 
+    if (ret == NGX_ERROR)
 	{
         dfs_log_error(log, DFS_LOG_ERROR,
             errno, "sys_set_limit get RLIMIT_NOFILE error");
@@ -340,19 +340,19 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
     if (rl.rlim_max < file_limit)
 	{
         rl.rlim_max = file_limit; //hard limit
-        need_set = DFS_TRUE;
+        need_set = NGX_TRUE;
     }
 
     if (rl.rlim_cur < file_limit) 
 	{
         rl.rlim_cur = file_limit; //soft limit
-        need_set = DFS_TRUE;
+        need_set = NGX_TRUE;
     }
 	*/
     if (need_set) 
 	{
         ret = setrlimit(RLIMIT_NOFILE, &rl);
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set RLIMIT_NOFILE error");
@@ -366,12 +366,12 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
     if (mem_size > ((size_t)1 << 32)) 
 	{
         ret = system("sysctl -w vm.overcommit_memory=1 > /dev/zero");
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set vm.overcommit error");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
@@ -381,7 +381,7 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
         dfs_log_error(log, DFS_LOG_ERROR,
             errno, "sys_set_limit set PR_SET_DUMPABLE error");
 		
-        return DFS_ERROR;
+        return NGX_ERROR;
     }
 	//内核转存文件的最大长度
     if (getrlimit(RLIMIT_CORE, &rl) == 0) 
@@ -389,16 +389,16 @@ static int sys_set_limit(uint32_t file_limit, uint64_t mem_size)
         rl.rlim_cur = rl.rlim_max;
 		
         ret = setrlimit(RLIMIT_CORE, &rl);
-        if (ret == DFS_ERROR) 
+        if (ret == NGX_ERROR)
 		{
             dfs_log_error(log, DFS_LOG_ERROR,
                 errno, "sys_set_limit set RLIMIT_CORE error");
 			
-            return DFS_ERROR;
+            return NGX_ERROR;
         }
     }
 
-    return DFS_OK;
+    return NGX_OK;
 }
 
 //设置 file resource limit和memory limit

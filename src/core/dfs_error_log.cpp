@@ -177,7 +177,7 @@ void error_log_debug_core(log_t *log, uint32_t level, char *file,
 //    printf(args);
     // log all
     if (!log || !(level || log->log_level)
-        || (log->file->fd == DFS_INVALID_FILE)) 
+        || (log->file->fd == NGX_INVALID_FILE))
     {
         return;
     }
@@ -319,7 +319,7 @@ int error_log_close(log_t *log)
     if (log && log->file && log->file->fd >= 0)
 	{
         close(log->file->fd);
-        log->file->fd = DFS_INVALID_FILE;
+        log->file->fd = NGX_INVALID_FILE;
     }
 
     return NGX_OK;

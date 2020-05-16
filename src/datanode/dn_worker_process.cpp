@@ -198,7 +198,7 @@ void worker_processer(cycle_t *cycle, void *data)
     // 初始化线程锁
     thread_registration_init();
 
-    // name node server ?
+    // name node server register
     // 获取 namespaceid 和 监控 report 上报
     // 发送心跳
     //

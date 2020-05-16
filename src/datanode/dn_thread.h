@@ -34,7 +34,7 @@ struct dfs_thread_s
     TREAD_FUNC              run_func;  // handler
     uint32_t                state;  // THREAD_ST_UNSTART
     int                     running;
-	ns_srv_info_t           ns_info;
+	ns_srv_info_t           ns_info; // namenode info
 	faio_notifier_manager_t faio_notify;
 	io_event_t              io_events;
 	fio_manager_t           fio_mgr;

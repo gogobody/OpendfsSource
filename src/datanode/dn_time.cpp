@@ -35,7 +35,7 @@ void time_update(void)
     struct tm       tm;
     time_t          sec;
     uint32_t        msec = 0;
-    uchar_t        *p0 = NULL;
+    uchar_t        *p0 = nullptr;
     rb_msec_t       nmsec;
 
     if (!dfs_time_trylock(&time_lock)) 

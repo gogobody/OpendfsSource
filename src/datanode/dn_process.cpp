@@ -32,15 +32,15 @@ extern char   **environ;
 extern char   **dfs_argv;
 
 static int      process_old_alived = NGX_FALSE;
-dfs_thread_t   *main_thread = NULL;
+dfs_thread_t   *main_thread = nullptr;
 
 static int process_reap_workers(cycle_t *cycle);
 
 int process_check_running(cycle_t *cycle)
 {
-    conf_server_t *sconf = NULL;
+    conf_server_t *sconf = nullptr;
     pid_t          pid = -1;
-    char          *pid_file = NULL;
+    char          *pid_file = nullptr;
     struct stat    st;
 
     sconf = (conf_server_t *)dfs_cycle->sconf;
@@ -73,7 +73,7 @@ static pid_t process_spawn(cycle_t *cycle, spawn_proc_pt proc,
 {
     pid_t     pid = -1;
     uint64_t  on = 0;
-    log_t    *log = NULL;
+    log_t    *log = nullptr;
     
     log = cycle->error_log;
 
@@ -248,11 +248,11 @@ void process_broadcast(int slot, int cmd)
 
 void process_set_title(string_t *title)
 {
-    // copy the title to argv[0], and set argv[1] to NULL
+    // copy the title to argv[0], and set argv[1] to nullptr
     string_strncpy(dfs_argv[0], title->data, title->len);
 
     dfs_argv[0][title->len] = 0;
-    dfs_argv[1] = NULL;
+    dfs_argv[1] = nullptr;
 }
 
 void process_get_status()
@@ -422,7 +422,7 @@ int process_start_workers(cycle_t *cycle)
 {
     dfs_log_debug(cycle->error_log, DFS_LOG_DEBUG, 0, "process_start_workers");
 
-    if (process_spawn(cycle, worker_processer, NULL,
+    if (process_spawn(cycle, worker_processer, nullptr,
         (char *)"worker process", PROCESS_SLOT_AUTO) == NGX_INVALID_PID)
     {
         return NGX_ERROR;
@@ -439,7 +439,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
     int       i = 0;
     int       live = 1;
     size_t    size = 0;
-    uchar_t  *p_title = NULL;
+    uchar_t  *p_title = nullptr;
     sigset_t  set; // 信号集用来描述信号的集合
     string_t  title;
 
@@ -455,7 +455,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 
 
 	//SIG_BLOCK 该值代表的功能是将newset所指向的信号集中所包含的信号加到当前的信号掩码中，作为新的信号屏蔽字
-    if (sigprocmask(SIG_BLOCK, &set, NULL) == NGX_ERROR)  //用于改变进程的当前阻塞信号集,也可以用来检测当前进程的信号掩码。
+    if (sigprocmask(SIG_BLOCK, &set, nullptr) == NGX_ERROR)  //用于改变进程的当前阻塞信号集,也可以用来检测当前进程的信号掩码。
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno,
             "sigprocmask() failed");
@@ -466,7 +466,7 @@ void process_master_cycle(cycle_t *cycle, int argc, char **argv)
 	// thread  多线程私有数据pthread_key_create
 	thread_env_init();
 	
-	main_thread = thread_new(NULL);
+	main_thread = thread_new(nullptr);
     if (!main_thread) 
 	{
         return;
@@ -701,8 +701,8 @@ int process_write_pid_file(pid_t pid)
     ssize_t        n = 0;
     uchar_t        buf[10] = {0};
     uchar_t       *last = 0;
-    uchar_t       *pid_file = NULL;
-    conf_server_t *sconf = NULL;
+    uchar_t       *pid_file = nullptr;
+    conf_server_t *sconf = nullptr;
 
     sconf = (conf_server_t *)dfs_cycle->sconf; 
     if (!sconf) 
@@ -740,7 +740,7 @@ int process_get_pid(cycle_t *cycle)
     int            n = 0;
     int            fd = -1;
     char           buf[11] = {0};
-    uchar_t       *pid_file = NULL;
+    uchar_t       *pid_file = nullptr;
     conf_server_t *sconf  = (conf_server_t *)dfs_cycle->sconf;
 
     pid_file = sconf->pid_file.data;
@@ -768,8 +768,8 @@ int process_get_pid(cycle_t *cycle)
 
 void process_del_pid_file(void)
 {
-    uchar_t       *pid_file = NULL;
-    conf_server_t *sconf = NULL;
+    uchar_t       *pid_file = nullptr;
+    conf_server_t *sconf = nullptr;
     
     sconf = (conf_server_t *)dfs_cycle->sconf;
     pid_file = sconf->pid_file.data;

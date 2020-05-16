@@ -25,7 +25,7 @@ int dn_signal_setup(void)
     sigemptyset(&sig_act.sa_mask);
     sig_act.sa_flags = SA_SIGINFO;
     //sig_act.sa_sigaction = file_aio_callback;
-    ret = sigaction(SIGRTMIN + 1, &sig_act, NULL);
+    ret = sigaction(SIGRTMIN + 1, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
@@ -39,67 +39,67 @@ int dn_signal_setup(void)
     
     //set other sig handler
     sig_act.sa_sigaction = signal_handler;
-    ret = sigaction(SIGALRM, &sig_act, NULL);
+    ret = sigaction(SIGALRM, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGINT, &sig_act, NULL);
+    ret = sigaction(SIGINT, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGIO, &sig_act, NULL);
+    ret = sigaction(SIGIO, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGCHLD, &sig_act, NULL);
+    ret = sigaction(SIGCHLD, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGPIPE, &sig_act, NULL);
+    ret = sigaction(SIGPIPE, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGSEGV, &sig_act, NULL);
+    ret = sigaction(SIGSEGV, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGNAL_RECONF, &sig_act, NULL);
+    ret = sigaction(SIGNAL_RECONF, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGNAL_QUIT, &sig_act, NULL);
+    ret = sigaction(SIGNAL_QUIT, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
     
-    ret = sigaction(SIGNAL_TERMINATE, &sig_act, NULL);
+    ret = sigaction(SIGNAL_TERMINATE, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
 
-    ret = sigaction(SIGNAL_TEST_STORE, &sig_act, NULL);
+    ret = sigaction(SIGNAL_TEST_STORE, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
     }
 	
-    ret = sigaction(SIGUSR1, &sig_act, NULL);
+    ret = sigaction(SIGUSR1, &sig_act, nullptr);
     if (ret != NGX_OK)
 	{
         return NGX_ERROR;
@@ -111,7 +111,7 @@ int dn_signal_setup(void)
 static void signal_handler(int sig, siginfo_t *info, void *context)
 {
     void      *fun_array[8192];
-    char     **fun_name = NULL;
+    char     **fun_name = nullptr;
     size_t     sz = 0;
     uint32_t   j = 0;
 

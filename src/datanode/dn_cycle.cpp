@@ -10,9 +10,9 @@
 cycle_t         *dfs_cycle;  
 extern string_t  config_file;
 
-cycle_t *cycle_create()
+cycle_t *dn_cycle_create()
 {
-    cycle_t *cycle = NULL;
+    cycle_t *cycle = nullptr;
     cycle = (cycle_t *)memory_calloc(sizeof(cycle_t));
     
     if (!cycle) 
@@ -22,25 +22,25 @@ cycle_t *cycle_create()
         return cycle;
     }
     
-    cycle->pool = pool_create(CYCLE_POOL_SIZE, CYCLE_POOL_SIZE, NULL);
+    cycle->pool = pool_create(CYCLE_POOL_SIZE, CYCLE_POOL_SIZE, nullptr);
     if (!cycle->pool) 
 	{
         memory_free(cycle, sizeof(cycle_t));
-        cycle = NULL;
+        cycle = nullptr;
     }
     
     return cycle;
 }
 
 // conf 和error log init
-int cycle_init(cycle_t *cycle)
+int dn_cycle_init(cycle_t *cycle)
 {
-    log_t          *log = NULL;
-    conf_context_t *ctx = NULL;
-    conf_object_t  *conf_objects = NULL;
+    log_t          *log = nullptr;
+    conf_context_t *ctx = nullptr;
+    conf_object_t  *conf_objects = nullptr;
     string_t        server = string_make("Server");
     
-    if (cycle == NULL) 
+    if (cycle == nullptr) 
 	{
         return NGX_ERROR;
     }
@@ -61,7 +61,7 @@ int cycle_init(cycle_t *cycle)
         dfs_cycle = cycle;
     }
 	
-    error_log_set_handle(log, (log_time_ptr)time_logstr, NULL);
+    error_log_set_handle(log, (log_time_ptr)time_logstr, nullptr);
  
     ctx = conf_context_create(cycle->pool);
     if (!ctx) 
@@ -101,7 +101,7 @@ error:
      return NGX_ERROR;
 }
 
-int cycle_free(cycle_t *cycle)
+int dn_cycle_free(cycle_t *cycle)
 {
     if (!cycle) 
 	{
@@ -115,7 +115,7 @@ int cycle_free(cycle_t *cycle)
     
     memory_free(cycle, sizeof(cycle_t));
 
-    cycle = NULL;
+    cycle = nullptr;
 
     return NGX_OK;
 }

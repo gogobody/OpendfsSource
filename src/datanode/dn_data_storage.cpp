@@ -17,7 +17,7 @@ static queue_t g_storage_dir_q;
 static int     g_storage_dir_n = 0;
 static char    g_last_version[56] = "";
 
-static blk_cache_mgmt_t *g_dn_bcm = NULL;
+static blk_cache_mgmt_t *g_dn_bcm = nullptr;
 
 static int init_storage_dirs(cycle_t *cycle);
 static int create_storage_dirs(cycle_t *cycle);
@@ -105,7 +105,7 @@ int dn_data_storage_worker_init(cycle_t *cycle)
 int dn_data_storage_worker_release(cycle_t *cycle)
 {
     blk_cache_mgmt_release(g_dn_bcm);
-	g_dn_bcm = NULL;
+	g_dn_bcm = nullptr;
 
 	blk_report_queue_release();
 	
@@ -140,15 +140,15 @@ static int init_storage_dirs(cycle_t *cycle)
 {
     conf_server_t *sconf = (conf_server_t *)cycle->sconf;
     uchar_t       *str = sconf->data_dir.data;
-    char          *saveptr = NULL;
-    uchar_t       *token = NULL;
+    char          *saveptr = nullptr;
+    uchar_t       *token = nullptr;
 	char           dir[PATH_LEN] = "";
 
-    for (int i = 0; ; str = NULL, token = NULL, i++)
+    for (int i = 0; ; str = nullptr, token = nullptr, i++)
     {
     	// data dir = "/data01/block,/data02/block,/data03/block"
         token = (uchar_t *)strtok_r((char *)str, ",", &saveptr); //分解字符串为一组字符串
-        if (token == NULL)
+        if (token == nullptr)
         {
             break;
         }
@@ -457,10 +457,10 @@ static blk_cache_mgmt_t *blk_cache_mgmt_new_init()
     blk_cache_mgmt_t *bcm = blk_cache_mgmt_create(index_num);
     if (!bcm) 
 	{
-        return NULL;
+        return nullptr;
     }
 
-    pthread_rwlock_init(&bcm->cache_rwlock, NULL);
+    pthread_rwlock_init(&bcm->cache_rwlock, nullptr);
 
     return bcm;
 }
@@ -495,7 +495,7 @@ err_mem_mgmt:
     memory_free(bcm, sizeof(*bcm));
 
 err_out:
-    return NULL;
+    return nullptr;
 }
 
 
@@ -566,12 +566,12 @@ static void *allocator_malloc(void *priv, size_t mem_size)
 {
     if (!priv) 
 	{
-        return NULL;
+        return nullptr;
     }
 
 	dfs_mem_allocator_t *allocator = (dfs_mem_allocator_t *)priv;
 	
-    return allocator->alloc(allocator, mem_size, NULL);
+    return allocator->alloc(allocator, mem_size, nullptr);
 }
 
 static void allocator_free(void *priv, void *mem_addr)
@@ -582,7 +582,7 @@ static void allocator_free(void *priv, void *mem_addr)
     }
 
     dfs_mem_allocator_t *allocator = (dfs_mem_allocator_t *)priv;
-    allocator->free(allocator, mem_addr, NULL);
+    allocator->free(allocator, mem_addr, nullptr);
 }
 
 static void blk_mem_mgmt_destroy(blk_cache_mem_t *mem_mgmt)
@@ -633,7 +633,7 @@ block_info_t *block_object_get(long id)
 // 数据节点每次初始化就需要重建一次hash table
 int block_object_add(char *path, long ns_id, long blk_id)
 {
-    block_info_t *blk = NULL;
+    block_info_t *blk = nullptr;
     // 去hash table 里面找到对应 id 的blk info
 	blk = block_object_get(blk_id);
 	if (blk) 
@@ -663,7 +663,7 @@ int block_object_add(char *path, long ns_id, long blk_id)
 
 	blk->ln.key = &blk->id;
     blk->ln.len = sizeof(blk->id);
-    blk->ln.next = NULL;
+    blk->ln.next = nullptr;
 
 	dfs_hashtable_join(g_dn_bcm->blk_htable, &blk->ln);
 
@@ -678,7 +678,7 @@ int block_object_add(char *path, long ns_id, long blk_id)
 
 int block_object_del(long blk_id)
 {
-    block_info_t *blk = NULL;
+    block_info_t *blk = nullptr;
 
 	blk = block_object_get(blk_id);
 	if (!blk) 
@@ -783,8 +783,8 @@ int write_block_done(dn_request_t *r)
 
 static int get_disk_id(long block_id, char *path)
 {
-    queue_t *head = NULL;
-	queue_t *entry = NULL;
+    queue_t *head = nullptr;
+	queue_t *entry = nullptr;
 	int      disk_id = 0;
 
 	disk_id = block_id % g_storage_dir_n;
@@ -811,7 +811,7 @@ static int get_disk_id(long block_id, char *path)
 
 static int recv_blk_report(dn_request_t *r)
 {
-    block_info_t *blk = NULL;
+    block_info_t *blk = nullptr;
 		
     pthread_rwlock_wrlock(&g_dn_bcm->cache_rwlock);
 
@@ -829,7 +829,7 @@ static int recv_blk_report(dn_request_t *r)
 
 	blk->ln.key = &blk->id;
     blk->ln.len = sizeof(blk->id);
-    blk->ln.next = NULL;
+    blk->ln.next = nullptr;
 
 	dfs_hashtable_join(g_dn_bcm->blk_htable, &blk->ln);
 
@@ -844,7 +844,7 @@ static int recv_blk_report(dn_request_t *r)
 // scanner线程
 void *blk_scanner_start(void *arg)
 {
-	conf_server_t *sconf = NULL;
+	conf_server_t *sconf = nullptr;
 	int            blk_report_interval = 0;
 	unsigned long  last_blk_report = 0;
 
@@ -852,14 +852,14 @@ void *blk_scanner_start(void *arg)
     blk_report_interval = sconf->block_report_interval;
 
 	//struct timeval now;
-	//gettimeofday(&now, NULL);
+	//gettimeofday(&now, nullptr);
 	//unsigned long diff = now.tv_sec * 1000 + now.tv_usec / 1000;
 
 	//last_blk_report = diff;
 
 	while (blk_scanner_running)  // 默认 true
 	{
-        //gettimeofday(&now, NULL);
+        //gettimeofday(&now, nullptr);
 	    //diff = (now.tv_sec * 1000 + now.tv_usec / 1000) - last_blk_report;
 
 		//if (diff >= blk_report_interval) 
@@ -883,17 +883,17 @@ void *blk_scanner_start(void *arg)
 		sleep(blk_report_interval);
 	}
 	
-    return NULL;
+    return nullptr;
 }
 
 static int scan_current_dir(char *dir)
 {
     char           root[PATH_LEN] = "";
-	DIR           *p_dir = NULL;
-	struct dirent *ent = NULL;
+	DIR           *p_dir = nullptr;
+	struct dirent *ent = nullptr;
 	
 	p_dir = opendir(dir);
-	if (NULL == p_dir) 
+	if (nullptr == p_dir)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
@@ -901,7 +901,7 @@ static int scan_current_dir(char *dir)
         return NGX_ERROR;
 	}
 
-	while (NULL != (ent = readdir(p_dir))) 
+	while (nullptr != (ent = readdir(p_dir)))
 	{
         if (ent->d_type == 8) 
 		{
@@ -935,11 +935,11 @@ static void get_namespace_id(char *src, char *id)
     static int scan_namespace_dir(char *dir, long namespace_id)
 {
     char           root[PATH_LEN] = "";
-	DIR           *p_dir = NULL;
-	struct dirent *ent = NULL;
+	DIR           *p_dir = nullptr;
+	struct dirent *ent = nullptr;
 	
 	p_dir = opendir(dir);
-	if (NULL == p_dir) 
+	if (nullptr == p_dir)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
@@ -947,7 +947,7 @@ static void get_namespace_id(char *src, char *id)
         return NGX_ERROR;
 	}
 
-	while (NULL != (ent = readdir(p_dir))) 
+	while (nullptr != (ent = readdir(p_dir)))
 	{
         if (ent->d_type == 8) 
 		{
@@ -968,11 +968,11 @@ static void get_namespace_id(char *src, char *id)
 static int scan_subdir(char *dir, long namespace_id)
 {
     char           root[PATH_LEN] = "";
-	DIR           *p_dir = NULL;
-	struct dirent *ent = NULL;
+	DIR           *p_dir = nullptr;
+	struct dirent *ent = nullptr;
 	
 	p_dir = opendir(dir);
-	if (NULL == p_dir) 
+	if (nullptr == p_dir)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
@@ -980,7 +980,7 @@ static int scan_subdir(char *dir, long namespace_id)
         return NGX_ERROR;
 	}
 
-	while (NULL != (ent = readdir(p_dir))) 
+	while (nullptr != (ent = readdir(p_dir)))
 	{
         if (ent->d_type == 8) 
 		{
@@ -1001,11 +1001,11 @@ static int scan_subdir(char *dir, long namespace_id)
 static int scan_subdir_subdir(char *dir, long namespace_id)
 {
     char           path[PATH_LEN] = "";
-	DIR           *p_dir = NULL;
-	struct dirent *ent = NULL;
+	DIR           *p_dir = nullptr;
+	struct dirent *ent = nullptr;
 	
 	p_dir = opendir(dir);
-	if (NULL == p_dir) 
+	if (nullptr == p_dir)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, errno, 
 			"opendir %s err", dir);
@@ -1013,7 +1013,7 @@ static int scan_subdir_subdir(char *dir, long namespace_id)
         return NGX_ERROR;
 	}
 
-	while (NULL != (ent = readdir(p_dir))) 
+	while (nullptr != (ent = readdir(p_dir)))
 	{
 	    // 如果是常规文件，
         if (DT_REG == ent->d_type && 0 == strncmp(ent->d_name, "blk_", 4))

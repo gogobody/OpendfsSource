@@ -83,7 +83,7 @@ static conf_macro_t conf_macro[] =
     { string_null, 0 }
 };
 
-conf_object_t *get_dn_conf_object(void)
+conf_object_t *get_dn_conf_object()
 {
     return dn_conf_objects;
 }

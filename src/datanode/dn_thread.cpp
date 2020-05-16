@@ -20,7 +20,7 @@ static int event_free_accept_lock(dfs_thread_t *thread);
 
 void thread_env_init()
 {
-    pthread_key_create(&dfs_thread_key, NULL); //分配用于标识进程中线程特定数据的键。
+    pthread_key_create(&dfs_thread_key, nullptr); //分配用于标识进程中线程特定数据的键。
 }
 
 dfs_thread_t *thread_new(pool_t *pool)
@@ -48,14 +48,14 @@ event_base_t *thread_get_event_base()
     //同一线程内的各个函数间共享数据
     dfs_thread_t *thread = (dfs_thread_t *)pthread_getspecific(dfs_thread_key);
 	
-    return thread != NULL ? &thread->event_base : NULL;
+    return thread != nullptr ? &thread->event_base : nullptr;
 }
 
 event_timer_t *thread_get_event_timer()
 {
     dfs_thread_t *thread = (dfs_thread_t *)pthread_getspecific(dfs_thread_key);
 	
-    return thread != NULL ? &thread->event_timer : NULL;
+    return thread != nullptr ? &thread->event_timer : nullptr;
 }
 
 conn_pool_t * thread_get_conn_pool()
@@ -92,7 +92,7 @@ void thread_clean(dfs_thread_t *thread)
 // 初始化 thread 的event
 int thread_event_init(dfs_thread_t *thread)
 {
-    io_event_t *ioevents = NULL; // 读写事件
+    io_event_t *ioevents = nullptr; // 读写事件
 
     // 初始化 epoll句柄和 event list 空间分配
     if (epoll_init(&thread->event_base, dfs_cycle->error_log) == NGX_ERROR)
@@ -108,10 +108,10 @@ int thread_event_init(dfs_thread_t *thread)
 
 	ioevents = &thread->io_events;
     ioevents->lock.lock = DFS_LOCK_OFF;
-    ioevents->lock.allocator = NULL;
+    ioevents->lock.allocator = nullptr;
     
     ioevents->bad_lock.lock = DFS_LOCK_OFF;
-    ioevents->bad_lock.allocator = NULL;
+    ioevents->bad_lock.allocator = nullptr;
 
     return NGX_OK;
 }
@@ -122,8 +122,8 @@ void thread_event_process(dfs_thread_t *thread)
     uint32_t      flags = EVENT_UPDATE_TIME;
     rb_msec_t     timer = 0;
     rb_msec_t     delta = 0;
-    event_base_t *ev_base = NULL;
-	array_t      *listens = NULL;
+    event_base_t *ev_base = nullptr;
+	array_t      *listens = nullptr;
     
     ev_base = &thread->event_base;
 	listens = cycle_get_listen_for_cli(); // 所有cli的listening
@@ -218,7 +218,7 @@ void thread_event_process(dfs_thread_t *thread)
 void accept_lock_init()
 {
     accept_lock.lock = DFS_LOCK_OFF;
-    accept_lock.allocator = NULL;
+    accept_lock.allocator = nullptr;
 }
 
 static int event_trylock_accept_lock(dfs_thread_t *thread)

@@ -59,7 +59,7 @@ static int create_data_blk_scanner(cycle_t *cycle);
 
 static int thread_setup(dfs_thread_t *thread, int type)
 {
-    conf_server_t *sconf = NULL;
+    conf_server_t *sconf = nullptr;
 	
     sconf = (conf_server_t *)dfs_cycle->sconf;
     thread->event_base.nevents = sconf->connection_n;
@@ -95,8 +95,8 @@ static int process_worker_exit(cycle_t *cycle)
 
 static void thread_registration_init()
 {
-    pthread_mutex_init(&init_lock, NULL);
-    pthread_cond_init(&init_cond, NULL);
+    pthread_mutex_init(&init_lock, nullptr);
+    pthread_cond_init(&init_cond, nullptr);
 }
 
 static void wait_for_thread_registration()
@@ -150,7 +150,7 @@ void worker_processer(cycle_t *cycle, void *data)
     string_t       title;
     sigset_t       set;
     struct rlimit  rl;
-    process_t     *process = NULL;
+    process_t     *process = nullptr;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);
     if (ret == NGX_ERROR)
@@ -182,7 +182,7 @@ void worker_processer(cycle_t *cycle, void *data)
     }
 
     sigemptyset(&set);//信号集置空
-    if (sigprocmask(SIG_SETMASK, &set, NULL) == -1) // 就是不阻塞信号？
+    if (sigprocmask(SIG_SETMASK, &set, nullptr) == -1) // 就是不阻塞信号？
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"sigprocmask() failed");
@@ -237,7 +237,7 @@ void worker_processer(cycle_t *cycle, void *data)
      * 这样有信息进来的时候就可以通知到了。*/
     // 子进程读取通道消息
     if (channel_add_event(process->channel[1],
-        EVENT_READ_EVENT, channel_handler, NULL) != NGX_OK)
+        EVENT_READ_EVENT, channel_handler, nullptr) != NGX_OK)
     {
         exit(PROCESS_FATAL_EXIT);
     }
@@ -266,7 +266,7 @@ void worker_processer(cycle_t *cycle, void *data)
 
 int create_worker_thread(cycle_t *cycle)
 {
-    conf_server_t *sconf = NULL;
+    conf_server_t *sconf = nullptr;
     int            i = 0;
     
     sconf = (conf_server_t *)cycle->sconf;
@@ -384,7 +384,7 @@ exit:
 	register_thread_exit();
     thread_worker_exit(me);
 
-    return NULL;
+    return nullptr;
 }
 
 // epoll event handler in worker cycle
@@ -405,11 +405,11 @@ static void dio_event_handler(event_t * ev)
 static int channel_add_event(int fd, int event, 
 	event_handler_pt handler, void *data)
 {
-    event_t      *ev = NULL;
-    event_t      *rev = NULL;
-    event_t      *wev = NULL;
-    conn_t       *c = NULL;
-    event_base_t *base = NULL;
+    event_t      *ev = nullptr;
+    event_t      *rev = nullptr;
+    event_t      *wev = nullptr;
+    conn_t       *c = nullptr;
+    event_base_t *base = nullptr;
 
     // 根据 eventfd 初始化 connection
     c = conn_get_from_mem(fd);
@@ -421,7 +421,7 @@ static int channel_add_event(int fd, int event,
     // worker thread  event base
     base = thread_get_event_base();
 
-    c->pool = NULL;
+    c->pool = nullptr;
     c->conn_data = data; // data 是 thread 本身
 
     rev = c->read;
@@ -444,10 +444,10 @@ static int channel_add_event(int fd, int event,
 static void channel_handler(event_t *ev)
 {
     int            n = 0;
-    conn_t        *c = NULL;
+    conn_t        *c = nullptr;
     channel_t      ch;
-    event_base_t  *ev_base = NULL;
-    process_t     *process = NULL;
+    event_base_t  *ev_base = nullptr;
+    process_t     *process = nullptr;
     
     if (ev->timedout) 
 	{
@@ -626,15 +626,15 @@ static int create_ns_service_thread(cycle_t *cycle)
 
 static int get_ns_srv_names(uchar_t *path, uchar_t names[][64])
 {
-    uchar_t *str = NULL;
-    char    *saveptr = NULL;
-    uchar_t *token = NULL;
+    uchar_t *str = nullptr;
+    char    *saveptr = nullptr;
+    uchar_t *token = nullptr;
     int      i = 0;
 
-    for (str = path ; ; str = NULL, token = NULL, i++)
+    for (str = path ; ; str = nullptr, token = nullptr, i++)
     {
         token = (uchar_t *)strtok_r((char *)str, ",", &saveptr);
-        if (token == NULL)
+        if (token == nullptr)
         {
             break;
         }
@@ -677,7 +677,7 @@ static void *thread_ns_service_cycle(void * args)
 	register_thread_exit();
     me->state = THREAD_ST_EXIT;
 	
-    return NULL;
+    return nullptr;
 }
 
 static void stop_ns_service_thread()
@@ -693,7 +693,7 @@ static int create_data_blk_scanner(cycle_t *cycle)
 {
     pthread_t pid;
 
-	if (pthread_create(&pid, NULL, &blk_scanner_start, NULL) != NGX_OK)
+	if (pthread_create(&pid, nullptr, &blk_scanner_start, nullptr) != NGX_OK)
     {
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 			"create blk_scanner thread failed");

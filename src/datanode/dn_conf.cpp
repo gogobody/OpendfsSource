@@ -68,14 +68,14 @@ static conf_option_t conf_server_option[] =
 	{ string_make("block_report_interval"), conf_parse_int,
         OPE_EQUAL, offsetof(conf_server_t, block_report_interval) },
 
-    { string_null, NULL, OPE_EQUAL, 0 }    
+    { string_null, nullptr, OPE_EQUAL, 0 }
 };
 
 static conf_object_t dn_conf_objects[] = 
 {
     { string_make("Server"), conf_server_init, conf_server_make_default, conf_server_option },
 
-    { string_null, NULL, NULL , NULL}
+    { string_null, nullptr, nullptr , nullptr}
 };
 
 static conf_macro_t conf_macro[] = 
@@ -112,18 +112,18 @@ conf_object_t *get_dn_conf_object(void)
 
 static void *conf_server_init(pool_t *pool)
 {
-    conf_server_t *sconf = NULL;
+    conf_server_t *sconf = nullptr;
 	
     sconf = (conf_server_t *)pool_calloc(pool, sizeof(conf_server_t));
     if (!sconf) 
 	{
-        return NULL;
+        return nullptr;
     }
 	
     if (array_init(&sconf->bind_for_cli, pool, CONF_SERVER_BIND_N, 
 		sizeof(server_bind_t)) != NGX_OK)
     {
-        return NULL;
+        return nullptr;
     }
     
     return sconf;
@@ -148,9 +148,9 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     int       vi = 0;
     size_t    len = 0;
     uint32_t *p = 0;
-    uchar_t  *start = NULL;
-    uchar_t  *end = NULL;
-    uchar_t  *pos = NULL;
+    uchar_t  *start = nullptr;
+    uchar_t  *end = nullptr;
+    uchar_t  *pos = nullptr;
 
     if (type != OPE_EQUAL) 
 	{
@@ -173,7 +173,7 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     end = start + args[vi].len;
     len = end - start;
 
-    if (strchr((char *)start, '|') == NULL) 
+    if (strchr((char *)start, '|') == nullptr)
 	{
         for (i = 0; conf_macro[i].name.len > 0; i++) 
 		{

@@ -100,10 +100,10 @@ static int parse_cmdline( int argc, char *const *argv)
 int main(int argc, char **argv)
 {
     int            ret = NGX_OK;
-    cycle_t       *cycle = NULL;
-    conf_server_t *sconf = NULL;
+    cycle_t       *cycle = nullptr;
+    conf_server_t *sconf = nullptr;
     
-    cycle = cycle_create(); //创建内存池
+    cycle = dn_cycle_create(); //创建内存池
 
     time_init();//时间缓存
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
         return NGX_ERROR;
     }
  
-    if (config_file.data == NULL) //加载默认配置文件
+    if (config_file.data == nullptr) //加载默认配置文件
 	{
         config_file.data = (uchar_t *)strndup(DEFAULT_CONF_FILE,
             strlen(DEFAULT_CONF_FILE));
@@ -126,9 +126,9 @@ int main(int argc, char **argv)
     
     if (g_quit) 
 	{
-        if ((ret = cycle_init(cycle))!= NGX_OK)
+        if ((ret = dn_cycle_init(cycle))!= NGX_OK)
 		{
-            fprintf(stderr, "cycle_init fail\n");
+            fprintf(stderr, "dn_cycle_init fail\n");
 			
             goto out;
         }
@@ -153,9 +153,9 @@ int main(int argc, char **argv)
     umask(0022);//默认创建新文件权限为755
 
     // cycle init 主要初始化配置文件结构体，解析配置文件，初始化error log相关结构体
-    if ((ret = cycle_init(cycle)) != NGX_OK)
+    if ((ret = dn_cycle_init(cycle)) != NGX_OK)
 	{
-        fprintf(stderr, "cycle_init fail\n");
+        fprintf(stderr, "dn_cycle_init fail\n");
 		
         goto out;
     }
@@ -241,7 +241,7 @@ out:
 	
     if (cycle) 
 	{
-        cycle_free(cycle);
+        dn_cycle_free(cycle);
     }
 
     return ret;

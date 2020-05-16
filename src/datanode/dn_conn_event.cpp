@@ -26,10 +26,10 @@ static void listen_rev_handler(event_t *ev);
 // listen_rev_handler 处理 listening 事件
 int conn_listening_init(cycle_t *cycle)
 {
-    listening_t   *ls = NULL;
-    conf_server_t *sconf = NULL;
+    listening_t   *ls = nullptr;
+    conf_server_t *sconf = nullptr;
     uint32_t       i = 0;
-    server_bind_t *bind_for_cli = NULL;
+    server_bind_t *bind_for_cli = nullptr;
     
     sconf = (conf_server_t *)dfs_cycle->sconf;
 	bind_for_cli = (server_bind_t *)sconf->bind_for_cli.elts; //cli server_bind_t addr prot
@@ -84,15 +84,15 @@ static void listen_rev_handler(event_t *ev)
 {
     int           s = NGX_INVALID_FILE;
     char          sa[DFS_SOCKLEN];
-    log_t        *log = NULL;
-    uchar_t      *address = NULL;
-    conn_t       *lc = NULL;
-    conn_t       *nc = NULL;
-    event_t      *wev = NULL;
+    log_t        *log = nullptr;
+    uchar_t      *address = nullptr;
+    conn_t       *lc = nullptr;
+    conn_t       *nc = nullptr;
+    event_t      *wev = nullptr;
     socklen_t     socklen;
-    listening_t  *ls = NULL;
+    listening_t  *ls = nullptr;
     int           i = 0;
-    conn_pool_t  *conn_pool = NULL;
+    conn_pool_t  *conn_pool = nullptr;
 
     // 第一次处理为1？监听过后事件失效
     ev->ready = 0;

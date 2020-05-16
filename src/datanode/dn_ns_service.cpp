@@ -79,7 +79,7 @@ int dn_register(dfs_thread_t *thread)
 	}
 
 	char *pNext = (char *)malloc(pLen);
-	if (NULL == pNext) 
+	if (nullptr == pNext)
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
 			"malloc err, pLen: %d", pLen);
@@ -98,7 +98,7 @@ int dn_register(dfs_thread_t *thread)
 	    close(sockfd);
 
 		free(pNext);
-		pNext = NULL;
+		pNext = nullptr;
 		
         return NGX_ERROR;
 	}
@@ -115,11 +115,11 @@ int dn_register(dfs_thread_t *thread)
 	    close(sockfd);
 
 		free(pNext);
-		pNext = NULL;
+		pNext = nullptr;
 		
         return NGX_ERROR;
 	}
-	else if (NULL != in_t.data && in_t.data_len > 0) 
+	else if (nullptr != in_t.data && in_t.data_len > 0)
 	{
 	    thread->ns_info.namespaceID = *(int64_t *)in_t.data;
 	}
@@ -127,7 +127,7 @@ int dn_register(dfs_thread_t *thread)
 	thread->ns_info.sockfd = sockfd;
 
 	free(pNext);
-	pNext = NULL;
+	pNext = nullptr;
 	
     return NGX_OK;
 }
@@ -173,7 +173,7 @@ int offer_service(dfs_thread_t *thread)
 	int block_report_interval = sconf->block_report_interval; // default is 3
 
     struct timeval now;
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nullptr);
 	unsigned long now_time = now.tv_sec + now.tv_usec / (1000 * 1000);
 	unsigned long diff = 0; // 当前时间 - 上一次heartbeat的时间
 		
@@ -218,7 +218,7 @@ int offer_service(dfs_thread_t *thread)
 	        wait_to_work(wtime);
 		}
 
-		gettimeofday(&now, NULL);
+		gettimeofday(&now, nullptr);
 		now_time = (now.tv_sec + now.tv_usec / (1000 * 1000)); // seconds
 	    diff = now_time - g_last_heartbeat;
 	}
@@ -260,7 +260,7 @@ static int send_heartbeat(int sockfd)
 	}
 
 	char *pNext = (char *)malloc(pLen);
-	if (NULL == pNext) 
+	if (nullptr == pNext)
 	{
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno,
 			"malloc err, pLen: %d", pLen);
@@ -275,7 +275,7 @@ static int send_heartbeat(int sockfd)
 			"read err, rLen: %d", rLen);
 
 		free(pNext);
-		pNext = NULL;
+		pNext = nullptr;
 		
         return NGX_ERROR;
 	}
@@ -290,11 +290,11 @@ static int send_heartbeat(int sockfd)
 			"send_heartbeat err, ret: %d", in_t.ret);
 
 		free(pNext);
-		pNext = NULL;
+		pNext = nullptr;
 		
         return NGX_ERROR;
 	} 
-	else if (NULL != in_t.data && in_t.data_len > 0) 
+	else if (nullptr != in_t.data && in_t.data_len > 0)
 	{
 	    delete_blks((char *)in_t.data, in_t.data_len);
 	}
@@ -303,7 +303,7 @@ static int send_heartbeat(int sockfd)
 		"send_heartbeat ok, ret: %d", in_t.ret);
 
 	free(pNext);
-	pNext = NULL;
+	pNext = nullptr;
 	
     return NGX_OK;
 }
@@ -311,8 +311,8 @@ static int send_heartbeat(int sockfd)
 //
 static int receivedblock_report(int sockfd)
 {
-    queue_t           *cur = NULL;
-	block_info_t      *blk = NULL;
+    queue_t           *cur = nullptr;
+	block_info_t      *blk = nullptr;
 	report_blk_info_t  rbi;
 
 	pthread_mutex_lock(&g_recv_blk_report.lock);
@@ -380,7 +380,7 @@ static int wait_to_work(int second)
 {
     struct timespec timer;
 	struct timeval now;
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nullptr);
 	timer.tv_sec = now.tv_sec + second;
 	timer.tv_nsec = now.tv_usec * 1000;
 
@@ -407,14 +407,14 @@ int blk_report_queue_init()
     queue_init(&g_recv_blk_report.que);
 	g_recv_blk_report.num = 0;
 
-	pthread_mutex_init(&g_recv_blk_report.lock, NULL);
-	pthread_cond_init(&g_recv_blk_report.cond, NULL);
+	pthread_mutex_init(&g_recv_blk_report.lock, nullptr);
+	pthread_cond_init(&g_recv_blk_report.cond, nullptr);
 
 	queue_init(&g_blk_report.que);
 	g_blk_report.num = 0;
 
-	pthread_mutex_init(&g_blk_report.lock, NULL);
-	pthread_cond_init(&g_blk_report.cond, NULL);
+	pthread_mutex_init(&g_blk_report.lock, nullptr);
+	pthread_cond_init(&g_blk_report.cond, nullptr);
 	
     return NGX_OK;
 }
@@ -449,8 +449,8 @@ int notify_nn_receivedblock(block_info_t *blk)
 
 static int block_report(int sockfd)
 {
-    queue_t           *cur = NULL;
-	block_info_t      *blk = NULL;
+    queue_t           *cur = nullptr;
+	block_info_t      *blk = nullptr;
 	report_blk_info_t  rbi;
 
 	pthread_mutex_lock(&g_blk_report.lock);

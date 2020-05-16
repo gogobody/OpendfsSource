@@ -23,29 +23,29 @@ dfs_module_t dfs_modules[] =
         string_make("errlog"),
         0,
         PROCESS_MOD_INIT,
-        NULL,
+        nullptr,
         dn_error_log_init,
         dn_error_log_release,
-        NULL,
-        NULL,
-        NULL,
-        NULL
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
     },
 
 	{
         string_make("data_storage"),
         0,
         PROCESS_MOD_INIT,
-        NULL,
+        nullptr,
         dn_data_storage_master_init,
-        NULL,
+        nullptr,
         dn_data_storage_worker_init,
         dn_data_storage_worker_release,
         dn_data_storage_thread_init,
-        NULL
+        nullptr
     },
 
-    {string_null, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+    {string_null, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
 // 初始化模块 index
@@ -53,7 +53,7 @@ void dfs_module_setup(void)
 {
     int i = 0;
 	
-    for (i = 0; dfs_modules[i].name.data != NULL; i++) 
+    for (i = 0; dfs_modules[i].name.data != nullptr; i++)
 	{
         dfs_modules[i].index = dfs_mod_max++;
     }
@@ -66,7 +66,7 @@ int dfs_module_master_init(cycle_t *cycle)
 	
     for (i = 0; i < dfs_mod_max; i++) 
 	{
-        if (dfs_modules[i].master_init != NULL &&
+        if (dfs_modules[i].master_init != nullptr &&
             dfs_modules[i].master_init(cycle) == NGX_ERROR)
         {
             printf("process_master_init: module %s init failed\n",
@@ -88,7 +88,7 @@ int dfs_module_master_release(cycle_t *cycle)
     for (i = dfs_mod_max - 1; i >= 0; i--) 
 	{
         if (dfs_modules[i].flag != PROCESS_MOD_FREE  ||
-            dfs_modules[i].master_release == NULL) 
+            dfs_modules[i].master_release == nullptr)
         {
             continue;
         }
@@ -115,7 +115,7 @@ int dfs_module_woker_init(cycle_t *cycle)
 	
     for (i = 0; i < dfs_mod_max; i++) 
 	{
-        if (dfs_modules[i].worker_init != NULL &&
+        if (dfs_modules[i].worker_init != nullptr &&
             dfs_modules[i].worker_init(cycle) == NGX_ERROR)
         {
             dfs_log_error(cycle->error_log, DFS_LOG_ERROR, 0,
@@ -136,7 +136,7 @@ int dfs_module_woker_release(cycle_t *cycle)
 	
     for (i = 0; i < dfs_mod_max; i++) 
 	{
-        if (dfs_modules[i].worker_release!= NULL &&
+        if (dfs_modules[i].worker_release!= nullptr &&
             dfs_modules[i].worker_release(cycle) == NGX_ERROR)
         {
             dfs_log_error(cycle->error_log, DFS_LOG_ERROR, 0,
@@ -158,7 +158,7 @@ int dfs_module_workethread_init(dfs_thread_t *thread)
 	
     for (i = 0; i < dfs_mod_max; i++) 
 	{
-        if (dfs_modules[i].worker_thread_init != NULL &&
+        if (dfs_modules[i].worker_thread_init != nullptr &&
             dfs_modules[i].worker_thread_init(thread) == NGX_ERROR)
         {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, 0,
@@ -179,7 +179,7 @@ int dfs_module_wokerthread_release(dfs_thread_t *thread)
 
     for (i = 0; i < dfs_mod_max; i++) 
 	{
-        if (dfs_modules[i].worker_thread_release != NULL &&
+        if (dfs_modules[i].worker_thread_release != nullptr &&
             dfs_modules[i].worker_thread_release(thread) == NGX_ERROR)
         {
             dfs_log_error(dfs_cycle->error_log, DFS_LOG_ERROR, 0,

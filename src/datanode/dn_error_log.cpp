@@ -5,8 +5,8 @@
 
 int dn_error_log_init(cycle_t *cycle)
 {
-    log_t         *slog = NULL;
-    conf_server_t *sconf = NULL;
+    log_t         *slog = nullptr;
+    conf_server_t *sconf = nullptr;
     
     errno = 0;
 
@@ -16,7 +16,7 @@ int dn_error_log_init(cycle_t *cycle)
     slog->file->name = sconf->error_log;
     slog->log_level = sconf->log_level;
     
-    error_log_init(slog, (log_time_ptr)time_logstr, NULL);
+    error_log_init(slog, (log_time_ptr)time_logstr, nullptr);
     
     return NGX_OK;
 }

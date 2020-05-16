@@ -26,6 +26,7 @@ static string_t * default_level(int level)
     return &error_levels[DFS_LOG_DEBUG];
 }
 
+// log init func
 log_t * error_log_init_with_stderr(pool_t *pool)
 {
     log_t *log = (log_t *)pool_alloc(pool, sizeof(log_t));

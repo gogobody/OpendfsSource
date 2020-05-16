@@ -47,10 +47,10 @@ static void dn_request_send_read_done_response(dn_request_t *r);
 // listen_rev_handler
 void dn_conn_init(conn_t *c)
 {
-    event_t       *rev = NULL;
-    event_t       *wev = NULL;
-    dn_request_t  *r = NULL;
-    dfs_thread_t  *thread = NULL;
+    event_t       *rev = nullptr;
+    event_t       *wev = nullptr;
+    dn_request_t  *r = nullptr;
+    dfs_thread_t  *thread = nullptr;
 
 	thread = get_local_thread();
 
@@ -124,9 +124,9 @@ static void dn_empty_handler(event_t *ev)
 // 连接成功后，开始处理请求
 void dn_request_init(event_t *rev)
 {
-    conn_t       *c = NULL;
-    dn_request_t *r = NULL;
-    event_t      *wev = NULL;
+    conn_t       *c = nullptr;
+    dn_request_t *r = nullptr;
+    event_t      *wev = nullptr;
 
     c = (conn_t *)rev->data;
 	r = (dn_request_t *)c->conn_data;
@@ -147,8 +147,8 @@ void dn_request_init(event_t *rev)
 // 处理request
 static void dn_request_process_handler(event_t *ev)
 {
-    conn_t       *c = NULL;
-    dn_request_t *r = NULL;
+    conn_t       *c = nullptr;
+    dn_request_t *r = nullptr;
 
 	c = (conn_t *)ev->data;
 	r = (dn_request_t *)c->conn_data;
@@ -158,7 +158,7 @@ static void dn_request_process_handler(event_t *ev)
         if (!r->write_event_handler) 
 		{
             dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0, 
-				"write handler NULL, conn_fd: %d", c->fd);
+				"write handler nullptr, conn_fd: %d", c->fd);
 			
             return;
         }
@@ -170,7 +170,7 @@ static void dn_request_process_handler(event_t *ev)
         if (!r->read_event_handler) 
 		{
             dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0, 
-				"read handler NULL, conn_fd: %d", c->fd);
+				"read handler nullptr, conn_fd: %d", c->fd);
 			
             return;
         }
@@ -182,8 +182,8 @@ static void dn_request_process_handler(event_t *ev)
 // 处理头信息
 static void dn_request_read_header(dn_request_t *r)
 {
-    conn_t   *c = NULL;
-	event_t  *rev = NULL;
+    conn_t   *c = nullptr;
+	event_t  *rev = nullptr;
 	ssize_t   rs = 0;
 
 	c = r->conn;
@@ -239,8 +239,8 @@ static void dn_request_read_header(dn_request_t *r)
 
 static void dn_request_close(dn_request_t *r, uint32_t err)
 {
-    conn_t       *c = NULL;
-	dfs_thread_t *thread = NULL;
+    conn_t       *c = nullptr;
+	dfs_thread_t *thread = nullptr;
 
 	dfs_log_debug(dfs_cycle->error_log, DFS_LOG_DEBUG, 0, 
 		"dn_request_close err: %d", err);
@@ -251,7 +251,7 @@ static void dn_request_close(dn_request_t *r, uint32_t err)
 	if (r->fio) 
 	{
         cfs_fio_manager_free(r->fio, &thread->fio_mgr);
-		r->fio = NULL;
+		r->fio = nullptr;
 	}
 
 	if (r->store_fd > 0) 
@@ -263,7 +263,7 @@ static void dn_request_close(dn_request_t *r, uint32_t err)
 	if (r->pool) 
 	{
         pool_destroy(r->pool);
-		r->pool = NULL;
+		r->pool = nullptr;
     }
 	
     conn_release(c);
@@ -299,8 +299,8 @@ static void dn_request_parse_header(dn_request_t *r)
 
 static void dn_request_block_reading(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-	event_t *rev = NULL;
+    conn_t  *c = nullptr;
+	event_t *rev = nullptr;
 
 	c = r->conn;
 	rev = c->read;
@@ -317,8 +317,8 @@ static void dn_request_block_reading(dn_request_t *r)
 
 static void dn_request_block_writing(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-	event_t *wev = NULL;
+    conn_t  *c = nullptr;
+	event_t *wev = nullptr;
 
 	c = r->conn;
 	wev = c->read;
@@ -335,7 +335,7 @@ static void dn_request_block_writing(dn_request_t *r)
 
 static void dn_request_read_file(dn_request_t *r)
 {
-    block_info_t *blk = NULL;
+    block_info_t *blk = nullptr;
 	int           fd = -1;
 
 	blk = block_object_get(r->header.block_id);
@@ -372,7 +372,7 @@ static void dn_request_read_file(dn_request_t *r)
 //
 static void dn_request_write_file(dn_request_t *r)
 {
-    conf_server_t *sconf = NULL;
+    conf_server_t *sconf = nullptr;
 	int            fd = -1;
 
 	sconf = (conf_server_t*)dfs_cycle->sconf;
@@ -419,9 +419,9 @@ static void dn_request_write_file(dn_request_t *r)
 static void dn_request_header_response(dn_request_t *r)
 {
     data_transfer_header_rsp_t  header_rsp;
-	chain_t                    *out = NULL;
-	buffer_t                   *b = NULL;
-	conn_t                     *c = NULL;
+	chain_t                    *out = nullptr;
+	buffer_t                   *b = nullptr;
+	conn_t                     *c = nullptr;
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
@@ -471,7 +471,7 @@ static void dn_request_header_response(dn_request_t *r)
 		}
 	}
 
-	r->output->out = NULL;
+	r->output->out = nullptr;
     // out 链接到chain
 	chain_append_all(&r->output->out, out);
 
@@ -503,8 +503,8 @@ static void dn_request_header_response(dn_request_t *r)
 //
 static void dn_request_send_header_response(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-	event_t *wev = NULL;
+    conn_t  *c = nullptr;
+	event_t *wev = nullptr;
 	int      rs = 0;
 
 	c = r->conn;
@@ -556,7 +556,7 @@ static void dn_request_check_write_connection(dn_request_t *r)
 static void dn_request_check_connection(dn_request_t *r, 
 	event_t *ev)
 {
-    conn_t *c = NULL;
+    conn_t *c = nullptr;
 	char    buf[1] = "";
 	int     rs = 0;
 
@@ -602,8 +602,8 @@ static void dn_request_check_connection(dn_request_t *r,
 
 static int send_header_response(dn_request_t *r)
 {
-    conn_t             *c = NULL;
-	chain_output_ctx_t *ctx = NULL;
+    conn_t             *c = nullptr;
+	chain_output_ctx_t *ctx = nullptr;
 
 	c = r->conn;
 	ctx = r->output;
@@ -634,8 +634,8 @@ static int send_header_response(dn_request_t *r)
 
 static void dn_request_process_body(dn_request_t *r)
 {
-    dfs_thread_t *thread = NULL;
-	conn_t       *c = NULL;
+    dfs_thread_t *thread = nullptr;
+	conn_t       *c = nullptr;
 
 	thread = get_local_thread();
 	c = r->conn;
@@ -667,8 +667,8 @@ static void dn_request_process_body(dn_request_t *r)
 
 static void dn_request_send_block(dn_request_t *r)
 {
-	conn_t                *c = NULL;
-	sendfile_chain_task_t *sf_chain_task = NULL;
+	conn_t                *c = nullptr;
+	sendfile_chain_task_t *sf_chain_task = nullptr;
 
 	c = r->conn;
 
@@ -713,8 +713,8 @@ static void dn_request_send_block(dn_request_t *r)
 
 static void fio_task_alloc_timeout(event_t *ev)
 {
-    dn_request_t *r = NULL;
-	conn_t       *c = NULL;
+    dn_request_t *r = nullptr;
+	conn_t       *c = nullptr;
 
 	r = (dn_request_t *)ev->data;
 	c = r->conn;
@@ -734,9 +734,9 @@ static void fio_task_alloc_timeout(event_t *ev)
 
 static int block_read_complete(void *data, void *task)
 {
-    dn_request_t *r = NULL;
-	conn_t       *c = NULL;
-	file_io_t    *fio = NULL;
+    dn_request_t *r = nullptr;
+	conn_t       *c = nullptr;
+	file_io_t    *fio = nullptr;
 	int           rs = NGX_ERROR;
 
 	r = (dn_request_t *)data;
@@ -788,9 +788,9 @@ static int block_read_complete(void *data, void *task)
 
 static void dn_request_send_block_again(dn_request_t *r)
 {
-    conn_t       *c = NULL;
-	event_t      *wev = NULL;
-	dfs_thread_t *thread = NULL;
+    conn_t       *c = nullptr;
+	event_t      *wev = nullptr;
+	dfs_thread_t *thread = nullptr;
 
 	c = r->conn;
 	wev = c->write;
@@ -820,8 +820,8 @@ static void dn_request_send_block_again(dn_request_t *r)
 
 static void dn_request_recv_block(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-    event_t *rev = NULL;
+    conn_t  *c = nullptr;
+    event_t *rev = nullptr;
 
     c = r->conn;
 	rev = c->read;
@@ -853,8 +853,8 @@ static void recv_block_handler(dn_request_t *r)
 {
     int      rs = 0;
 	size_t   blen = 0;
-	conn_t  *c = NULL;
-	event_t *rev = NULL;
+	conn_t  *c = nullptr;
+	event_t *rev = nullptr;
 
 	c = r->conn;
 	rev = c->read;
@@ -941,8 +941,8 @@ static void recv_block_handler(dn_request_t *r)
 // param data is request , task is fio it self
 static int block_write_complete(void *data, void *task)
 {
-    dn_request_t *r = NULL;
-	file_io_t    *fio = NULL;
+    dn_request_t *r = nullptr;
+	file_io_t    *fio = nullptr;
 	int           rs = NGX_ERROR;
 
 	r = (dn_request_t *)data;
@@ -995,9 +995,9 @@ static int block_write_complete(void *data, void *task)
 static void dn_request_write_done_response(dn_request_t *r)
 {
     data_transfer_header_rsp_t  header_rsp;
-	chain_t                    *out = NULL;
-	buffer_t                   *b = NULL;
-	conn_t                     *c = NULL;
+	chain_t                    *out = nullptr;
+	buffer_t                   *b = nullptr;
+	conn_t                     *c = nullptr;
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
@@ -1046,7 +1046,7 @@ static void dn_request_write_done_response(dn_request_t *r)
 		}
 	}
 
-	r->output->out = NULL;
+	r->output->out = nullptr;
 	chain_append_all(&r->output->out, out);
 
 	r->write_event_handler = dn_request_send_write_done_response;
@@ -1074,8 +1074,8 @@ static void dn_request_write_done_response(dn_request_t *r)
 
 static void dn_request_send_write_done_response(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-	event_t *wev = NULL;
+    conn_t  *c = nullptr;
+	event_t *wev = nullptr;
 	int      rs = 0;
 
 	c = r->conn;
@@ -1114,9 +1114,9 @@ static void dn_request_send_write_done_response(dn_request_t *r)
 static void dn_request_read_done_response(dn_request_t *r)
 {
     data_transfer_header_rsp_t  header_rsp;
-	chain_t                    *out = NULL;
-	buffer_t                   *b = NULL;
-	conn_t                     *c = NULL;
+	chain_t                    *out = nullptr;
+	buffer_t                   *b = nullptr;
+	conn_t                     *c = nullptr;
     int                         header_sz = 0;
 
 	header_rsp.op_status = OP_STATUS_SUCCESS;
@@ -1165,7 +1165,7 @@ static void dn_request_read_done_response(dn_request_t *r)
 		}
 	}
 
-	r->output->out = NULL;
+	r->output->out = nullptr;
 	chain_append_all(&r->output->out, out);
 
 	r->write_event_handler = dn_request_send_read_done_response;
@@ -1193,8 +1193,8 @@ static void dn_request_read_done_response(dn_request_t *r)
 
 static void dn_request_send_read_done_response(dn_request_t *r)
 {
-    conn_t  *c = NULL;
-	event_t *wev = NULL;
+    conn_t  *c = nullptr;
+	event_t *wev = nullptr;
 	int      rs = 0;
 
 	c = r->conn;

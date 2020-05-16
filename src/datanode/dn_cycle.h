@@ -19,9 +19,9 @@ typedef struct cycle_s  //作为一个全局变量指向nginx当前运行的上�
 
 extern cycle_t *dfs_cycle;
 
-cycle_t  *cycle_create();
-int       cycle_init(cycle_t *cycle);
-int       cycle_free(cycle_t *cycle);
+cycle_t  *dn_cycle_create();
+int       dn_cycle_init(cycle_t *cycle);
+int       dn_cycle_free(cycle_t *cycle);
 array_t  *cycle_get_listen_for_cli();
 int       cycle_check_sys_env(cycle_t *cycle);
 

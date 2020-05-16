@@ -30,6 +30,7 @@ static int conf_string_pdup(pool_t *pool, string_t *dst, string_t *src);
 
 
 //从pool为conf_ctx分配空间
+// 配置文件上下文
 conf_context_t * conf_context_create(pool_t *pool)
 {
     conf_context_t *ctx = nullptr;

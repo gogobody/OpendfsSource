@@ -172,7 +172,7 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     uchar_t  *end = nullptr;
     uchar_t  *pos = nullptr;
 
-    if (type != OPE_EQUAL) 
+    if (type != OPE_EQUAL) // =
 	{
         return NGX_ERROR;
     }
@@ -182,7 +182,7 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
         return NGX_ERROR;
     }
 
-    vi = args_n - 1;
+    vi = args_n - 1; // 2
     if (args[vi].len == 0 || !args[vi].data) 
 	{
         return NGX_ERROR;

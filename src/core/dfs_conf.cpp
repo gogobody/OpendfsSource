@@ -598,8 +598,8 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
 static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 {
     int              i = 0;
-    uchar_t         *ch = NULL;
-    string_t        *word = NULL;
+    uchar_t         *ch = NULL; // eg: .daemon
+    string_t        *word = NULL; // serve.daemon
     string_t         var = string_null;
     string_t         att = string_null;
     conf_object_t   *objects = NULL;
@@ -610,7 +610,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 	
     log = ctx->log;
     args = conf_args->arr;
-    word = (string_t *)args->elts;
+    word = (string_t *)args->elts; // serve.daemon
     line = conf_args->line;
     objects = ctx->conf_objects;
   
@@ -655,7 +655,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
     } 
 	else 
 	{
-        ch = (uchar_t *)string_strchr(word[0].data, '.');
+        ch = (uchar_t *)string_strchr(word[0].data, '.'); // server.daemon => .daemon
         if (!ch) 
 		{
             dfs_log_error(log , DFS_LOG_ERROR, 0, "at line %d: missing \".\" in"
@@ -666,7 +666,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 		
         var.data = word[0].data ;
         var.len = ch - var.data;
-        att.data = ch + 1;
+        att.data = ch + 1; // daemon
         att.len = word[0].len - var.len - 1;
         vclass = conf_get_vobject(ctx, &var);
         if (!vclass) 
@@ -687,6 +687,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
     return NGX_OK;
 }
 
+//
 static conf_variable_t * conf_get_vobject(conf_context_t *ctx, 
 	                                            string_t *name)
 {
@@ -758,6 +759,7 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
     return NGX_OK;
 }
 
+// eg: att:daemon ,args: server.daemon
 static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v, 
 	                                    string_t *att, string_t *args, 
 	                                    int args_n, conf_option_t *option)

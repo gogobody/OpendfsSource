@@ -111,6 +111,7 @@ uchar_t * string_xxdup(string_t *src)
     return dst;
 }
 
+// if s1 == s2  then return 0
 int string_xxstrncasecmp(uchar_t *s1, uchar_t *s2, size_t n)
 {
     uint32_t c1 = 0, c2 = 0;

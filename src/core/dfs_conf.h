@@ -14,7 +14,7 @@ typedef struct conf_file_read_s conf_file_read_t;
 
 struct conf_object_s 
 {
-    string_t       name;
+    string_t       name; // eg: server
     void *         (*init)(pool_t *pool);
     int            (*make_default)(void *);
     conf_option_t *option;  

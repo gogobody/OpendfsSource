@@ -292,7 +292,7 @@ static int nn_conn_decode(nn_conn_t *mc)
 			event_del_read(mc->connection->ev_base, mc->connection->read);
             event_timer_add(mc->connection->ev_timer, &mc->ev_timer, 1000);
 			
-            return DFS_BUSY;
+            return NGX_BUSY;
     	}	
 
 		// decode task to _in buffer

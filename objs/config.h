@@ -55,7 +55,7 @@
 
 
 #ifndef PACKAGE_BUGREPORT
-#define PACKAGE_BUGREPORT  "liaosanity@gmail.com"
+#define PACKAGE_BUGREPORT  "gogobody@gmail.com"
 #endif
 
 
@@ -75,11 +75,11 @@
 
 
 #ifndef PREFIX
-#define PREFIX  "/home/gogobody/opendfs"
+#define PREFIX  "/home/ginux/Projects/OpendfsSource"
 #endif
 
 
 #ifndef PID_FILE
-#define PID_FILE  "/home/gogobody/opendfs/logs/namenode.pid"
+#define PID_FILE  "/home/ginux/Projects/OpendfsSource/logs/namenode.pid"
 #endif
 

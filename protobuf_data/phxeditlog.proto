@@ -27,6 +27,8 @@ message LogCreate
     uint64 blk_id = 6;
     uint64 blk_sz = 7;
     uint32 blk_rep = 8;
+    uint32 blk_seq = 9;
+    uint32 total_blk = 10;
 };
 
 message LogGetAdditionalBlk

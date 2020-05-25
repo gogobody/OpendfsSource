@@ -189,6 +189,8 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_phxeditlog_2eproto::offsets[] 
   PROTOBUF_FIELD_OFFSET(::phxeditlog::LogCreate, blk_id_),
   PROTOBUF_FIELD_OFFSET(::phxeditlog::LogCreate, blk_sz_),
   PROTOBUF_FIELD_OFFSET(::phxeditlog::LogCreate, blk_rep_),
+  PROTOBUF_FIELD_OFFSET(::phxeditlog::LogCreate, blk_seq_),
+  PROTOBUF_FIELD_OFFSET(::phxeditlog::LogCreate, total_blk_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::phxeditlog::LogGetAdditionalBlk, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -231,10 +233,10 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 0, -1, sizeof(::phxeditlog::LogMkdir)},
   { 10, -1, sizeof(::phxeditlog::LogRmr)},
   { 17, -1, sizeof(::phxeditlog::LogCreate)},
-  { 30, -1, sizeof(::phxeditlog::LogGetAdditionalBlk)},
-  { 39, -1, sizeof(::phxeditlog::LogClose)},
-  { 48, -1, sizeof(::phxeditlog::LogRm)},
-  { 55, -1, sizeof(::phxeditlog::LogOperator)},
+  { 32, -1, sizeof(::phxeditlog::LogGetAdditionalBlk)},
+  { 41, -1, sizeof(::phxeditlog::LogClose)},
+  { 50, -1, sizeof(::phxeditlog::LogRm)},
+  { 57, -1, sizeof(::phxeditlog::LogOperator)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -252,23 +254,24 @@ const char descriptor_table_protodef_phxeditlog_2eproto[] PROTOBUF_SECTION_VARIA
   "ir\022\013\n\003key\030\001 \001(\t\022\022\n\npermission\030\002 \001(\r\022\r\n\005o"
   "wner\030\003 \001(\t\022\r\n\005group\030\004 \001(\t\022\031\n\021modificatio"
   "n_time\030\005 \001(\004\"0\n\006LogRmr\022\013\n\003key\030\001 \001(\t\022\031\n\021m"
-  "odification_time\030\002 \001(\004\"\226\001\n\tLogCreate\022\013\n\003"
+  "odification_time\030\002 \001(\004\"\272\001\n\tLogCreate\022\013\n\003"
   "key\030\001 \001(\t\022\022\n\npermission\030\002 \001(\r\022\r\n\005owner\030\003"
   " \001(\t\022\r\n\005group\030\004 \001(\t\022\031\n\021modification_time"
   "\030\005 \001(\004\022\016\n\006blk_id\030\006 \001(\004\022\016\n\006blk_sz\030\007 \001(\004\022\017"
-  "\n\007blk_rep\030\010 \001(\r\"S\n\023LogGetAdditionalBlk\022\013"
-  "\n\003key\030\001 \001(\t\022\016\n\006blk_id\030\002 \001(\004\022\016\n\006blk_sz\030\003 "
-  "\001(\004\022\017\n\007blk_rep\030\004 \001(\r\"P\n\010LogClose\022\013\n\003key\030"
-  "\001 \001(\t\022\031\n\021modification_time\030\002 \001(\004\022\013\n\003len\030"
-  "\003 \001(\004\022\017\n\007blk_rep\030\004 \001(\r\"/\n\005LogRm\022\013\n\003key\030\001"
-  " \001(\t\022\031\n\021modification_time\030\002 \001(\004\"\365\001\n\013LogO"
-  "perator\022\016\n\006optype\030\001 \001(\r\022!\n\003mkr\030\002 \001(\0132\024.p"
-  "hxeditlog.LogMkdir\022\037\n\003rmr\030\003 \001(\0132\022.phxedi"
-  "tlog.LogRmr\022\"\n\003cre\030\004 \001(\0132\025.phxeditlog.Lo"
-  "gCreate\022,\n\003gab\030\005 \001(\0132\037.phxeditlog.LogGet"
-  "AdditionalBlk\022!\n\003cle\030\006 \001(\0132\024.phxeditlog."
-  "LogClose\022\035\n\002rm\030\007 \001(\0132\021.phxeditlog.LogRmb"
-  "\006proto3"
+  "\n\007blk_rep\030\010 \001(\r\022\017\n\007blk_seq\030\t \001(\r\022\021\n\ttota"
+  "l_blk\030\n \001(\r\"S\n\023LogGetAdditionalBlk\022\013\n\003ke"
+  "y\030\001 \001(\t\022\016\n\006blk_id\030\002 \001(\004\022\016\n\006blk_sz\030\003 \001(\004\022"
+  "\017\n\007blk_rep\030\004 \001(\r\"P\n\010LogClose\022\013\n\003key\030\001 \001("
+  "\t\022\031\n\021modification_time\030\002 \001(\004\022\013\n\003len\030\003 \001("
+  "\004\022\017\n\007blk_rep\030\004 \001(\r\"/\n\005LogRm\022\013\n\003key\030\001 \001(\t"
+  "\022\031\n\021modification_time\030\002 \001(\004\"\365\001\n\013LogOpera"
+  "tor\022\016\n\006optype\030\001 \001(\r\022!\n\003mkr\030\002 \001(\0132\024.phxed"
+  "itlog.LogMkdir\022\037\n\003rmr\030\003 \001(\0132\022.phxeditlog"
+  ".LogRmr\022\"\n\003cre\030\004 \001(\0132\025.phxeditlog.LogCre"
+  "ate\022,\n\003gab\030\005 \001(\0132\037.phxeditlog.LogGetAddi"
+  "tionalBlk\022!\n\003cle\030\006 \001(\0132\024.phxeditlog.LogC"
+  "lose\022\035\n\002rm\030\007 \001(\0132\021.phxeditlog.LogRmb\006pro"
+  "to3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_phxeditlog_2eproto_deps[1] = {
 };
@@ -284,7 +287,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_phx
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_phxeditlog_2eproto_once;
 static bool descriptor_table_phxeditlog_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_phxeditlog_2eproto = {
-  &descriptor_table_phxeditlog_2eproto_initialized, descriptor_table_protodef_phxeditlog_2eproto, "phxeditlog.proto", 807,
+  &descriptor_table_phxeditlog_2eproto_initialized, descriptor_table_protodef_phxeditlog_2eproto, "phxeditlog.proto", 843,
   &descriptor_table_phxeditlog_2eproto_once, descriptor_table_phxeditlog_2eproto_sccs, descriptor_table_phxeditlog_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_phxeditlog_2eproto::offsets,
   file_level_metadata_phxeditlog_2eproto, 7, file_level_enum_descriptors_phxeditlog_2eproto, file_level_service_descriptors_phxeditlog_2eproto,
@@ -884,8 +887,8 @@ LogCreate::LogCreate(const LogCreate& from)
     group_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.group_);
   }
   ::memcpy(&modification_time_, &from.modification_time_,
-    static_cast<size_t>(reinterpret_cast<char*>(&blk_sz_) -
-    reinterpret_cast<char*>(&modification_time_)) + sizeof(blk_sz_));
+    static_cast<size_t>(reinterpret_cast<char*>(&total_blk_) -
+    reinterpret_cast<char*>(&modification_time_)) + sizeof(total_blk_));
   // @@protoc_insertion_point(copy_constructor:phxeditlog.LogCreate)
 }
 
@@ -895,8 +898,8 @@ void LogCreate::SharedCtor() {
   owner_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   group_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&modification_time_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&blk_sz_) -
-      reinterpret_cast<char*>(&modification_time_)) + sizeof(blk_sz_));
+      reinterpret_cast<char*>(&total_blk_) -
+      reinterpret_cast<char*>(&modification_time_)) + sizeof(total_blk_));
 }
 
 LogCreate::~LogCreate() {
@@ -929,8 +932,8 @@ void LogCreate::Clear() {
   owner_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   group_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&modification_time_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&blk_sz_) -
-      reinterpret_cast<char*>(&modification_time_)) + sizeof(blk_sz_));
+      reinterpret_cast<char*>(&total_blk_) -
+      reinterpret_cast<char*>(&modification_time_)) + sizeof(total_blk_));
   _internal_metadata_.Clear();
 }
 
@@ -1000,6 +1003,20 @@ const char* LogCreate::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
       case 8:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
           blk_rep_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 blk_seq = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
+          blk_seq_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 total_blk = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
+          total_blk_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1089,6 +1106,18 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(8, this->_internal_blk_rep(), target);
   }
 
+  // uint32 blk_seq = 9;
+  if (this->blk_seq() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(9, this->_internal_blk_seq(), target);
+  }
+
+  // uint32 total_blk = 10;
+  if (this->total_blk() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(10, this->_internal_total_blk(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields(), target, stream);
@@ -1161,6 +1190,20 @@ size_t LogCreate::ByteSizeLong() const {
         this->_internal_blk_sz());
   }
 
+  // uint32 blk_seq = 9;
+  if (this->blk_seq() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_blk_seq());
+  }
+
+  // uint32 total_blk = 10;
+  if (this->total_blk() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_total_blk());
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -1219,6 +1262,12 @@ void LogCreate::MergeFrom(const LogCreate& from) {
   if (from.blk_sz() != 0) {
     _internal_set_blk_sz(from._internal_blk_sz());
   }
+  if (from.blk_seq() != 0) {
+    _internal_set_blk_seq(from._internal_blk_seq());
+  }
+  if (from.total_blk() != 0) {
+    _internal_set_total_blk(from._internal_total_blk());
+  }
 }
 
 void LogCreate::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
@@ -1253,6 +1302,8 @@ void LogCreate::InternalSwap(LogCreate* other) {
   swap(blk_rep_, other->blk_rep_);
   swap(blk_id_, other->blk_id_);
   swap(blk_sz_, other->blk_sz_);
+  swap(blk_seq_, other->blk_seq_);
+  swap(total_blk_, other->total_blk_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata LogCreate::GetMetadata() const {

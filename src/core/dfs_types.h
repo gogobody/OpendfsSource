@@ -197,6 +197,8 @@ typedef ssize_t  (*sysio_send_pt)(conn_t *c, uchar_t *buf, size_t size);
 typedef chain_t *(*sysio_send_chain_pt)(conn_t *c, chain_t *in, size_t limit);
 typedef chain_t *(*sysio_sendfile_pt)(conn_t *c, chain_t *in, int fd, size_t limit);
 
+#define BLK_NOT_EXIST -1
+
 #ifndef DFS_PAGE_SIZE
     #if defined(_SC_PAGESIZE)
         #define DFS_PAGE_SIZE sysconf(_SC_PAGESIZE)

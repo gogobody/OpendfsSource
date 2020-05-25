@@ -31,6 +31,10 @@ static int log_get_additional_blk(task_t *task);
 static int log_close(task_t *task);
 static int log_rm(task_t *task);
 
+FSEditlog* nn_get_paxos_obj(){
+    return g_editlog;
+}
+
 static int parse_ipport(const char * pcStr, NodeInfo & oNodeInfo)
 {
     char sIP[32] = {0};
@@ -113,7 +117,7 @@ int nn_paxos_worker_init(cycle_t *cycle)
     
     int iGroupCount = (int)sconf->paxos_group_num;
 
-    g_editlog = new FSEditlog(oMyNode, vecNodeList, editlogDir, iGroupCount);
+    g_editlog = new FSEditlog(sconf->enableMaster, oMyNode, vecNodeList, editlogDir, iGroupCount);
     if (nullptr == g_editlog)
     {
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 0, 
@@ -138,6 +142,7 @@ int nn_paxos_worker_release(cycle_t *cycle)
 
 int nn_paxos_run()
 {
+
     return g_editlog->RunPaxos();
 }
 
@@ -182,7 +187,7 @@ void do_paxos_task_handler(void *q) // param task queue
 static int do_paxos_task(task_t *task)
 {
     int optype = task->cmd;
-	
+
 	switch (optype)
     {
     case NN_MKDIR:
@@ -267,19 +272,24 @@ int check_ancestor_access(uchar_t *path, task_t *task,
     return NGX_OK;
 }
 
+//
 static int log_mkdir(task_t *task)
 {
     int            expect_mkdir_num = 0;
 	int            parent_index = 0;
-	fi_inode_t    *finodes[PATH_LEN];
+	fi_inode_t    *finodes[PATH_LEN]={};
+
 	conf_server_t *sconf = (conf_server_t *)dfs_cycle->sconf;
 	
     task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
 
-	if (!g_editlog->IsIMMaster(task->key)) // 不是master 节点 就重定向到master节点
+    printf("master ip:port %s:%d \n",g_editlog->GetMaster(task->key).GetIP().c_str(),g_editlog->GetMaster(task->key).GetPort());
+
+    if (!g_editlog->IsIMMaster(task->key)) // 不是master 节点 就重定向到master节点
 	{
         task->ret = MASTER_REDIRECT;
 		task->master_nodeid = g_editlog->GetMaster(task->key).GetNodeID();
+        printf("master node id:%d\n ",task->master_nodeid);
 
 		return write_back(node);
 	}
@@ -307,6 +317,9 @@ static int log_mkdir(task_t *task)
 	{
 	    goto do_paxos;
 	}
+
+	// init finodes?
+
 
 	// 找到哪一级目录不存在
 	parent_index = get_path_inodes(keys, names_sz, finodes);
@@ -535,6 +548,7 @@ static int log_create(task_t *task)
 	fi_store_t *fi = get_store_obj((uchar_t *)task->key); // key 是dst 目录
 	if (fi) // 元数据存在
 	{
+	    //
 	    if (fi->state == KEY_STATE_OK) 
 		{
             task->ret = KEY_EXIST;
@@ -631,6 +645,9 @@ static int log_create(task_t *task)
 	lopr.mutable_cre()->set_blk_id(resp_info.blk_id);
 	lopr.mutable_cre()->set_blk_sz(blk_info.blk_sz);
 	lopr.mutable_cre()->set_blk_rep(blk_info.blk_rep);
+	// add blk seq
+	lopr.mutable_cre()->set_blk_seq(blk_info.blk_seq);
+    lopr.mutable_cre()->set_total_blk(blk_info.total_blk);
 
 	string sPaxosValue;
 	lopr.SerializeToString(&sPaxosValue);

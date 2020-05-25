@@ -22,7 +22,7 @@ int nn_rpc_worker_release(cycle_t *cycle)
     return NGX_OK;
 }
 
-// do task
+// first do task
 // 重新push到不同的队列里 // dn 和 cli push 到bque队列，其他线程push到 tq队列里
 // from notice_wake_up
 int nn_rpc_service_run(task_t *task)

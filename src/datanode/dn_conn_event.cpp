@@ -65,6 +65,7 @@ int conn_listening_init(cycle_t *cycle)
         }
 
 		strcpy(cycle->listening_ip, (const char *)bind_for_cli[i].addr.data);
+
     }
 
 	// open listening

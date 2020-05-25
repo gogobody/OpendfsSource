@@ -688,14 +688,21 @@ static void dn_request_send_block(dn_request_t *r)
 
 		    return;
 		}
-
+        printf("dn_request_send_block conn fd:%d file fd :%d\n",c->fd,r->store_fd);
 		sf_chain_task->conn_fd = c->fd;
         sf_chain_task->store_fd = r->store_fd;
 		
 		r->fio->sf_chain_task = sf_chain_task;
 	}
 
-	r->fio->fd = r->store_fd;
+    // fix : no sf_chain_task conn_fd and store_fd
+
+    sf_chain_task = static_cast<sendfile_chain_task_t *>(r->fio->sf_chain_task);
+    sf_chain_task->conn_fd = c->fd;
+    sf_chain_task->store_fd = r->store_fd;
+
+    // end
+    r->fio->fd = r->store_fd;
 	r->fio->offset = r->header.start_offset;
     r->fio->need = r->header.len;
     r->fio->data = r;

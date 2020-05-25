@@ -132,6 +132,7 @@ static int cfs_faio_write(file_io_t *data, log_t *log)
     return NGX_OK;
 }
 
+//
 static int cfs_faio_sendfile(file_io_t *data, log_t *log)
 {
 	faio_errno_t             error;
@@ -238,7 +239,8 @@ int cfs_faio_io_read(faio_data_task_t *task)
         file_task->offset)) < 0) 
     {
         task->err.sys = errno;
-		
+        printf("cfs_faio_io_read rc:%d\n ",ret);
+
         return NGX_ERROR;
     }
 
@@ -289,7 +291,8 @@ int cfs_faio_io_send_file(faio_data_task_t *task)
 	{
 		rc = sendfile(sf_chain_task->conn_fd, sf_chain_task->store_fd, 
 			&file_task->offset, file_task->need);
-        
+        printf("cfs_faio_io_send_file rc:%d connfd:%d filefd:%d offset:%llu need:%d\n ",rc,sf_chain_task->conn_fd, sf_chain_task->store_fd,
+               &file_task->offset, file_task->need);
         if (rc == NGX_ERROR)
 		{
             if (errno == DFS_EAGAIN) 
@@ -339,7 +342,7 @@ static void cfs_faio_parse(swap_opt_t *sp, fs_meta_t *meta)
     sp->io_opt.write = cfs_faio_write;
     sp->io_opt.open = cfs_faio_open;
     sp->io_opt.close = cfs_faio_close;
-    sp->io_opt.sendfilechain = cfs_faio_sendfile;
+    sp->io_opt.sendfilechain = cfs_faio_sendfile; //
 }
 
 static void cfs_faio_done(void)

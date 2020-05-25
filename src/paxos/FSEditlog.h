@@ -12,7 +12,7 @@ using namespace std;
 class FSEditlog
 {
 public:
-    FSEditlog(const NodeInfo & oMyNode, const NodeInfoList & vecNodeList, 
+    FSEditlog(int enableMaster, const NodeInfo & oMyNode, const NodeInfoList & vecNodeList,
         string & sPaxosLogPath, int iGroupCount);
     ~FSEditlog();
 
@@ -26,6 +26,8 @@ public:
 	int Propose(const string & sKey, const string & sPaxosValue, 
         PhxEditlogSMCtx & oEditlogSMCtx);
 
+public:
+    int enableMaster = 0; // not use Master if zero
 private:
     int MakeLogStoragePath(string & sLogStoragePath);
     int GetGroupIdx(const string & sKey);

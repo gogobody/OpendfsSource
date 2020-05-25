@@ -10,11 +10,12 @@
 #include "nn_cycle.h"
 #include "nn_error_log.h"
 
-FSEditlog::FSEditlog(const NodeInfo & oMyNode, const NodeInfoList & vecNodeList, 
+FSEditlog::FSEditlog(int enableMaster,const NodeInfo & oMyNode, const NodeInfoList & vecNodeList,
     string & sPaxosLogPath, int iGroupCount) : m_oMyNode(oMyNode), 
     m_vecNodeList(vecNodeList), m_sPaxosLogPath(sPaxosLogPath), 
     m_iGroupCount(iGroupCount), m_poPaxosNode(nullptr)
 {
+    enableMaster = enableMaster;
 }
 
 FSEditlog::~FSEditlog()
@@ -52,7 +53,11 @@ int FSEditlog::RunPaxos()
         oSMInfo.iGroupIdx = iGroupIdx;
         //one paxos group can have multi state machine.
         oSMInfo.vecSMList.push_back(&m_oEditlogSM);
-        oSMInfo.bIsUseMaster = true; //开启我们内置的一个Master状态机
+        if(enableMaster){
+            oSMInfo.bIsUseMaster = true; //开启我们内置的一个Master状态机
+        } else{
+            oSMInfo.bIsUseMaster = false; //开启我们内置的一个Master状态机
+        }
 
         oOptions.vecGroupSMInfoList.push_back(oSMInfo); //vecGroupSMInfoList 描述了多个PhxPaxos实例对应的状态机列表
     }
@@ -76,7 +81,9 @@ int FSEditlog::RunPaxos()
 const NodeInfo FSEditlog::GetMaster(const string & sKey)
 {
     int iGroupIdx = GetGroupIdx(sKey);
-    
+    printf("## now master group id %d; is master: %d \n",iGroupIdx,m_poPaxosNode->IsIMMaster(iGroupIdx));
+    printf("## master ip:port %s:%d \n",m_poPaxosNode->GetMaster(iGroupIdx).GetIP().c_str(),m_poPaxosNode->GetMaster(iGroupIdx).GetPort());
+
     return m_poPaxosNode->GetMaster(iGroupIdx);
 }
 
@@ -84,7 +91,11 @@ const bool FSEditlog::IsIMMaster(const string & sKey)
 {
     int iGroupIdx = GetGroupIdx(sKey);
 
-    return m_poPaxosNode->IsIMMaster(iGroupIdx);
+    if(enableMaster){
+        return m_poPaxosNode->IsIMMaster(iGroupIdx);
+    } else{
+        return true;
+    }
 }
 
 int FSEditlog::Propose(const string & sKey, const string & sPaxosValue, 

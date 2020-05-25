@@ -7,10 +7,13 @@
 
 typedef struct conf_server_s conf_server_t;
 
+// 如果修改了配置文件，需要添加相应的字段
+
 struct conf_server_s 
 {
     int      daemon;
     int      worker_n; // task thread, dn thread , cli thread num
+    int      enableMaster;
     array_t  bind_for_cli;
     array_t  bind_for_dn;
     uint32_t connection_n;

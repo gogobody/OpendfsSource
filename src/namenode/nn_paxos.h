@@ -7,6 +7,7 @@
 int nn_paxos_worker_init(cycle_t *cycle);
 int nn_paxos_worker_release(cycle_t *cycle);
 int nn_paxos_run();
+FSEditlog* nn_get_paxos_obj();
 void set_checkpoint_instanceID(const uint64_t llInstanceID);
 void do_paxos_task_handler(void *q);
 int check_traverse(uchar_t *path, task_t *task, 

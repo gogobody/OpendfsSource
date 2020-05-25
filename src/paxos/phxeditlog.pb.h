@@ -543,6 +543,8 @@ class LogCreate :
     kBlkRepFieldNumber = 8,
     kBlkIdFieldNumber = 6,
     kBlkSzFieldNumber = 7,
+    kBlkSeqFieldNumber = 9,
+    kTotalBlkFieldNumber = 10,
   };
   // string key = 1;
   void clear_key();
@@ -637,6 +639,24 @@ class LogCreate :
   void _internal_set_blk_sz(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // uint32 blk_seq = 9;
+  void clear_blk_seq();
+  ::PROTOBUF_NAMESPACE_ID::uint32 blk_seq() const;
+  void set_blk_seq(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_blk_seq() const;
+  void _internal_set_blk_seq(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 total_blk = 10;
+  void clear_total_blk();
+  ::PROTOBUF_NAMESPACE_ID::uint32 total_blk() const;
+  void set_total_blk(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_total_blk() const;
+  void _internal_set_total_blk(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:phxeditlog.LogCreate)
  private:
   class _Internal;
@@ -650,6 +670,8 @@ class LogCreate :
   ::PROTOBUF_NAMESPACE_ID::uint32 blk_rep_;
   ::PROTOBUF_NAMESPACE_ID::uint64 blk_id_;
   ::PROTOBUF_NAMESPACE_ID::uint64 blk_sz_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 blk_seq_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 total_blk_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_phxeditlog_2eproto;
 };
@@ -1962,6 +1984,46 @@ inline void LogCreate::_internal_set_blk_rep(::PROTOBUF_NAMESPACE_ID::uint32 val
 inline void LogCreate::set_blk_rep(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   _internal_set_blk_rep(value);
   // @@protoc_insertion_point(field_set:phxeditlog.LogCreate.blk_rep)
+}
+
+// uint32 blk_seq = 9;
+inline void LogCreate::clear_blk_seq() {
+  blk_seq_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 LogCreate::_internal_blk_seq() const {
+  return blk_seq_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 LogCreate::blk_seq() const {
+  // @@protoc_insertion_point(field_get:phxeditlog.LogCreate.blk_seq)
+  return _internal_blk_seq();
+}
+inline void LogCreate::_internal_set_blk_seq(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  blk_seq_ = value;
+}
+inline void LogCreate::set_blk_seq(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_blk_seq(value);
+  // @@protoc_insertion_point(field_set:phxeditlog.LogCreate.blk_seq)
+}
+
+// uint32 total_blk = 10;
+inline void LogCreate::clear_total_blk() {
+  total_blk_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 LogCreate::_internal_total_blk() const {
+  return total_blk_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 LogCreate::total_blk() const {
+  // @@protoc_insertion_point(field_get:phxeditlog.LogCreate.total_blk)
+  return _internal_total_blk();
+}
+inline void LogCreate::_internal_set_total_blk(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  total_blk_ = value;
+}
+inline void LogCreate::set_total_blk(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_total_blk(value);
+  // @@protoc_insertion_point(field_set:phxeditlog.LogCreate.total_blk)
 }
 
 // -------------------------------------------------------------------

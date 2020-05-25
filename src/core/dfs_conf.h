@@ -33,9 +33,9 @@ struct conf_context_s
     conf_file_read_t  file; // conf file
     log_t            *log; //
     pool_t           *pool;
-    array_t          *conf_objects_array;
+    array_t          *conf_objects_array; // 解析的配置文件 conf_variable_s
     int               conf_line;
-    conf_object_t    *conf_objects;
+    conf_object_t    *conf_objects; //配置文件 大类解析的相关操作，小类配置解析相关函数// nn_conf_objects in nn_conf.cpp
 };
 
 conf_context_t* conf_context_create(pool_t *pool);

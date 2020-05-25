@@ -51,7 +51,7 @@ struct conf_variable_s
 {
     string_t       name;
     string_t       obj_name;
-    void          *conf;
+    void          *conf;  // obj->init(ctx->pool) // conf_server_init->return conf_server_t
     conf_option_t *option;
     int           (*make_default)(void *);
 };

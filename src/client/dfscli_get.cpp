@@ -10,10 +10,12 @@ static int dfs_read_blk(rw_context_t *rw_ctx);
 static int do_recvfile_splice(int fromfd, int tofd, 
 	loff_t *offset, size_t count);
 
-int dfscli_get(char *src, char *dst)
+
+// blk num is remote file's total blk num
+int dfscli_get(char *src, char *dst, const int *blk_num)
 {
-    conf_server_t *sconf = NULL;
-    rw_context_t  *rw_ctx = NULL;
+    conf_server_t *sconf = nullptr;
+    rw_context_t  *rw_ctx = nullptr;
 
 	sconf = (conf_server_t *)dfs_cycle->sconf;
 	
@@ -35,6 +37,10 @@ int dfscli_get(char *src, char *dst)
         return NGX_ERROR;
 	}
 
+	//
+	blk_num = reinterpret_cast<int *>(rw_ctx->total_blk);
+	printf("now blk seq:%d\n",rw_ctx->blk_seq);
+	//
 	dfs_read_blk(rw_ctx);
 
 	//dfs_close(rw_ctx);
@@ -45,6 +51,7 @@ int dfscli_get(char *src, char *dst)
 		rw_ctx->nn_fd = -1;
 	}
 
+	//
 	for (int i = 0; i < rw_ctx->dn_num; i++) 
 	{
         if (rw_ctx->dn_fd[i] > 0) 
@@ -167,7 +174,7 @@ static int dfs_open(rw_context_t *rw_ctx)
 
         return NGX_ERROR;
 	}
-	else if (NULL != in_t.data && in_t.data_len > 0) 
+	else if (nullptr != in_t.data && in_t.data_len > 0)
 	{
         memset(&resp_info, 0x00, sizeof(create_resp_info_t));
 		memcpy(&resp_info, in_t.data, in_t.data_len);
@@ -177,6 +184,10 @@ static int dfs_open(rw_context_t *rw_ctx)
 		rw_ctx->blk_sz = resp_info.blk_sz;
 		rw_ctx->namespace_id = resp_info.namespace_id;
 		rw_ctx->dn_num = resp_info.dn_num;
+		// add
+		rw_ctx->blk_seq = resp_info.blk_seq;
+		rw_ctx->total_blk = resp_info.total_blk;
+		//
 		memcpy(rw_ctx->dn_ips, resp_info.dn_ips, sizeof(resp_info.dn_ips));
 	}
 	
@@ -248,7 +259,7 @@ static int dfs_read_blk(rw_context_t *rw_ctx)
 	    return NGX_ERROR;
 	}
 
-	if (do_recvfile_splice(sockfd, datafd, NULL, fsize) == NGX_ERROR)
+	if (do_recvfile_splice(sockfd, datafd, nullptr, fsize) == NGX_ERROR)
 	{
 	    close(datafd);
 		close(sockfd);
@@ -289,7 +300,7 @@ static int do_recvfile_splice(int fromfd, int tofd,
     long rc = 0, wc = 0, nread = 0, nwrite = 0, total = 0;
     loff_t off = 0;
 
-    if (offset == NULL) 
+    if (offset == nullptr)
     {
         offset = &off;
     }

@@ -347,11 +347,15 @@ static void nn_conn_read_handler(nn_conn_t *mc)
 
     // recv buf to mc->in
     rc = nn_conn_recv(mc);
+    uchar_t  * addr = mc->connection->addr_text.data;
+//    printf("%s\n",addr);
+    char tmpchar[50];
     switch (rc) 
 	{
     case NGX_CONN_CLOSED:
-        err = (char *)"conn closed";
-		
+//        err = (char *)"conn closed";
+		sprintf(tmpchar,"%s conn closed",addr);
+		err = tmpchar;
         goto error;
 			
     case NGX_ERROR:

@@ -104,8 +104,8 @@ void * mem_get0(struct mem_mblks *mblks)
 
 void mem_put(void *ptr)
 {
-    struct mem_data *pdata = NULL;
-    struct mem_mblks *mblks = NULL;
+    struct mem_data *pdata = nullptr;
+    struct mem_mblks *mblks = nullptr;
 
     if (!ptr) 
 	{
@@ -133,8 +133,6 @@ void mem_put(void *ptr)
         mblks->free_blks = pdata;
     }
     UNLOCK(&mblks->lock);
-
-    return;
 }
 
 void mem_mblks_destroy(struct mem_mblks *mblks) 

@@ -1,6 +1,6 @@
 #include "dfs_task_codec.h"
 
-//
+// decode buffer to task
 int task_decode(buffer_t *buff, task_t *task)
 {
     int ret = 0;

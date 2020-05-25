@@ -284,6 +284,8 @@ void ngx_worker_process_cycle(cycle_t *cycle, void *data)
 
     for ( ;; ) 
 	{
+
+
         if (process_quit_check()) 
 		{
             stop_cli_thread();
@@ -383,6 +385,14 @@ static void * thread_paxos_cycle(void *arg) //paxos_thread
 
     while (me->running) 
 	{
+//        FSEditlog * fsEditlog = nn_get_paxos_obj();
+//        if(fsEditlog){
+//            task_s tmptask;
+//            memcpy(&tmptask.key,"1",1);
+//
+////            printf("master ip:port %s:%d \n",fsEditlog->GetMaster(tmptask.key).GetIP().c_str(),fsEditlog->GetMaster(tmptask.key).GetPort());
+//
+//        }
         thread_event_process(me); // nn thread
     }
 

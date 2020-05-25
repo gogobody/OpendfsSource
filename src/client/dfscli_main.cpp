@@ -10,6 +10,7 @@
 #include <grp.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <filetool.h>
 #include "dfscli_main.h"
 #include "dfs_string.h"
 #include "fs_permission.h"
@@ -24,286 +25,316 @@
 
 #define DEFAULT_CONF_FILE PREFIX"/etc/dfscli.conf"
 
+#define DEFAULT_COUNT 5 // 默认文件切5个
 string_t config_file;
 
 static void log_raw(uint32_t level, const char *msg);
+
 static void help(int argc, char **argv);
+
 static int dfscli_mkdir(char *path);
+
 static int dfscli_rmr(char *path);
+
 static int dfscli_ls(char *path);
+
 static int showDirsFiles(char *p, int len);
+
 static int getTimeStr(uint64_t msec, char *str, int len);
+
 static int isPathValid(char *path);
+
 static int getValidPath(char *src, char *dst);
+
 static int dfscli_rm(char *path);
 
-int dfscli_daemon()
-{
+int dfscli_daemon() {
     return 0;
 }
 
-void dfscli_log(int level, const char *fmt, ...)
-{
-    va_list        ap;    
-	char           msg[LOGMSG_LEN] = "";
-	conf_server_t *sconf = nullptr;
-
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	
-	if ((level & 0xff) > sconf->log_level)     
-	{        
-	    return;    
-	}    
-
-	va_start(ap, fmt);    
-	vsnprintf(msg, sizeof(msg), fmt, ap);    
-	va_end(ap);    
-
-	log_raw(level, msg);
-}
-
-static void log_raw(uint32_t level, const char *msg) 
-{    
-    const char    *c = "#FEAWNICED";
-	conf_server_t *sconf = nullptr;
-
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	
-	int rawmode = (level & MY_LOG_RAW);    
-
-	level &= 0xff; // clear flags    
-	if (level > sconf->log_level)     
-	{        
-	    return;    
-	}    
-
-	FILE *fp = (0 == sconf->error_log.len) 
-		? stdout : fopen((const char *)sconf->error_log.data, "a");    
-	if (nullptr == fp)
-	{        
-	    return;    
-	}    
-
-    if (rawmode)     
-	{        
-	    fprintf(fp, "%s", msg);    
-	}     
-	else    
-	{        
-	    int off = 0;        
-		char buf[64] = "";        
-		struct timeval tv;        
-
-		gettimeofday(&tv, nullptr);
-		off = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S.", 
-			localtime(&tv.tv_sec));        
-		snprintf(buf + off, sizeof(buf) - off, "%03d", (int)tv.tv_usec / 1000);                
-
-		switch (level)        
-		{        
-		case DFS_LOG_WARN:            
-			fprintf(fp, "%s[%ld] %s [%c] %s%s\n", ANSI_YELLOW, 
-				syscall(__NR_gettid), buf, c[level], msg, ANSI_RESET);
-			break;
-
-		case DFS_LOG_ERROR:
-			fprintf(fp, "%s[%ld] %s [%c] %s%s\n", ANSI_RED, 
-				syscall(__NR_gettid), buf, c[level], msg, ANSI_RESET);
-			break;
-
-		default:
-			fprintf(fp, "[%ld] %s [%c] %s\n", 
-				syscall(__NR_gettid), buf, c[level], msg);
-		}
-	}        
-
-	fflush(fp);    
-
-	if (0 != sconf->error_log.len)     
-	{        
-        fclose(fp);    
-	}
-}
-
-static void help(int argc, char **argv)
-{		    
-    fprintf(stderr, "Usage: %s cmd...\n"
-		"\t -mkdir <path> \n"
-		"\t -rmr <path> \n"
-		"\t -ls <path> \n"
-		"\t -put <local path> <remote path> \n"
-		"\t -get <remote path> <local path> \n"
-		"\t -rm <path> \n", 
-		argv[0]);
-}
-
-int main(int argc, char **argv)
-{
-    if (argc < 3) 
-	{
-	    help(argc, argv);
-
-	    return NGX_ERROR;
-	}
-
-    int            ret = NGX_OK; //0
-	cycle_t       *cycle = nullptr;
+void dfscli_log(int level, const char *fmt, ...) {
+    va_list ap;
+    char msg[LOGMSG_LEN] = "";
     conf_server_t *sconf = nullptr;
-	char           cmd[16] = {0};
-	char           path[PATH_LEN] = {0};
 
-	cycle = cycle_create();
+    sconf = (conf_server_t *) dfs_cycle->sconf;
 
-	if (config_file.data == nullptr)
-	{
-        config_file.data = (uchar_t *)strndup(DEFAULT_CONF_FILE,
-            strlen(DEFAULT_CONF_FILE));
+    if ((level & 0xff) > sconf->log_level) {
+        return;
+    }
+
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    log_raw(level, msg);
+}
+
+static void log_raw(uint32_t level, const char *msg) {
+    const char *c = "#FEAWNICED";
+    conf_server_t *sconf = nullptr;
+
+    sconf = (conf_server_t *) dfs_cycle->sconf;
+
+    int rawmode = (level & MY_LOG_RAW);
+
+    level &= 0xff; // clear flags
+    if (level > sconf->log_level) {
+        return;
+    }
+
+    FILE *fp = (0 == sconf->error_log.len)
+               ? stdout : fopen((const char *) sconf->error_log.data, "a");
+    if (nullptr == fp) {
+        return;
+    }
+
+    if (rawmode) {
+        fprintf(fp, "%s", msg);
+    } else {
+        int off = 0;
+        char buf[64] = "";
+        struct timeval tv;
+
+        gettimeofday(&tv, nullptr);
+        off = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S.",
+                       localtime(&tv.tv_sec));
+        snprintf(buf + off, sizeof(buf) - off, "%03d", (int) tv.tv_usec / 1000);
+
+        switch (level) {
+            case DFS_LOG_WARN:
+                fprintf(fp, "%s[%ld] %s [%c] %s%s\n", ANSI_YELLOW,
+                        syscall(__NR_gettid), buf, c[level], msg, ANSI_RESET);
+                break;
+
+            case DFS_LOG_ERROR:
+                fprintf(fp, "%s[%ld] %s [%c] %s%s\n", ANSI_RED,
+                        syscall(__NR_gettid), buf, c[level], msg, ANSI_RESET);
+                break;
+
+            default:
+                fprintf(fp, "[%ld] %s [%c] %s\n",
+                        syscall(__NR_gettid), buf, c[level], msg);
+        }
+    }
+
+    fflush(fp);
+
+    if (0 != sconf->error_log.len) {
+        fclose(fp);
+    }
+}
+
+static void help(int argc, char **argv) {
+    fprintf(stderr, "Usage: %s cmd...\n"
+                    "\t tip: if you use [-cutput local/file remote/file] then the file in remote will be stored in \n"
+                    "\t file1,file2,...,file5 (default is 5), and then if you use [-merget remote/file local/file],that \n"
+                    "\t (file1,...,file5 in remote) will be download and merge into local/file\n"
+                    "\t -mkdir <path> \n"
+                    "\t -rmr <path> \n"
+                    "\t -ls <path> \n"
+                    "\t -put <local path> <remote path> \n"
+                    "\t -get <remote path> <local path> \n"
+                    "\t -rm <path> \n"
+                    "\t -cutput <local path> <remote path>  \n"
+                    "\t -merget <remote path> <local path>  \n",
+            argv[0]);
+}
+
+int main(int argc, char **argv) {
+    if (argc < 3) {
+        help(argc, argv);
+
+        return NGX_ERROR;
+    }
+
+    int ret = NGX_OK; //0
+    cycle_t *cycle = nullptr;
+    conf_server_t *sconf = nullptr;
+    char cmd[16] = {0};
+    char path[PATH_LEN] = {0};
+
+    cycle = cycle_create();
+
+    if (config_file.data == nullptr) {
+        config_file.data = (uchar_t *) strndup(DEFAULT_CONF_FILE,
+                                               strlen(DEFAULT_CONF_FILE));
         config_file.len = strlen(DEFAULT_CONF_FILE);
     }
 
-	if ((ret = cycle_init(cycle)) != NGX_OK)
-	{ 
+    if ((ret = cycle_init(cycle)) != NGX_OK) {
         fprintf(stderr, "cycle_init fail\n");
-		
+
         goto out;
     }
 
     strcpy(cmd, argv[1]);
 
-    if (strlen(argv[2]) > (int)PATH_LEN) 
-	{
-        dfscli_log(DFS_LOG_WARN, "path's len is greater than %d", 
-			(int)PATH_LEN);
+    if (strlen(argv[2]) > (int) PATH_LEN) {
+        dfscli_log(DFS_LOG_WARN, "path's len is greater than %d",
+                   (int) PATH_LEN);
 
-		goto out;
-	}
-	
-	strcpy(path, argv[2]);
+        goto out;
+    }
 
-	if (0 == strncmp(cmd, "-mkdir", strlen("-mkdir"))) 
-	{
-	    if (!isPathValid(path)) 
-	    {
-		    dfscli_log(DFS_LOG_WARN, 
-				"path[%s] is invalid, these symbols[%s] can't use in the path", 
-				path, INVALID_SYMBOLS_IN_PATH);
-		
-		    goto out;
-	    }
+    strcpy(path, argv[2]);
+
+    if (0 == strncmp(cmd, "-mkdir", strlen("-mkdir"))) {
+        if (!isPathValid(path)) {
+            dfscli_log(DFS_LOG_WARN,
+                       "path[%s] is invalid, these symbols[%s] can't use in the path",
+                       path, INVALID_SYMBOLS_IN_PATH);
+
+            goto out;
+        }
 
         char vPath[PATH_LEN] = {0};
-		getValidPath(path, vPath);
+        getValidPath(path, vPath);
 
         dfscli_mkdir(vPath);
-	}
-	else if (0 == strncmp(cmd, "-rmr", strlen("-rmr"))) 
-	{
-	    // check path's pattern
-	    
-	    char vPath[PATH_LEN] = {0};
-		getValidPath(path, vPath);
-		
-        dfscli_rmr(vPath);
-	}
-	else if (0 == strncmp(cmd, "-ls", strlen("-ls")))
-	{
-	    // check path's pattern
-
-		char vPath[PATH_LEN] = {0};
-		getValidPath(path, vPath);
-		
-        dfscli_ls(vPath);
-	}
-	else if (4 == argc && 0 == strncmp(cmd, "-put", strlen("-put"))) //put local path ,remote path
-	{
-        char tmp[PATH_LEN] = {0};
-		strcpy(tmp, argv[3]);
-
-		char src[PATH_LEN] = {0};
-		getValidPath(path, src);
-
-		char dst[PATH_LEN] = {0};
-		getValidPath(tmp, dst);
-
-		dfscli_put(src, dst);
-	}
-	else if (4 == argc && 0 == strncmp(cmd, "-get", strlen("-get"))) 
-	{
-        //char tmp[PATH_LEN] = {0};
-		//strcpy(tmp, argv[3]);
-
-		char src[PATH_LEN] = {0};
-		getValidPath(path, src);
-
-		char dst[PATH_LEN] = {0};
-		//getValidPath(tmp, dst);
-		strcpy(dst, argv[3]);
-
-		dfscli_get(src, dst);
-	}
-	else if (0 == strncmp(cmd, "-rm", strlen("-rm"))) 
-	{
+    } else if (0 == strncmp(cmd, "-rmr", strlen("-rmr"))) {
         // check path's pattern
 
-		char vPath[PATH_LEN] = {0};
-		getValidPath(path, vPath);
-		
-        dfscli_rm(vPath);
-	}
-	else 
-	{
-	    help(argc, argv);
-	}
+        char vPath[PATH_LEN] = {0};
+        getValidPath(path, vPath);
 
-out:
-	if (config_file.data) 
-	{
+        dfscli_rmr(vPath);
+    } else if (0 == strncmp(cmd, "-ls", strlen("-ls"))) {
+        // check path's pattern
+
+        char vPath[PATH_LEN] = {0};
+        getValidPath(path, vPath);
+
+        dfscli_ls(vPath);
+    } else if (4 == argc && 0 == strncmp(cmd, "-put", strlen("-put"))) //put local path ,remote path
+    {
+        char tmp[PATH_LEN] = {0};
+        strcpy(tmp, argv[3]);
+
+        char src[PATH_LEN] = {0};
+        getValidPath(path, src);
+
+        char dst[PATH_LEN] = {0};
+        getValidPath(tmp, dst);
+
+        dfscli_put(src, dst, 1, 1);
+    } else if (4 == argc && 0 == strncmp(cmd, "-get", strlen("-get"))) {
+        //char tmp[PATH_LEN] = {0};
+        //strcpy(tmp, argv[3]);
+
+        char src[PATH_LEN] = {0};
+        getValidPath(path, src);
+
+        char dst[PATH_LEN] = {0};
+        //getValidPath(tmp, dst);
+        strcpy(dst, argv[3]);
+        int blk_num = 0;
+        dfscli_get(src, dst, &blk_num);
+    } else if (0 == strncmp(cmd, "-rm", strlen("-rm"))) {
+        // check path's pattern
+
+        char vPath[PATH_LEN] = {0};
+        getValidPath(path, vPath);
+
+        dfscli_rm(vPath);
+    } else if (0 == strncmp(cmd, "-cutput", strlen("-cutput"))) {
+        char tmp[PATH_LEN] = {0};
+        strcpy(tmp, argv[3]);
+
+        char src[PATH_LEN] = {0};
+        getValidPath(path, src);
+
+        char dst[PATH_LEN] = {0};
+        getValidPath(tmp, dst);
+
+        // split and send file
+        int count = DEFAULT_COUNT; //
+        splitFile(src, count, src);
+
+        // name start from "xxxx1,xxxx2 ...."
+        for (int i = 1; i <= count; i++) {
+            char splitedfilename[256];
+            char spliteddstname[256];
+            sprintf(splitedfilename, "%s%d", src, i);
+            sprintf(spliteddstname, "%s%d", dst, i);
+            dfscli_put(splitedfilename, spliteddstname, i, count);
+        }
+
+    } else if (4 == argc && 0 == strncmp(cmd, "-merget", strlen("-merget"))) {
+        //char tmp[PATH_LEN] = {0};
+        //strcpy(tmp, argv[3]);
+
+        // remote path
+        char src[PATH_LEN] = {0};
+        getValidPath(path, src);
+
+        // local path
+        char dst[PATH_LEN] = {0};
+        //getValidPath(tmp, dst);
+        strcpy(dst, argv[3]);
+        int blk_num = 0;
+        for (int i = 1; i <= DEFAULT_COUNT; i++) {
+            char splitedfilename[256]; // remote
+            char spliteddstname[256]; // local
+            sprintf(splitedfilename, "%s%d", src, i);
+            sprintf(spliteddstname, "%s%d", dst, i);
+            dfscli_get(splitedfilename, spliteddstname, &blk_num);
+
+        }
+        if (blk_num == DEFAULT_COUNT) {
+            dfscli_log(DFS_LOG_ERROR,
+                       "DEFAULT_COUNT is 5, remote blk_num is %d, check if the blk num match\n",
+                       blk_num);
+            return NGX_ERROR;
+        }
+        mergeFile(dst, DEFAULT_COUNT, dst);
+    } else {
+        help(argc, argv);
+    }
+
+    out:
+    if (config_file.data) {
         free(config_file.data);
         config_file.len = 0;
     }
-	
-    if (cycle) 
-	{
+
+    if (cycle) {
         cycle_free(cycle);
-		cycle = nullptr;
+        cycle = nullptr;
     }
-	
+
     return ret;
 }
 
-int dfs_connect(char* ip, int port)
-{
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (-1 == sockfd) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "socket() err: %s", strerror(errno));
-		
-	    return NGX_ERROR;
-	}
+int dfs_connect(char *ip, int port) {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (-1 == sockfd) {
+        dfscli_log(DFS_LOG_WARN, "socket() err: %s", strerror(errno));
 
-	int reuse = 1;
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+        return NGX_ERROR;
+    }
 
-	struct sockaddr_in servaddr;
-	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	servaddr.sin_addr.s_addr = inet_addr(ip);
+    int reuse = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
-	int iRet = connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
-	if (iRet < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "connect to %s:%d err: %s", 
-			ip, port, strerror(errno));
-		
-	    return NGX_ERROR;
-	}
+    struct sockaddr_in servaddr;
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(port);
+    servaddr.sin_addr.s_addr = inet_addr(ip);
 
-	return sockfd;
+    int iRet = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    if (iRet < 0) {
+        dfscli_log(DFS_LOG_WARN, "connect to %s:%d err: %s",
+                   ip, port, strerror(errno));
+
+        return NGX_ERROR;
+    }
+
+    return sockfd;
 }
 
-void keyEncode(uchar_t *path, uchar_t *key)
-{
+void keyEncode(uchar_t *path, uchar_t *key) {
     string_t src;
     string_set(src, path);
 
@@ -313,9 +344,8 @@ void keyEncode(uchar_t *path, uchar_t *key)
     string_base64_encode(&dst, &src);
 }
 
-void keyDecode(uchar_t *key, uchar_t *path)
-{
-	string_t src;
+void keyDecode(uchar_t *key, uchar_t *path) {
+    string_t src;
     string_set(src, key);
 
     string_t dst;
@@ -324,451 +354,385 @@ void keyDecode(uchar_t *key, uchar_t *path)
     string_base64_decode(&dst, &src);
 }
 
-void getUserInfo(task_t *out_t)
-{
+void getUserInfo(task_t *out_t) {
     struct passwd *passwd;
-	passwd = getpwuid(getuid());
-	strcpy(out_t->user, passwd->pw_name);
-	struct group *group;
-	group = getgrgid(passwd->pw_gid);
-	strcpy(out_t->group, group->gr_name);
+    passwd = getpwuid(getuid());
+    strcpy(out_t->user, passwd->pw_name);
+    struct group *group;
+    group = getgrgid(passwd->pw_gid);
+    strcpy(out_t->group, group->gr_name);
 }
 
-static int dfscli_mkdir(char *path)
-{
+static int dfscli_mkdir(char *path) {
     conf_server_t *sconf = nullptr;
     server_bind_t *nn_addr = nullptr;
 
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	nn_addr = (server_bind_t *)sconf->namenode_addr.elts;
-	
-    int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
-	if (sockfd < 0) 
-	{
-	    return NGX_ERROR;
-	}
-	
-	task_t out_t;
-	bzero(&out_t, sizeof(task_t));
-	out_t.cmd = NN_MKDIR;
-	keyEncode((uchar_t *)path, (uchar_t *)out_t.key);
+    sconf = (conf_server_t *) dfs_cycle->sconf;
+    nn_addr = (server_bind_t *) sconf->namenode_addr.elts;
 
-	getUserInfo(&out_t);
-
-	out_t.permission = 755;
-
-	char sBuf[BUF_SZ] = "";
-	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
-	int ws = write(sockfd, sBuf, sLen);
-	if (ws != sLen) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
-		
-	    close(sockfd);
-		
+    int sockfd = dfs_connect((char *) nn_addr[0].addr.data, nn_addr[0].port);
+    if (sockfd < 0) {
         return NGX_ERROR;
-	}
+    }
 
-	char rBuf[BUF_SZ] = "";
-	int rLen = read(sockfd, rBuf, sizeof(rBuf));
-	if (rLen < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
-		
-	    close(sockfd);
-		
+    task_t out_t;
+    bzero(&out_t, sizeof(task_t));
+    out_t.cmd = NN_MKDIR;
+    keyEncode((uchar_t *) path, (uchar_t *) out_t.key);
+
+    getUserInfo(&out_t);
+
+    out_t.permission = 755;
+
+    char sBuf[BUF_SZ] = "";
+    int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
+    int ws = write(sockfd, sBuf, sLen);
+    if (ws != sLen) {
+        dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
+
+        close(sockfd);
+
         return NGX_ERROR;
-	}
-	
-	task_t in_t;
-	bzero(&in_t, sizeof(task_t));
-	task_decodefstr(rBuf, rLen, &in_t);
+    }
 
-    if (in_t.ret != NGX_OK)
-	{
-	    if (in_t.ret == KEY_EXIST) 
-		{
+    char rBuf[BUF_SZ] = "";
+    int rLen = read(sockfd, rBuf, sizeof(rBuf));
+    if (rLen < 0) {
+        dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
+
+        close(sockfd);
+
+        return NGX_ERROR;
+    }
+
+    task_t in_t;
+    bzero(&in_t, sizeof(task_t));
+    task_decodefstr(rBuf, rLen, &in_t);
+
+    if (in_t.ret != NGX_OK) {
+        if (in_t.ret == KEY_EXIST) {
             dfscli_log(DFS_LOG_WARN, "mkdir err, path %s is exist.", path);
-		}
-		else if (in_t.ret == NOT_DIRECTORY) 
-		{
-            dfscli_log(DFS_LOG_WARN, 
-				"mkdir err, parent path is not a directory.");
-		} 
-		else if (in_t.ret == PERMISSION_DENY) 
-		{
+        } else if (in_t.ret == NOT_DIRECTORY) {
+            dfscli_log(DFS_LOG_WARN,
+                       "mkdir err, parent path is not a directory.");
+        } else if (in_t.ret == PERMISSION_DENY) {
             dfscli_log(DFS_LOG_WARN, "mkdir err, permission deny.");
-		}
-		else 
-		{
+        } else {
             dfscli_log(DFS_LOG_WARN, "mkdir err, ret: %d", in_t.ret);
-		}
-	}
+        }
+    }
 
-	close(sockfd);
-	
+    close(sockfd);
+
     return NGX_OK;
 }
 
-static int dfscli_rmr(char *path)
-{
+static int dfscli_rmr(char *path) {
     conf_server_t *sconf = nullptr;
     server_bind_t *nn_addr = nullptr;
 
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	nn_addr = (server_bind_t *)sconf->namenode_addr.elts;
-	
-    int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
-	if (sockfd < 0) 
-	{
-	    return NGX_ERROR;
-	}
-	
-	task_t out_t;
-	bzero(&out_t, sizeof(task_t));
-	out_t.cmd = NN_RMR;
-	keyEncode((uchar_t *)path, (uchar_t *)out_t.key);
+    sconf = (conf_server_t *) dfs_cycle->sconf;
+    nn_addr = (server_bind_t *) sconf->namenode_addr.elts;
 
-	getUserInfo(&out_t);
-
-	char sBuf[BUF_SZ] = "";
-	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
-	int ws = write(sockfd, sBuf, sLen);
-	if (ws != sLen) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
-		
-	    close(sockfd);
-		
+    int sockfd = dfs_connect((char *) nn_addr[0].addr.data, nn_addr[0].port);
+    if (sockfd < 0) {
         return NGX_ERROR;
-	}
+    }
 
-	char rBuf[BUF_SZ] = "";
-	int rLen = read(sockfd, rBuf, sizeof(rBuf));
-	if (rLen < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
-		
-	    close(sockfd);
-		
+    task_t out_t;
+    bzero(&out_t, sizeof(task_t));
+    out_t.cmd = NN_RMR;
+    keyEncode((uchar_t *) path, (uchar_t *) out_t.key);
+
+    getUserInfo(&out_t);
+
+    char sBuf[BUF_SZ] = "";
+    int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
+    int ws = write(sockfd, sBuf, sLen);
+    if (ws != sLen) {
+        dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
+
+        close(sockfd);
+
         return NGX_ERROR;
-	}
-	
-	task_t in_t;
-	bzero(&in_t, sizeof(task_t));
-	task_decodefstr(rBuf, rLen, &in_t);
+    }
 
-    if (in_t.ret != NGX_OK)
-	{
-        if (in_t.ret == NOT_DIRECTORY) 
-		{
-            dfscli_log(DFS_LOG_WARN, 
-				"rmr err, the target is a file, you should use -rm instead.");
-		}
-		else if (in_t.ret == KEY_NOTEXIST) 
-		{
+    char rBuf[BUF_SZ] = "";
+    int rLen = read(sockfd, rBuf, sizeof(rBuf));
+    if (rLen < 0) {
+        dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
+
+        close(sockfd);
+
+        return NGX_ERROR;
+    }
+
+    task_t in_t;
+    bzero(&in_t, sizeof(task_t));
+    task_decodefstr(rBuf, rLen, &in_t);
+
+    if (in_t.ret != NGX_OK) {
+        if (in_t.ret == NOT_DIRECTORY) {
+            dfscli_log(DFS_LOG_WARN,
+                       "rmr err, the target is a file, you should use -rm instead.");
+        } else if (in_t.ret == KEY_NOTEXIST) {
             dfscli_log(DFS_LOG_WARN, "rmr err, path %s doesn't exist.", path);
-		}
-		else if (in_t.ret == PERMISSION_DENY) 
-		{
+        } else if (in_t.ret == PERMISSION_DENY) {
             dfscli_log(DFS_LOG_WARN, "rmr err, permission deny.");
-		}
-		else 
-		{
+        } else {
             dfscli_log(DFS_LOG_WARN, "rmr err, ret: %d", in_t.ret);
-		}
-	}
+        }
+    }
 
-	close(sockfd);
-	
+    close(sockfd);
+
     return NGX_OK;
 }
 
-static int dfscli_ls(char *path)
-{
+static int dfscli_ls(char *path) {
     conf_server_t *sconf = nullptr;
     server_bind_t *nn_addr = nullptr;
 
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	nn_addr = (server_bind_t *)sconf->namenode_addr.elts;
-	
-    int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
-	if (sockfd < 0) 
-	{
-	    return NGX_ERROR;
-	}
-	
-	task_t out_t;
-	bzero(&out_t, sizeof(task_t));
-	out_t.cmd = NN_LS;
-	keyEncode((uchar_t *)path, (uchar_t *)out_t.key);
+    sconf = (conf_server_t *) dfs_cycle->sconf;
+    nn_addr = (server_bind_t *) sconf->namenode_addr.elts;
 
-	getUserInfo(&out_t);
-
-	char sBuf[BUF_SZ] = "";
-	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
-	int ws = write(sockfd, sBuf, sLen);
-	if (ws != sLen) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
-		
-	    close(sockfd);
-		
+    int sockfd = dfs_connect((char *) nn_addr[0].addr.data, nn_addr[0].port);
+    if (sockfd < 0) {
         return NGX_ERROR;
-	}
+    }
 
-	int pLen = 0;
-	int rLen = recv(sockfd, &pLen, sizeof(int), MSG_PEEK);
-	if (rLen < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "recv err, rLen: %d", rLen);
-		
-	    close(sockfd);
-		
+    task_t out_t;
+    bzero(&out_t, sizeof(task_t));
+    out_t.cmd = NN_LS;
+    keyEncode((uchar_t *) path, (uchar_t *) out_t.key);
+
+    getUserInfo(&out_t);
+
+    char sBuf[BUF_SZ] = "";
+    int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
+    int ws = write(sockfd, sBuf, sLen);
+    if (ws != sLen) {
+        dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
+
+        close(sockfd);
+
         return NGX_ERROR;
-	}
+    }
 
-	char *pNext = (char *)malloc(pLen);
-	if (nullptr == pNext)
-	{
-	    dfscli_log(DFS_LOG_WARN, "malloc err, pLen: %d", pLen);
-		
-	    close(sockfd);
-		
+    int pLen = 0;
+    int rLen = recv(sockfd, &pLen, sizeof(int), MSG_PEEK);
+    if (rLen < 0) {
+        dfscli_log(DFS_LOG_WARN, "recv err, rLen: %d", rLen);
+
+        close(sockfd);
+
         return NGX_ERROR;
-	}
+    }
 
-	rLen = read(sockfd, pNext, pLen);
-	if (rLen < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
-		
-	    close(sockfd);
+    char *pNext = (char *) malloc(pLen);
+    if (nullptr == pNext) {
+        dfscli_log(DFS_LOG_WARN, "malloc err, pLen: %d", pLen);
 
-		free(pNext);
-		pNext = nullptr;
-		
+        close(sockfd);
+
         return NGX_ERROR;
-	}
+    }
 
-	task_t in_t;
-	bzero(&in_t, sizeof(task_t));
-	task_decodefstr(pNext, rLen, &in_t);
+    rLen = read(sockfd, pNext, pLen);
+    if (rLen < 0) {
+        dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
 
-    if (in_t.ret != NGX_OK)
-	{
-		if (in_t.ret == KEY_NOTEXIST) 
-		{
+        close(sockfd);
+
+        free(pNext);
+        pNext = nullptr;
+
+        return NGX_ERROR;
+    }
+
+    task_t in_t;
+    bzero(&in_t, sizeof(task_t));
+    task_decodefstr(pNext, rLen, &in_t);
+
+    if (in_t.ret != NGX_OK) {
+        if (in_t.ret == KEY_NOTEXIST) {
             dfscli_log(DFS_LOG_WARN, "ls err, path %s doesn't exist.", path);
-		}
-		else if (in_t.ret == PERMISSION_DENY) 
-		{
+        } else if (in_t.ret == PERMISSION_DENY) {
             dfscli_log(DFS_LOG_WARN, "ls err, permission deny.");
-		}
-		else 
-		{
+        } else {
             dfscli_log(DFS_LOG_WARN, "ls err, ret: %d", in_t.ret);
-		}
-	}
-	else if (nullptr != in_t.data && in_t.data_len > 0)
-	{
-        showDirsFiles((char *)in_t.data, in_t.data_len);
-	}
+        }
+    } else if (nullptr != in_t.data && in_t.data_len > 0) {
+        showDirsFiles((char *) in_t.data, in_t.data_len);
+    }
 
-	close(sockfd);
+    close(sockfd);
 
-	free(pNext);
-	pNext = nullptr;
-	
+    free(pNext);
+    pNext = nullptr;
+
     return NGX_OK;
 }
 
-static int showDirsFiles(char *p, int len)
-{
+static int showDirsFiles(char *p, int len) {
     fi_inode_t fii;
-	int fiiLen = sizeof(fi_inode_t);
-	uchar_t permission[16] = "";
-	char mtime[64] = "";
-	uchar_t path[PATH_LEN] = "";
+    int fiiLen = sizeof(fi_inode_t);
+    uchar_t permission[16] = "";
+    char mtime[64] = "";
+    uchar_t path[PATH_LEN] = "";
 
-	while (len > 0) 
-	{
-	    bzero(&fii, sizeof(fi_inode_t));
-	    memcpy(&fii, p, fiiLen);
+    while (len > 0) {
+        bzero(&fii, sizeof(fi_inode_t));
+        memcpy(&fii, p, fiiLen);
 
-		printf("%s", fii.is_directory ? "d" : "-");
+        printf("%s", fii.is_directory ? "d" : "-");
 
         memset(permission, 0x00, sizeof(permission));
-		get_permission(fii.permission, permission);
-		printf("%s", permission);
+        get_permission(fii.permission, permission);
+        printf("%s", permission);
 
-		if (fii.is_directory) 
-		{
-		    printf("    -");
-		}
-		else 
-		{
-		    printf("    %d", fii.blk_replication);
-		}
+        if (fii.is_directory) {
+            printf("    -");
+        } else {
+            printf("    %d", fii.blk_replication);
+        }
 
-		printf(" %s %s    %ld", fii.owner, fii.group, fii.length);
+        printf(" %s %s    %ld", fii.owner, fii.group, fii.length);
 
         memset(mtime, 0x00, sizeof(mtime));
-		getTimeStr(fii.modification_time, mtime, sizeof(mtime));
-		printf(" %s", mtime);
+        getTimeStr(fii.modification_time, mtime, sizeof(mtime));
+        printf(" %s", mtime);
 
         memset(path, 0x00, sizeof(path));
-		keyDecode((uchar_t *)fii.key, path);
-		printf(" %s\n", path);
+        keyDecode((uchar_t *) fii.key, path);
+        printf(" %s\n", path);
 
-		p += fiiLen;
-		len -= fiiLen;
-	}
-	
+        p += fiiLen;
+        len -= fiiLen;
+    }
+
     return NGX_OK;
 }
 
-static int getTimeStr(uint64_t msec, char *str, int len)
-{
+static int getTimeStr(uint64_t msec, char *str, int len) {
     time_t t;
     struct tm *p;
 
-	t = msec / 1000 + 28800;
-	p = gmtime(&t);
-	strftime(str, len, "%Y-%m-%d %H:%M:%S", p);
-	
+    t = msec / 1000 + 28800;
+    p = gmtime(&t);
+    strftime(str, len, "%Y-%m-%d %H:%M:%S", p);
+
     return NGX_OK;
 }
 
-static int isPathValid(char *path)
-{
+static int isPathValid(char *path) {
     char *p = path;
-	
-    while (*p != '\000') 
-	{
-	    if (*p == '\\' || *p == ':' || *p == '*' || *p == '?' || *p == '"' 
-			|| *p == '<' || *p == '>' || *p == '|') 
-		{
-			return NGX_FALSE;
-		}
 
-		p++;
-	}
-		
+    while (*p != '\000') {
+        if (*p == '\\' || *p == ':' || *p == '*' || *p == '?' || *p == '"'
+            || *p == '<' || *p == '>' || *p == '|') {
+            return NGX_FALSE;
+        }
+
+        p++;
+    }
+
     return NGX_TRUE;
 }
 
 //check path is rigth format
-static int getValidPath(char *src, char *dst)
-{
+static int getValidPath(char *src, char *dst) {
     char *s = src;
-	char *d = dst;
-	char l = '/';
+    char *d = dst;
+    char l = '/';
 
-	if (0 == strcmp(src, "/") || 0 == strcmp(src, "//")) 
-	{
-	    strcpy(dst, "/");
-		
+    if (0 == strcmp(src, "/") || 0 == strcmp(src, "//")) {
+        strcpy(dst, "/");
+
         return NGX_OK;
-	}
+    }
 
-	while (*s != '\000') 
-	{
-	    if (l == '/' && *s == '/') 
-		{
-			l = *s++;
+    while (*s != '\000') {
+        if (l == '/' && *s == '/') {
+            l = *s++;
 
-			continue;
-		}
+            continue;
+        }
 
-        if (l == '/') 
-		{
-		    *d++ = l;
-		} 
+        if (l == '/') {
+            *d++ = l;
+        }
 
-		*d++ = *s++;
-		l = *s;
-	}
+        *d++ = *s++;
+        l = *s;
+    }
 
-	if (l == '/') 
-	{
-	    *(d--) = '\000';
-	}
-	
+    if (l == '/') {
+        *(d--) = '\000';
+    }
+
     return NGX_OK;
 }
 
-static int dfscli_rm(char *path)
-{
+static int dfscli_rm(char *path) {
     conf_server_t *sconf = nullptr;
     server_bind_t *nn_addr = nullptr;
 
-	sconf = (conf_server_t *)dfs_cycle->sconf;
-	nn_addr = (server_bind_t *)sconf->namenode_addr.elts;
-	
-    int sockfd = dfs_connect((char *)nn_addr[0].addr.data, nn_addr[0].port);
-	if (sockfd < 0) 
-	{
-	    return NGX_ERROR;
-	}
-	
-	task_t out_t;
-	bzero(&out_t, sizeof(task_t));
-	out_t.cmd = NN_RM;
-	keyEncode((uchar_t *)path, (uchar_t *)out_t.key);
+    sconf = (conf_server_t *) dfs_cycle->sconf;
+    nn_addr = (server_bind_t *) sconf->namenode_addr.elts;
 
-	getUserInfo(&out_t);
-
-	char sBuf[BUF_SZ] = "";
-	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
-	int ws = write(sockfd, sBuf, sLen);
-	if (ws != sLen) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
-		
-	    close(sockfd);
-		
+    int sockfd = dfs_connect((char *) nn_addr[0].addr.data, nn_addr[0].port);
+    if (sockfd < 0) {
         return NGX_ERROR;
-	}
+    }
 
-	char rBuf[BUF_SZ] = "";
-	int rLen = read(sockfd, rBuf, sizeof(rBuf));
-	if (rLen < 0) 
-	{
-	    dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
-		
-	    close(sockfd);
-		
+    task_t out_t;
+    bzero(&out_t, sizeof(task_t));
+    out_t.cmd = NN_RM;
+    keyEncode((uchar_t *) path, (uchar_t *) out_t.key);
+
+    getUserInfo(&out_t);
+
+    char sBuf[BUF_SZ] = "";
+    int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
+    int ws = write(sockfd, sBuf, sLen);
+    if (ws != sLen) {
+        dfscli_log(DFS_LOG_WARN, "write err, ws: %d, sLen: %d", ws, sLen);
+
+        close(sockfd);
+
         return NGX_ERROR;
-	}
-	
-	task_t in_t;
-	bzero(&in_t, sizeof(task_t));
-	task_decodefstr(rBuf, rLen, &in_t);
+    }
 
-    if (in_t.ret != NGX_OK)
-	{
-        if (in_t.ret == NOT_FILE) 
-		{
-            dfscli_log(DFS_LOG_WARN, 
-				"rm err, the target is a directory, you should use -rmr instead.");
-		}
-		else if (in_t.ret == KEY_NOTEXIST) 
-		{
+    char rBuf[BUF_SZ] = "";
+    int rLen = read(sockfd, rBuf, sizeof(rBuf));
+    if (rLen < 0) {
+        dfscli_log(DFS_LOG_WARN, "read err, rLen: %d", rLen);
+
+        close(sockfd);
+
+        return NGX_ERROR;
+    }
+
+    task_t in_t;
+    bzero(&in_t, sizeof(task_t));
+    task_decodefstr(rBuf, rLen, &in_t);
+
+    if (in_t.ret != NGX_OK) {
+        if (in_t.ret == NOT_FILE) {
+            dfscli_log(DFS_LOG_WARN,
+                       "rm err, the target is a directory, you should use -rmr instead.");
+        } else if (in_t.ret == KEY_NOTEXIST) {
             dfscli_log(DFS_LOG_WARN, "rm err, path %s doesn't exist.", path);
-		}
-		else if (in_t.ret == PERMISSION_DENY) 
-		{
+        } else if (in_t.ret == PERMISSION_DENY) {
             dfscli_log(DFS_LOG_WARN, "rm err, permission deny.");
-		}
-		else 
-		{
+        } else {
             dfscli_log(DFS_LOG_WARN, "rm err, ret: %d", in_t.ret);
-		}
-	}
+        }
+    }
 
-	close(sockfd);
-	
+    close(sockfd);
+
     return NGX_OK;
 }
 

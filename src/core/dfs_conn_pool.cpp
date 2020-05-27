@@ -114,23 +114,19 @@ conn_t * conn_pool_get_connection(conn_pool_t *pool) {
     c = pool->free_connections;
     // 当free_connection中没有可以用的connection时，扫描连接池，找到一个可以用的
     if (c == nullptr) {
-        if (!c) {
-            if (pool->change_n >= 0) {
-                return nullptr;
-            }
-
-            n = -pool->change_n;
-            c = get_comm_conn(n, &num);
-            if (c) {
-                pool->free_connections = c;
-                pool->free_connection_n += num;
-                pool->change_n += num;
-
-                goto out_conn;
-            }
-
+        if (pool->change_n >= 0) {
             return nullptr;
         }
+        n = -pool->change_n;
+        c = get_comm_conn(n, &num);
+        if (c) {
+            pool->free_connections = c;
+            pool->free_connection_n += num;
+            pool->change_n += num;
+
+            goto out_conn;
+        }
+        return nullptr;
 
         out_conn:
         pool->free_connections = (conn_t *) c->next; // 指向下一个connections
@@ -139,8 +135,10 @@ conn_t * conn_pool_get_connection(conn_pool_t *pool) {
 
         return c;
     }
-    return nullptr;
+    // if c then out conn
+    goto out_conn;
 }
+
 void conn_pool_free_connection(conn_pool_t *pool, conn_t *c)
 {   
     if (pool->change_n > 0) 

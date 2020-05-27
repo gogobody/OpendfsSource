@@ -7,11 +7,12 @@
 #include "dn_cycle.h"
 #include "dn_time.h"
 #include "dn_conf.h"
+#include "dn_main.h"
 
 #define BUF_SZ 4096
 
 unsigned long g_last_heartbeat = 0;
-
+extern sys_info_t   dfs_sys_info;
 typedef struct recv_blk_report_s
 {
     queue_t         que;
@@ -42,7 +43,7 @@ static int delete_blks(char *p, int len);
 // 获取 namespaceid
 int dn_register(dfs_thread_t *thread)
 {
-    int sockfd = ns_srv_init(thread->ns_info.ip, thread->ns_info.port);
+    int sockfd = ns_srv_init(thread->ns_info.ip, thread->ns_info.port); // name server info
 	if (sockfd < 0) 
 	{
 	    return NGX_ERROR;
@@ -52,7 +53,12 @@ int dn_register(dfs_thread_t *thread)
 	bzero(&out_t, sizeof(task_t));
 	out_t.cmd = DN_REGISTER;
 	strcpy(out_t.key, dfs_cycle->listening_ip); // bind for cli ip
+    // upload its mem info when register
+    dn_get_info(&dfs_sys_info);
+    out_t.data_len = sizeof(sys_info_t);
+    out_t.data = &dfs_sys_info;
 
+    //end
 	char sBuf[BUF_SZ] = "";
 	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
 	int ws = write(sockfd, sBuf, sLen);
@@ -157,7 +163,7 @@ static int ns_srv_init(char* ip, int port)
 	if (iRet < 0) 
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, errno, 
-			"connect(%s: %d) err", ip, port);
+			"\t connect(%s: %d) err", ip, port);
 		
 	    return NGX_ERROR;
 	}
@@ -238,6 +244,11 @@ static int send_heartbeat(int sockfd)
 	out_t.cmd = DN_HEARTBEAT;
 	strcpy(out_t.key, dfs_cycle->listening_ip); // 上报自己的ip
 
+	// when send heatbeat , upload dn sys info
+    dn_get_info(&dfs_sys_info);
+    out_t.data_len = sizeof(sys_info_t);
+    out_t.data = &dfs_sys_info;
+	//
 	char sBuf[BUF_SZ] = "";
 	int sLen = task_encode2str(&out_t, sBuf, sizeof(sBuf));
 	int ws = write(sockfd, sBuf, sLen);
@@ -294,7 +305,7 @@ static int send_heartbeat(int sockfd)
 		
         return NGX_ERROR;
 	} 
-	else if (nullptr != in_t.data && in_t.data_len > 0)
+	else if (in_t.cmd == DN_DEL_BLK && nullptr != in_t.data && in_t.data_len > 0)
 	{
 	    delete_blks((char *)in_t.data, in_t.data_len);
 	}

@@ -253,7 +253,7 @@ static void dn_timer_destroy(void *args)
 {
     assert(args);
 	
-    dn_timer_t *dt = (dn_timer_t *)args;
+    auto *dt = (dn_timer_t *)args;
     memory_free(dt, sizeof(*dt));
 }
 
@@ -266,7 +266,8 @@ static void dn_store_destroy(dn_store_t *dns)
 
 int nn_dn_register(task_t *task)
 {
-    task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
+    auto *node = queue_data(task, task_queue_node_t, tk);
+    sys_info_t dn_sys_info;
 
 	dn_store_t *dns = get_dn_store_obj((uchar_t *)task->key);
 	if (dns) 
@@ -292,8 +293,14 @@ int nn_dn_register(task_t *task)
 
 	// key
 	strcpy(dns->dni.id, task->key);
+    // datanode mem info
+    memcpy(&dn_sys_info,task->data, task->data_len);
+    dns->dni.capacity = dn_sys_info.capacity;
+    dns->dni.dfs_used = dn_sys_info.dfs_used;
+    dns->dni.remaining = dn_sys_info.remaining;
+    //
 
-	dns->ln.key = dns->dni.id;
+    dns->ln.key = dns->dni.id;
     dns->ln.len = string_strlen(dns->dni.id);
     dns->ln.next = nullptr;
 
@@ -306,9 +313,11 @@ int nn_dn_register(task_t *task)
 
 	dn_timer_create(dns);
 
+
 out:
 	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
-		"datanode %s register", dns->dni.id);
+		"datanode %s register, total mem: %l, dfs used: %l\n", dns->dni.id,dns->dni.capacity,
+		dns->dni.dfs_used);
 	
     task->ret = NGX_OK;
 
@@ -342,13 +351,23 @@ int nn_dn_heartbeat(task_t *task)
 {
     dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 
 			0, "Got datanode %s heartbeat", task->key);
-	
-    task_queue_node_t *node = queue_data(task, task_queue_node_t, tk);
+	sys_info_t dn_sys_info;
+    auto *node = queue_data(task, task_queue_node_t, tk);
 
 	dn_store_t *dns = get_dn_store_obj((uchar_t *)task->key);
 	if (dns) 
 	{
 	    dn_timer_update(dns);
+	    // update dn info
+	    memcpy(&dn_sys_info,task->data,task->data_len);
+	    dns->dni.dfs_used = dn_sys_info.dfs_used;
+	    dns->dni.capacity = dn_sys_info.capacity;
+	    dns->dni.remaining = dn_sys_info.remaining;
+        // if not point to null, then free() func will get error
+        // mem from mc->buffer , no need to free
+	    task->data = nullptr;
+        task->data_len = 0;
+	    //
 
 		if (dns->del_blk_num > 0) 
 		{
@@ -389,9 +408,12 @@ int nn_dn_heartbeat(task_t *task)
 			}
 			
 			pthread_rwlock_unlock(&g_dcm->cache_rwlock);
+            //
+            task->cmd = DN_DEL_BLK;
 		}
 		
 		task->ret = NGX_OK;
+
 	} else
 	{
 	    dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 
@@ -405,7 +427,7 @@ int nn_dn_heartbeat(task_t *task)
 
 static dn_timer_t *dn_timer_create(dn_store_t *dns)
 {    
-    dn_timer_t *dt = (dn_timer_t *)memory_calloc(sizeof(dn_timer_t));
+    auto *dt = (dn_timer_t *)memory_calloc(sizeof(dn_timer_t));
     if (!dt) 
 	{
         dfs_log_error(dfs_cycle->error_log, DFS_LOG_FATAL, 
@@ -439,8 +461,8 @@ static void dn_timeout_handler(event_t *ev)
 {
     assert(ev);
 
-    dn_timer_t *dt = (dn_timer_t *)ev->data;
-	dn_store_t *dns = (dn_store_t *)dt->dns;
+    auto *dt = (dn_timer_t *)ev->data;
+	auto *dns = (dn_store_t *)dt->dns;
 
 	dfs_log_error(dfs_cycle->error_log, DFS_LOG_INFO, 0, 
 		"datanode %s is dead", dns->dni.id);
@@ -467,7 +489,7 @@ static void dn_timer_update(dn_store_t *dns)
 {
     pthread_rwlock_wrlock(&g_dcm->timer_rwlock);
 	
-	dn_timer_t *dt = (dn_timer_t *)dfs_hashtable_lookup(g_dcm->dn_timer_htable, 
+	auto *dt = (dn_timer_t *)dfs_hashtable_lookup(g_dcm->dn_timer_htable,
 		(void *)dns->dni.id, string_strlen(dns->dni.id));
 
 	event_timer_add(&dt->thread->event_timer, &dt->ev, g_dcm->timeout);
@@ -582,6 +604,7 @@ out:
     return write_back(node);
 }
 
+// response dn ips to resp info
 int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 {
     queue_t    *cur = nullptr;
@@ -601,7 +624,9 @@ int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 
 	cur = queue_head(&g_dn_q); //
 	dns = queue_data(cur, dn_store_t, me); //
-	
+	//todo:从不同群组中选择存储节点
+
+	//
 	resp_info->dn_num = 1;
 	strcpy(resp_info->dn_ips[0], dns->dni.id);
 	strcpy(resp_info->dn_ips[1], "");

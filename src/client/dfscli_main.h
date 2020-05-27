@@ -24,7 +24,7 @@
 #define LOGMSG_LEN  4096
 #define BUF_SZ      4096
 
-#define DN_PORT 8100
+#define DN_PORT 8100 // set default datanode port is 8100
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -45,6 +45,9 @@ typedef struct rw_context_s //读写环境变量
 	int       res[3];
 	uint64_t  fsize;
 	short     write_done_blk_rep;
+	// add blk here
+	int       blk_seq; // 当前序列
+	int       total_blk; // 总的序列
 } rw_context_t;
 
 int dfscli_daemon();

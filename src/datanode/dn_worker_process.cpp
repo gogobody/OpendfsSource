@@ -149,7 +149,7 @@ void worker_processer(cycle_t *cycle, void *data)
     int            ret = 0;
     string_t       title;
     sigset_t       set;
-    struct rlimit  rl;
+    struct rlimit  rl{};
     process_t     *process = nullptr;
 
     ret = getrlimit(RLIMIT_NOFILE, &rl);
@@ -182,7 +182,7 @@ void worker_processer(cycle_t *cycle, void *data)
     }
 
     sigemptyset(&set);//信号集置空
-    if (sigprocmask(SIG_SETMASK, &set, nullptr) == -1) // 就是不阻塞信号？
+    if (sigprocmask(SIG_SETMASK, &set, nullptr) == -1) // 就是不阻塞信号
 	{
         dfs_log_error(cycle->error_log, DFS_LOG_ALERT, errno, 
 			"sigprocmask() failed");
@@ -330,7 +330,7 @@ int create_worker_thread(cycle_t *cycle)
 // dn_data_storage_thread_init
 static void * thread_worker_cycle(void *arg)
 {
-    dfs_thread_t *me = (dfs_thread_t *)arg;
+    auto *me = (dfs_thread_t *)arg;
 
     thread_bind_key(me);
 
@@ -387,6 +387,7 @@ exit:
     return nullptr;
 }
 
+// thread->faio_notify.nfd 被唤醒
 // epoll event handler in worker cycle
 // notifier handler
 // eventfd
@@ -566,7 +567,7 @@ static inline int hash_task_key(char* str, int len)
 // namenode 线程
 static int create_ns_service_thread(cycle_t *cycle)
 {
-    conf_server_t *sconf = (conf_server_t *)cycle->sconf;
+    auto *sconf = (conf_server_t *)cycle->sconf;
 
 	int i = 0;
 	uchar_t names[16][64]; // 127.0.0.1:8001
@@ -650,7 +651,7 @@ static int get_ns_srv_names(uchar_t *path, uchar_t names[][64])
 // args is thread self
 static void *thread_ns_service_cycle(void * args)
 {
-    dfs_thread_t *me = (dfs_thread_t *)args;
+    auto *me = (dfs_thread_t *)args;
 
     thread_bind_key(me);
 

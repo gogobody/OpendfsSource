@@ -12,7 +12,7 @@ struct conf_server_s
 {
     int      daemon;
     int      worker_n;
-    array_t  bind_for_cli; // cli arr
+    array_t  bind_for_cli;
 	string_t ns_srv;
     uint32_t connection_n; // 连接
     string_t error_log;

@@ -20,7 +20,7 @@ typedef struct task_s
 	int       ret;
 	uint32_t  seq;
 	void     *opq; // 指向node 对应的 nn_wb_t
-	int       master_nodeid;
+	int       master_nodeid; // master 节点id
 	char      key[KEY_LEN];
 	char      user[OWNER_LEN];
 	char      group[GROUP_LEN];

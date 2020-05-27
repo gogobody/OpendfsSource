@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 project(ngxfs LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -std=c++11 -lpthread -lm")
-set(CMAKE_EXE_LINKER_FLAGS "-lpthread -lm")
+set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -std=c++11 -pthread -lm")
+set(CMAKE_EXE_LINKER_FLAGS "-pthread -lm")
 set(CMAKE_C_FLAGS "-std=c++11 -Wall -Wpointer-arith -fPIC")
 
 
@@ -21,9 +21,9 @@ link_directories(lib ${libleveldb} ${libphxpaxos} ${libprotobuf})
 #link_libraries(libprotobuf.a)
 #link_libraries(libphxpaxos.a)
 
-find_package(Protobuf REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+#find_package(Protobuf REQUIRED)
+#include_directories(${Protobuf_INCLUDE_DIRS})
+#include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(include)
 #include_directories(include/google)
@@ -37,7 +37,7 @@ include_directories(src/cfs)
 include_directories(src/common)
 include_directories(src/faio)
 include_directories(src/datanode)
-include_directories(objs)
+include_directories(default)
 include_directories(src/namenode)
 
 

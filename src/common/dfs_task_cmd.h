@@ -30,8 +30,9 @@ typedef enum
     DN_REGISTER,
     DN_HEARTBEAT,
     DN_RECV_BLK_REPORT,
+    DN_DEL_BLK,
     DN_DEL_BLK_REPORT,
-    DN_BLK_REPORT
+    DN_BLK_REPORT,
 } cmd_t;
 
 typedef enum
@@ -64,6 +65,9 @@ typedef struct create_blk_info_s
 {
 	uint64_t blk_sz;
 	short    blk_rep;
+	// file list info
+	int      blk_seq;
+	int      total_blk;
 } create_blk_info_t;
 
 typedef struct create_resp_info_s
@@ -73,6 +77,9 @@ typedef struct create_resp_info_s
 	uint64_t namespace_id;
 	short    dn_num;
 	char     dn_ips[3][32];
+	// add file list here
+    int      blk_seq;
+    int      total_blk;
 } create_resp_info_t;
 
 typedef struct report_blk_info_s
@@ -82,7 +89,8 @@ typedef struct report_blk_info_s
 	char     dn_ip[32];
 } report_blk_info_t;
 
-//数据传输头
+// 数据传输头
+// datanode first get this header
 typedef struct data_transfer_header_s
 {
     int  op_type;  //option type 
@@ -91,6 +99,9 @@ typedef struct data_transfer_header_s
 	long generation_stamp;
 	long start_offset;
 	long len;
+	//
+	int blk_seq; // 当前切片
+	int total_blk; // 总的切片
 } data_transfer_header_t;
 
 typedef struct data_transfer_header_rsp_s

@@ -36,7 +36,8 @@ bool PhxEditlogSM::Execute(const int iGroupIdx, const uint64_t llInstanceID,
 	{
         update_fi_cache_mgmt(llInstanceID, sPaxosValue, nullptr);
 	}
-
+//    printf(                  "[SM Execute] ok, smid: %d, instanceid: %lu, value: %s\n",
+//                  SMID(), llInstanceID, sPaxosValue.c_str());
     return NGX_TRUE;
 }
 

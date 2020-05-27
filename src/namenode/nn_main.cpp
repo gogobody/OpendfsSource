@@ -1,6 +1,6 @@
 #include <dirent.h>
 #include "nn_main.h"
-#include "config.h"
+#include "../../etc/config.h"
 #include "dfs_conf.h"
 #include "nn_cycle.h"
 #include "nn_signal.h"
@@ -599,11 +599,11 @@ static int get_ns_version(cycle_t *cycle)
 	string_xxsprintf((uchar_t *)v_name, "%s/current/VERSION", 
 		sconf->fsimage_dir.data);
 	
-	int fd = open(v_name, O_RDONLY);
+	int fd = open(v_name, O_RDWR|O_CREAT,0777);
 	if (fd < 0) 
 	{
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
-			"open %s err", v_name);
+			"open %s err, maybe use namenode -h , to see how to format dfs", v_name);
 		
         return NGX_ERROR;
 	}

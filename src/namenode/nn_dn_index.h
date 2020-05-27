@@ -45,7 +45,8 @@ typedef struct del_blk_s
 
 typedef struct dn_info_s
 {
-	char     id[ID_LEN];
+	char     id[ID_LEN]; //dn's ip
+	int      port;  //dn's port // not add info now
 	uint64_t capacity;
 	uint64_t dfs_used;
 	uint32_t remaining;
@@ -62,7 +63,7 @@ typedef struct dn_store_s
 	queue_t              blk; // blk queue
 	queue_t              del_blk;
 	uint64_t             del_blk_num; //
-	dn_info_t            dni;
+	dn_info_t            dni; // dn info
 } dn_store_t;
 
 typedef struct dn_timer_s {
@@ -82,7 +83,7 @@ typedef struct dn_cache_mem_s
 
 typedef struct dn_cache_mgmt_s 
 {
-    dfs_hashtable_t  *dn_htable;
+    dfs_hashtable_t  *dn_htable; //dns
     pthread_rwlock_t  cache_rwlock;
     dn_cache_mem_t    mem_mgmt;
     dfs_hashtable_t  *dn_timer_htable;

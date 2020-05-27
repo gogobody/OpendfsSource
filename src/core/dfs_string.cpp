@@ -111,7 +111,8 @@ uchar_t * string_xxdup(string_t *src)
     return dst;
 }
 
-// if s1 == s2  then return 0
+// cmp func
+//
 int string_xxstrncasecmp(uchar_t *s1, uchar_t *s2, size_t n)
 {
     uint32_t c1 = 0, c2 = 0;
@@ -897,6 +898,7 @@ ssize_t string_xxstrtossize(uchar_t *line, size_t n)
     return negflag ? -value: value;
 }
 
+//
 uint32_t string_xxstrtoui(uchar_t *line, size_t n)
 {
     uint32_t value = 0;

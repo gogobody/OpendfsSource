@@ -49,10 +49,10 @@ typedef struct server_bind_s   server_bind_t;
 
 struct conf_variable_s 
 {
-    string_t       name; // eg: server
+    string_t       name;
     string_t       obj_name;
-    void          *conf;
-    conf_option_t *option; // eg: option.name = daemon
+    void          *conf;  // obj->init(ctx->pool) // conf_server_init->return conf_server_t
+    conf_option_t *option;
     int           (*make_default)(void *);
 };
 

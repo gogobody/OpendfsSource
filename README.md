@@ -1,16 +1,7 @@
-#  
-namenode :
-
-listening_rev_handler
-
--> add epoll event
-
--> call event and call `nn_event_process_handler`
-
--> `nn_event_process_handler` will call `mc->read/write_event_handler`
-
--> call `nn_conn_read_handler` and `nn_conn_recv`  rev buf , then call `nn_conn_decode` 
- to decode buf to task
- 
- -> call `dispatch_task` to dispatch task to task_threads[hash] (TASK_THREAD)
- ，push task to the task thread->tq and `notice_wake_up`
+how to run:
+1. you should compile phxpaxos(github), then replace the lib/* and include/* to what you have compiled.
+2. modify /etc/config.h and /etc/*.conf , then run prepareDir.sh
+3. cmake . and make 
+4. run namenode -h , you should see how to format dfs system
+5. run datanode
+6. run client -h to see how to use cmds

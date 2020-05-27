@@ -67,7 +67,7 @@ void faio_handler_exec(faio_handler_manager_t *handler_mgr,
         return;
     }
 
-    if (handler_mgr->handler[io_type](task) != FAIO_OK)  // cfs_faio_io_write in cfs_faio.c
+    if (handler_mgr->handler[io_type](task) != FAIO_OK)  // cfs_faio_io_write in cfs_faio.cpp
 	{
 		task->err.err = FAIO_ERR_TASK_HANDLER_ERR;
 		

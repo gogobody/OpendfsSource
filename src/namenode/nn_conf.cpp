@@ -1,5 +1,5 @@
 #include "dfs_memory_pool.h"
-#include "config.h"
+#include "../../etc/config.h"
 #include "dfs_array.h"
 #include "nn_cycle.h"
 #include "nn_conf.h"
@@ -20,6 +20,8 @@ static int   conf_server_make_default(void *var);
 static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     int type, string_t *args, int args_n);
 
+// 如果修改了配置文件，需要添加相应的解析操作在这里
+
 static conf_option_t conf_server_option[] = 
 {
     { string_make("daemon"), conf_parse_nn_macro,
@@ -27,7 +29,10 @@ static conf_option_t conf_server_option[] =
         
     { string_make("workers"), conf_parse_int,
         OPE_EQUAL, offsetof(conf_server_t, worker_n) },
-        
+
+    { string_make("enableMaster"), conf_parse_int,
+            OPE_EQUAL, offsetof(conf_server_t, worker_n) },
+
     { string_make("bind_for_cli"), conf_parse_bind,
         OPE_EQUAL, offsetof(conf_server_t, bind_for_cli) },
 
@@ -85,6 +90,7 @@ static conf_option_t conf_server_option[] =
     { string_null, nullptr, OPE_EQUAL, 0 }
 };
 
+// 配置文件大类相关操作，eg：Server 类别
 static conf_object_t nn_conf_objects[] = 
 {
     { string_make("Server"), conf_server_init, conf_server_make_default, conf_server_option },
@@ -119,11 +125,14 @@ static conf_macro_t conf_macro[] =
     { string_null, 0 }
 };
 
+// 获取配置文件 大类解析的相关操作，小类配置解析相关函数
 conf_object_t *get_nn_conf_object(void)
 {
     return nn_conf_objects;
 }
 
+// conf_variable_s->conf = conf_context_init
+// return conf_server_t
 static void *conf_server_init(pool_t *pool)
 {
     conf_server_t *sconf = nullptr;
@@ -149,6 +158,7 @@ static void *conf_server_init(pool_t *pool)
     return sconf;
 }
 
+// make conf_server_t default
 static int conf_server_make_default(void *var)
 {
     conf_server_t *sconf = (conf_server_t *)var;
@@ -172,7 +182,7 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
     uchar_t  *end = nullptr;
     uchar_t  *pos = nullptr;
 
-    if (type != OPE_EQUAL) // =
+    if (type != OPE_EQUAL) 
 	{
         return NGX_ERROR;
     }
@@ -182,7 +192,7 @@ static int conf_parse_nn_macro(conf_variable_t *v, uint32_t offset,
         return NGX_ERROR;
     }
 
-    vi = args_n - 1; // 2
+    vi = args_n - 1;
     if (args[vi].len == 0 || !args[vi].data) 
 	{
         return NGX_ERROR;

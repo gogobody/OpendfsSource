@@ -1,6 +1,7 @@
 #include <dirent.h>
+#include <sys/statfs.h>
 #include "dn_main.h"
-#include "config.h"
+#include "../../etc/config.h"
 #include "dfs_conf.h"
 #include "dn_cycle.h"
 #include "dn_signal.h"
@@ -97,6 +98,90 @@ static int parse_cmdline( int argc, char *const *argv)
     return NGX_OK;
 }
 
+// this func is only for datanode
+int dn_get_info(sys_info_t *sys_info){
+    // get cpu info and set cacheline size
+    uint64_t pages = 0;
+
+    // pag esize
+#if defined(_SC_PAGESIZE)
+    sys_info->pagesize = sysconf(_SC_PAGESIZE);
+#elif defined(_SC_PAGE_SIZE)
+    sys_info->pagesize = sysconf(_SC_PAGE_SIZE);
+#else
+	sys_info->pagesize = 4096;
+#endif
+    if (sys_info->pagesize < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    sys_info->cpu_num =  sysconf(_SC_NPROCESSORS_ONLN);
+    if (sys_info->cpu_num < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    // level1 cache
+    sys_info->lv1_dcache_size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
+    if (sys_info->lv1_dcache_size < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    sys_info->lv1_dcacheline_size =
+            sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    if (sys_info->lv1_dcacheline_size < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    // level2 cache
+    sys_info->lv2_cache_size = sysconf(_SC_LEVEL2_CACHE_SIZE);
+    if (sys_info->lv2_cache_size < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    sys_info->lv2_cacheline_size =
+            sysconf(_SC_LEVEL2_CACHE_LINESIZE);
+    if (sys_info->lv2_cacheline_size < 0)
+    {
+        return NGX_FALSE;
+    }
+
+    pages = sysconf(_SC_PHYS_PAGES);
+
+    sys_info->mem_num = pages * sys_info->pagesize;
+
+
+    // get disk info here
+
+    struct statfs diskInfo{};
+
+    conf_server_t * sconf = nullptr;
+    sconf = static_cast<conf_server_t *>(dfs_cycle->sconf);
+//    printf("data dir : %s\n",sconf->data_dir.data);
+
+    statfs(reinterpret_cast<const char *>(sconf->data_dir.data), &diskInfo);
+
+    unsigned long long blocksize = diskInfo.f_bsize;	//每个block里包含的字节数
+    unsigned long long totalsize = blocksize * diskInfo.f_blocks; 	//总的字节数，f_blocks为block的数目
+    printf("Total_size = %llu B = %llu KB = %llu MB = %llu GB\n",
+           totalsize, totalsize>>10, totalsize>>20, totalsize>>30);
+
+    unsigned long long freeDisk = diskInfo.f_bfree * blocksize;	//剩余空间的大小
+    unsigned long long availableDisk = diskInfo.f_bavail * blocksize; 	//可用空间大小
+    printf("Disk_free = %llu MB = %llu GB\nDisk_available = %llu MB = %llu GB\n",
+           freeDisk>>20, freeDisk>>30, availableDisk>>20, availableDisk>>30);
+
+    sys_info->capacity = totalsize;
+    sys_info->remaining = freeDisk;
+    sys_info->dfs_used = totalsize-freeDisk;
+    return NGX_OK;
+
+}
+
 int main(int argc, char **argv)
 {
     int            ret = NGX_OK;
@@ -112,10 +197,6 @@ int main(int argc, char **argv)
         return NGX_ERROR;
     }
 
-    if (!show_version && sys_get_info(&dfs_sys_info) != NGX_OK)
-	{
-        return NGX_ERROR;
-    }
  
     if (config_file.data == nullptr) //加载默认配置文件
 	{
@@ -158,6 +239,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "dn_cycle_init fail\n");
 		
         goto out;
+    }
+
+    if (!show_version && dn_get_info(&dfs_sys_info) != NGX_OK)
+    {
+        return NGX_ERROR;
     }
 
     if ((ret = process_check_running(cycle)) == NGX_TRUE) // check if process running

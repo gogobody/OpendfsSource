@@ -63,7 +63,9 @@ typedef struct fi_inode_s
 	uint64_t length;
 	uint64_t blk_size;
 	short    blk_replication;
-	uint64_t blks[BLK_LIMIT];
+	uint64_t blks[BLK_LIMIT]; // 每块的hash
+    uint32_t blk_seq; // 当前访问块 序列
+	uint32_t total_blk; // 总的块数
 } fi_inode_t;
 
 typedef struct fi_store_s 

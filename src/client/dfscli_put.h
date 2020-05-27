@@ -4,7 +4,8 @@
 #include "dfs_types.h"
 #include "dfscli_main.h"
 
-int dfscli_put(char *src, char *dst);
+// if u only send one file ,then blk_seq and total total blk should be 1
+int dfscli_put(char *src, char *dst, int blk_seq, int total_blk);
 
 #endif
 

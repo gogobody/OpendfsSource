@@ -1,5 +1,6 @@
 Server server;
 server.daemon = ALLOW;
+server.enableMaster = 1; #
 server.workers = 8;
 server.connections = 65536;
 server.bind_for_cli = "0.0.0.0:8000";

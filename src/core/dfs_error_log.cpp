@@ -93,7 +93,7 @@ void error_log_core(log_t *log, uint32_t level, char *file,
     uchar_t  *last = nullptr;
     ssize_t   n = 0;
     ssize_t   logsz = 0;
-    uchar_t   errstr[DFS_MAX_ERROR_STR];
+    uchar_t   errstr[DFS_MAX_ERROR_STR]={};
     int       len = 0;
     string_t *stime;
 	
@@ -149,7 +149,10 @@ void error_log_core(log_t *log, uint32_t level, char *file,
     }
 
     *p++ = LF;
-	
+
+    // cout to shell
+    printf("%s\n", errstr);
+
     if (log->file->fd > 0) 
 	{
         logsz = p - errstr;
@@ -234,7 +237,9 @@ void error_log_debug_core(log_t *log, uint32_t level, char *file,
     }
 
     *p++ = LF;
-    printf("%s\n", errstr);
+
+    // cout to shell
+    printf("errstr %s\n", errstr);
 
     if (log->file->fd > 0) 
 	{

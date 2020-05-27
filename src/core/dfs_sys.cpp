@@ -1,3 +1,6 @@
+#include <sys/statfs.h>
+#include <dn_conf.h>
+#include <dn_cycle.h>
 #include "dfs_sys.h"
 
 int sys_get_info(sys_info_t *sys_info)

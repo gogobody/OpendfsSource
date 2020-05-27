@@ -45,6 +45,7 @@ conf_context_t * conf_context_create(pool_t *pool)
     return ctx;
 }
 
+
 int conf_context_init(conf_context_t*ctx, string_t *file, log_t *log, 
 	                       conf_object_t* conf_objects)
 {
@@ -57,7 +58,7 @@ int conf_context_init(conf_context_t*ctx, string_t *file, log_t *log,
 int conf_context_parse(conf_context_t *ctx)
 {
     int               ret = NGX_ERROR;
-    struct stat       s;
+    struct stat       s{};
     string_t         *name = nullptr;
     conf_file_read_t *file = nullptr;
     
@@ -149,27 +150,28 @@ static int conf_file_read(conf_file_read_t *file, log_t *log)
 }
 // 解析上面保存的用户空间的文件 gx_conf_read_token
 // https://blog.csdn.net/jackywgw/article/details/51454006?xx
+
 static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 {
-    int           comment = 0;
+    int           comment = 0; // 注释
     int           line = 1;
     int           first_quote = 0;
     int           last_quote = 0;
     uchar_t      *last_pos;
     size_t        option_len = 0;
     pool_t       *tmp_pool = nullptr;
-    uchar_t      *last = NULL;
-    uchar_t      *end = NULL;
+    uchar_t      *last = nullptr;
+    uchar_t      *end = nullptr;
     uchar_t       ch = 0;
-    uchar_t      *q = NULL;
-    uchar_t      *option = NULL;
-    array_t      *args = NULL;
-    string_t     *word = NULL;
-    uchar_t      *p = NULL;
-    array_t      *arr_opts = NULL;
-    array_t      *arr_type = NULL;
-    conf_args_t  *opt = NULL;  //先把配置文件解析存在 conf_args数组里
-    conf_args_t  *type = NULL; 
+    uchar_t      *q = nullptr; // normal char
+    uchar_t      *option = nullptr;
+    array_t      *args = nullptr; // 多个数组空间
+    string_t     *word = nullptr;
+    uchar_t      *p = nullptr;
+    array_t      *arr_opts = nullptr;
+    array_t      *arr_type = nullptr;
+    conf_args_t  *opt = nullptr;  //先把配置文件解析存在 conf_args数组里
+    conf_args_t  *type = nullptr; 
     int           type_n = 0;
     int           opt_n = 0;
     int           i = 0;
@@ -187,9 +189,12 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
         return NGX_ERROR;
     }
 
+    // arr_type 存大类 // Server server;
     arr_type = (array_t *)array_create(tmp_pool, CONF_MAX_TYPE_ARRAY_N, sizeof(conf_args_t));
+    // arr_opts 存大类里的小类，保存 多个数组，每个数组保存一行解析的配置文件，比如：“server.daemon","=","ALLOW”
     arr_opts = (array_t *)array_create(tmp_pool, CONF_MAX_TYPE_ARRAY_N, sizeof(conf_args_t));
 
+    // 创建 string_t 的数组
     args = (array_t *)array_create(tmp_pool, CONF_MAX_OPTION_N, sizeof(string_t));
     option = (uchar_t *)pool_alloc(tmp_pool, CONF_MAX_OPTION_S + 1);
 
@@ -201,20 +206,20 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
     for ( ; p < end; ) 
 	{
         ch = *p;
-        // comment is start by "#"
+        // 遇到注释 comment is starting by "#"
         if (comment && ch != '\n') 
 		{
             p++;
 			
             continue;
         }
-        // added
+        // 回车
         if (ch == '\r'){
             p++;
 
             continue;
         }
-
+        
         switch(ch) 
 		{
             case ' ':
@@ -227,7 +232,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 				{
                     // get one option, then save it
                     word = (string_t *)array_push(args);
-                    if (word == NULL) 
+                    if (word == nullptr) 
 					{
                         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
                             "at line %d: no more space to parse configure", line);
@@ -389,7 +394,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 				else 
 				{
                     word = (string_t *)array_push(args);
-                    word->data = NULL;
+                    word->data = nullptr;
                     word->len = 0;
                 }
 
@@ -403,10 +408,10 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
                     opt->arr = args;
                     opt->line = line;
                 } 
-				else if (args->nelts == 2) 
+				else if (args->nelts == 2) // Server server;
 				{
                     type = (conf_args_t *)array_push(arr_type);
-                    type->arr = args;
+                    type->arr = args; // 直接保存配置的数组
                     type->line = line;
                 } 
 				else 
@@ -441,7 +446,7 @@ static int conf_parse_buf(conf_context_t *ctx, uchar_t *buf, size_t size)
 				
             default:
 normal_char:
-                *q++ = *p;
+                *q++ = *p; 
                 option_len++;
                 break;
         }
@@ -461,24 +466,28 @@ normal_char:
         goto error;
     }
 
+    // 解析完字符串的二维配置文件数组
+    // 大类
     type = (conf_args_t *)arr_type->elts;
     type_n = arr_type->nelts;
     for (i = 0; i < type_n; i++) 
 	{
-        ctx->conf_line = type[i].line;
-		
+        ctx->conf_line = type[i].line;// 行数
+		// 解析到上下文 Server server
         if (conf_parse_type(ctx, &type[i]) != NGX_OK)
 		{
             goto error;
         }
     }
 
+    // 解析小类
     opt = (conf_args_t *)arr_opts->elts;
     opt_n = arr_opts->nelts;
 	
     for (i = 0; i < opt_n; i++) 
 	{
         ctx->conf_line = type[i].line;
+        // 解析小类
         if (conf_parse_option(ctx, &opt[i]) != NGX_OK)
 		{
             goto error;
@@ -513,7 +522,7 @@ static int conf_file_close(conf_file_read_t *file, log_t *log)
 
     munmap(file->buf, file->size);
     close(file->fd);
-    file->buf = NULL;
+    file->buf = nullptr;
     file->fd = -1;
     file->size = 0;
 
@@ -523,15 +532,15 @@ static int conf_file_close(conf_file_read_t *file, log_t *log)
 static int conf_make_objects_default(conf_context_t *ctx)
 {
     uint32_t         i = 0;
-    array_t         *conf_objects_array = NULL;
-    conf_variable_t *v = NULL;
+    array_t         *conf_objects_array = nullptr;
+    conf_variable_t *v = nullptr;
  
     conf_objects_array = ctx->conf_objects_array;
     v = (conf_variable_t *)conf_objects_array->elts;
 
     for (i = 0; i < conf_objects_array->nelts; i++) 
 	{
-        if (v[i].make_default != NULL && v[i].make_default(&v[i]) != NGX_OK)
+        if (v[i].make_default != nullptr && v[i].make_default(&v[i]) != NGX_OK)
 		{
             dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
                 "%V make_default fail", &v->name);
@@ -543,18 +552,19 @@ static int conf_make_objects_default(conf_context_t *ctx)
     return NGX_OK;
 }
 
+// 解析配置文件数组 conf_args<string_t> Server server
 static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
 {
     int            i = 0;
-    string_t      *word = NULL;
-    conf_object_t *objects = NULL;
-    array_t       *args = NULL;
-    log_t         *log = NULL;
+    string_t      *word = nullptr;
+    conf_object_t *objects = nullptr;
+    array_t       *args = nullptr;
+    log_t         *log = nullptr;
 	
     log = ctx->log;
     args = conf_args->arr;
     word = (string_t *)args->elts;
-    objects = ctx->conf_objects;
+    objects = ctx->conf_objects; // in this application ,there is only one case "Server"
 	
     if (args->nelts > 0 && args->nelts != 2) 
 	{
@@ -575,7 +585,7 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
             continue;
         }
 
-        //
+        // Server server
         if (conf_parse_object(ctx, &word[1], &objects[i]) != NGX_OK)
 		{
             dfs_log_error(log, DFS_LOG_ERROR, 0, 
@@ -595,22 +605,23 @@ static int conf_parse_type(conf_context_t *ctx, conf_args_t *conf_args)
     return NGX_ERROR;
 }
 
+// 解析一行的 option
 static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 {
     int              i = 0;
-    uchar_t         *ch = NULL; // eg: .daemon
-    string_t        *word = NULL; // serve.daemon
+    uchar_t         *ch = nullptr;
+    string_t        *word = nullptr;
     string_t         var = string_null;
     string_t         att = string_null;
-    conf_object_t   *objects = NULL;
-    conf_variable_t *vclass = NULL;
+    conf_object_t   *objects = nullptr;
+    conf_variable_t *vclass = nullptr;
     int              line = 0;
-    array_t         *args = NULL;
-    log_t           *log = NULL;
+    array_t         *args = nullptr;
+    log_t           *log = nullptr;
 	
     log = ctx->log;
     args = conf_args->arr;
-    word = (string_t *)args->elts; // serve.daemon
+    word = (string_t *)args->elts;
     line = conf_args->line;
     objects = ctx->conf_objects;
   
@@ -655,7 +666,7 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
     } 
 	else 
 	{
-        ch = (uchar_t *)string_strchr(word[0].data, '.'); // server.daemon => .daemon
+        ch = (uchar_t *)string_strchr(word[0].data, '.'); // eg: .daemon
         if (!ch) 
 		{
             dfs_log_error(log , DFS_LOG_ERROR, 0, "at line %d: missing \".\" in"
@@ -666,8 +677,9 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 		
         var.data = word[0].data ;
         var.len = ch - var.data;
-        att.data = ch + 1; // daemon
+        att.data = ch + 1;
         att.len = word[0].len - var.len - 1;
+        // lookup for 'server'
         vclass = conf_get_vobject(ctx, &var);
         if (!vclass) 
 		{
@@ -676,7 +688,8 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
 			
             return NGX_ERROR;
         }
-		
+
+		//
         if (conf_parse_object_att(ctx, vclass, &att, word, args->nelts,
             vclass->option) != NGX_OK)
         {
@@ -687,12 +700,11 @@ static int conf_parse_option(conf_context_t *ctx, conf_args_t *conf_args)
     return NGX_OK;
 }
 
-//
 static conf_variable_t * conf_get_vobject(conf_context_t *ctx, 
 	                                            string_t *name)
 {
     uint32_t         i = 0;
-    conf_variable_t *v = NULL;
+    conf_variable_t *v = nullptr;
 
     v = (conf_variable_t *)ctx->conf_objects_array->elts;
 
@@ -715,16 +727,16 @@ static conf_variable_t * conf_get_vobject(conf_context_t *ctx,
         "conf_get_vobject: not such object exists \"%V\", at line:%d",
         name, ctx->conf_line);
 
-    return NULL;
+    return nullptr;
 }
 
 static int conf_parse_object(conf_context_t *ctx, string_t *var, 
 	                               conf_object_t *obj)
 {
-    conf_variable_t *v = NULL;
+    conf_variable_t *v = nullptr;
 
     v = (conf_variable_t *)array_push(ctx->conf_objects_array);
-    if (v == NULL) 
+    if (v == nullptr) 
 	{
         dfs_log_error(ctx->log, DFS_LOG_ERROR, 0,
             "No more space to parse configure", ctx->conf_objects_array->nelts);
@@ -747,8 +759,8 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
 	
     // malloc memory from conf
     // conf init
-    v->conf = obj->init(ctx->pool);
-    if (v->conf == NULL) 
+    v->conf = obj->init(ctx->pool); // conf_server_init to get conf_server_t
+    if (v->conf == nullptr) 
 	{
         return NGX_ERROR;
     }
@@ -759,7 +771,6 @@ static int conf_parse_object(conf_context_t *ctx, string_t *var,
     return NGX_OK;
 }
 
-// eg: att:daemon ,args: server.daemon
 static int conf_parse_object_att(conf_context_t *ctx, conf_variable_t *v, 
 	                                    string_t *att, string_t *args, 
 	                                    int args_n, conf_option_t *option)
@@ -829,8 +840,8 @@ static int conf_string_pdup(pool_t *pool, string_t *dst, string_t *src)
 void * conf_get_parsed_obj(conf_context_t *ctx, string_t *name)
 {
     uint32_t         i = 0;
-    conf_variable_t *v = NULL;
-    array_t         *vars = NULL;
+    conf_variable_t *v = nullptr;
+    array_t         *vars = nullptr;
 
     vars = ctx->conf_objects_array;
     v = (conf_variable_t *)vars->elts;
@@ -845,6 +856,6 @@ void * conf_get_parsed_obj(conf_context_t *ctx, string_t *name)
         return v[i].conf;
     }
 	
-    return NULL;
+    return nullptr;
 }
 

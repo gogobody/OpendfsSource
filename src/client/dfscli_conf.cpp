@@ -1,5 +1,5 @@
 #include "dfs_memory_pool.h"
-#include "config.h"
+#include "../../etc/config.h"
 #include "dfs_array.h"
 #include "dfscli_cycle.h"
 #include "dfscli_conf.h"

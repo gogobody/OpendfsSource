@@ -660,13 +660,21 @@ static void *thread_ns_service_cycle(void * args)
     //
     register_thread_initialized();
 
+    int tries = 0;
     while (me->running) 
 	{
         // 连接上 namenode 获取 namespaceid
         if (dn_register(me) != NGX_OK)
 		{
+            printf("can not connect to namenode : %s:%d now \n",me->ns_info.ip, me->ns_info.port);
             sleep(1);
+            // can not conn to nn
+            tries++;
+            if(tries == 10){
 
+            }
+
+            //
 			continue;
 		}
 		// 检查 version namespace id ，创建子文件夹

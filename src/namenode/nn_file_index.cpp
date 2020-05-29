@@ -1487,6 +1487,7 @@ static int update_fi_rm(fi_inode_t *fin) {
 
     pthread_rwlock_unlock(&g_fcm->cache_rwlock);
 
+    //
     sub_FsObjectNum(1);
 
     for (int i = 0; i < BLK_LIMIT; i++) {

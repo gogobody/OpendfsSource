@@ -369,6 +369,7 @@ int nn_dn_heartbeat(task_t *task)
         task->data_len = 0;
 	    //
 
+	    // if need del task then return blk id to dn
 		if (dns->del_blk_num > 0) 
 		{
             int del_blk_num = dns->del_blk_num > DELETING_BLK_FOR_ONCE 
@@ -441,7 +442,7 @@ static dn_timer_t *dn_timer_create(dn_store_t *dns)
     dt->ln.next = nullptr;
 	
     dt->ev.data = (void *)dt;
-	dt->ev.handler = dn_timeout_handler;
+	dt->ev.handler = dn_timeout_handler; // dn timer handler
 
 	dt->thread = get_local_thread();
 	dt->dns = dns;
@@ -457,6 +458,7 @@ static dn_timer_t *dn_timer_create(dn_store_t *dns)
     return dt;
 }
 
+// if dn is dead
 static void dn_timeout_handler(event_t *ev)
 {
     assert(ev);
@@ -636,6 +638,7 @@ int generate_dns(short blk_rep, create_resp_info_t *resp_info)
 	
     return NGX_OK;
 }
+
 
 int notify_dn_2_delete_blk(long blk_id, char dn_ip[32])
 {

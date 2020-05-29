@@ -102,6 +102,7 @@ void * mem_get0(struct mem_mblks *mblks)
 	return ptr;
 }
 
+// 归还空间
 void mem_put(void *ptr)
 {
     struct mem_data *pdata = nullptr;

@@ -232,6 +232,7 @@ blk_store_t *get_blk_store_obj(long id)
     return blk;
 }
 
+// nn blk del
 int block_object_del(long id)
 {
     blk_store_t *blk = nullptr;
@@ -242,8 +243,10 @@ int block_object_del(long id)
         return NGX_OK;
 	}
 
+	//
 	notify_dn_2_delete_blk(id, blk->dn_ip);
 
+	//
 	queue_remove(&blk->dn_me);
 	
     pthread_rwlock_wrlock(&g_nn_bcm->cache_rwlock);

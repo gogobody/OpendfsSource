@@ -676,6 +676,7 @@ int block_object_add(char *path, long ns_id, long blk_id)
     return NGX_OK;
 }
 
+//
 int block_object_del(long blk_id)
 {
     block_info_t *blk = nullptr;
@@ -692,7 +693,7 @@ int block_object_del(long blk_id)
 
     dfs_hashtable_remove_link(g_dn_bcm->blk_htable, &blk->ln);
 
-	mem_put(blk);
+	mem_put(blk);// reback mem
 
 	pthread_rwlock_unlock(&g_dn_bcm->cache_rwlock);
     

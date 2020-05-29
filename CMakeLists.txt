@@ -67,7 +67,7 @@ AUX_SOURCE_DIRECTORY(src/client CLIENT)
 #file(GLOB_RECURSE CFILES "${CMAKE_SOURCE_DIR}/*.c")
 #SET_SOURCE_FILES_PROPERTIES(${CFILES} PROPERTIES LANGUAGE CXX )
 
-add_executable(namenode ${DIR_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${PAXOS} ${NAMENODE})
+add_executable(namenode ${DIR_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${PAXOS} ${NAMENODE} src/namenode/nn_group.cpp src/namenode/nn_group.h)
 TARGET_LINK_LIBRARIES(namenode ${CMAKE_THREAD_LIBS_INIT} ${Protobuf_LIBRARIES})
 TARGET_LINK_LIBRARIES(namenode m libprotobuf.a libphxpaxos.a libleveldb.a)
 

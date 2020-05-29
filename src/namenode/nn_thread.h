@@ -12,7 +12,7 @@
 #include "nn_task_queue.h"
 
 typedef void *(*TREAD_FUNC)(void *);
-typedef struct dfs_thread_s dfs_thread_t;
+typedef struct dfs_thread_s  dfs_thread_t;
 
 struct dfs_thread_s 
 {

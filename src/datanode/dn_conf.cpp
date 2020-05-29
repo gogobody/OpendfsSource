@@ -34,7 +34,13 @@ static conf_option_t conf_server_option[] =
 
 	{ string_make("ns_srv"), conf_parse_string,
         OPE_EQUAL, offsetof(conf_server_t, ns_srv) },
-        
+
+    { string_make("listen_for_other_dn"), conf_parse_string,
+            OPE_EQUAL, offsetof(conf_server_t, listen_for_other_dn) },
+
+    { string_make("my_paxos"), conf_parse_string,
+            OPE_EQUAL, offsetof(conf_server_t, my_paxos) },
+
     { string_make("connections"), conf_parse_int,
         OPE_EQUAL, offsetof(conf_server_t, connection_n) },
         

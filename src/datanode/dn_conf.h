@@ -14,6 +14,9 @@ struct conf_server_s
     int      worker_n;
     array_t  bind_for_cli;
 	string_t ns_srv;
+	string_t listen_for_other_dn; // used for other dn
+    string_t my_paxos;  // dn's own paxos
+    string_t ot_paxos;  // paxos's NodeList
     uint32_t connection_n; // 连接
     string_t error_log;
     string_t coredump_dir;

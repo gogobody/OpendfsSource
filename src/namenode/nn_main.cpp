@@ -600,7 +600,7 @@ static int get_ns_version(cycle_t *cycle)
 		sconf->fsimage_dir.data);
 	
 	int fd = open(v_name, O_RDWR|O_CREAT,0777);
-	if (fd < 0) 
+	if (fd < 0)   
 	{
 		dfs_log_error(dfs_cycle->error_log, DFS_LOG_ALERT, errno, 
 			"open %s err, maybe use namenode -h , to see how to format dfs", v_name);
